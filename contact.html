@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="logo/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact — Little Symphony</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="main.css">
+<style>
+body{font-family:var(--sans);background:#fff;color:var(--charcoal);-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+button{cursor:pointer;font-family:var(--sans)}
+
+/* ── HERO ── */
+.contact-hero{
+  padding:140px 2rem 60px;
+  background:linear-gradient(135deg,var(--primary-xlight) 0%,#fff 60%);
+  text-align:center;
+}
+.contact-hero .eyebrow{
+  font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--primary-dark);margin-bottom:1rem;display:block;
+}
+.contact-hero h1{
+  font-family:var(--serif);font-size:clamp(2rem,5vw,3.2rem);font-weight:700;
+  color:var(--charcoal);margin-bottom:1rem;line-height:1.2;
+}
+.contact-hero p{
+  font-size:16px;color:var(--text-soft);max-width:500px;margin:0 auto;line-height:1.7;
+}
+
+/* ── LAYOUT ── */
+.contact-wrap{
+  max-width:1100px;margin:0 auto;padding:4rem 2rem 6rem;
+  display:grid;grid-template-columns:1fr 1.4fr;gap:4rem;align-items:start;
+}
+
+/* ── INFO CARDS ── */
+.contact-info{display:flex;flex-direction:column;gap:1.5rem}
+.info-card{
+  background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.4rem 1.6rem;display:flex;align-items:flex-start;gap:1rem;
+  transition:box-shadow 0.2s,transform 0.2s;
+}
+.info-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.info-icon{
+  width:44px;height:44px;border-radius:12px;background:var(--primary-xlight);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.info-icon svg{width:20px;height:20px;stroke:var(--primary-dark);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.info-label{font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px}
+.info-value{font-size:14px;font-weight:500;color:var(--charcoal);line-height:1.5}
+.info-sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+
+/* Social links */
+.contact-social{margin-top:0.5rem}
+.contact-social p{font-size:13px;color:var(--text-muted);margin-bottom:0.8rem}
+.social-row{display:flex;gap:10px}
+.social-btn{
+  width:40px;height:40px;border-radius:50%;border:1.5px solid var(--border);
+  background:#fff;display:flex;align-items:center;justify-content:center;
+  color:var(--text-soft);transition:all 0.2s;cursor:pointer;
+}
+.social-btn:hover{border-color:var(--primary);color:var(--primary-dark);background:var(--primary-xlight)}
+.social-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── FORM ── */
+.contact-form-wrap{
+  background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+  padding:2.4rem 2.4rem;box-shadow:var(--shadow-sm);
+}
+.form-title{font-family:var(--serif);font-size:1.4rem;font-weight:600;color:var(--charcoal);margin-bottom:0.4rem}
+.form-subtitle{font-size:13px;color:var(--text-muted);margin-bottom:2rem}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-group{margin-bottom:1.2rem}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--charcoal);margin-bottom:6px;letter-spacing:0.02em}
+.form-input,.form-select,.form-textarea{
+  width:100%;padding:11px 14px;border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);font-size:14px;color:var(--charcoal);
+  background:#fff;transition:border-color 0.2s;outline:none;font-family:var(--sans);
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--primary)}
+.form-textarea{resize:vertical;min-height:130px;line-height:1.6}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23A09590' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+
+.submit-btn{
+  width:100%;padding:14px;background:var(--primary);color:#fff;border:none;
+  border-radius:40px;font-size:14px;font-weight:600;letter-spacing:0.02em;
+  transition:all 0.25s;box-shadow:0 4px 20px rgba(201,160,154,0.35);margin-top:0.5rem;
+}
+.submit-btn:hover{background:var(--primary-dark);transform:translateY(-2px)}
+
+.form-success{
+  display:none;text-align:center;padding:2rem;
+}
+.form-success svg{width:48px;height:48px;stroke:var(--primary-dark);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0 auto 1rem}
+.form-success h3{font-family:var(--serif);font-size:1.3rem;color:var(--charcoal);margin-bottom:0.5rem}
+.form-success p{font-size:14px;color:var(--text-muted)}
+
+/* ── MAP STRIP ── */
+.map-strip{
+  background:var(--primary-xlight);padding:3rem 2rem;text-align:center;
+  border-top:1px solid var(--border);
+}
+.map-strip h3{font-family:var(--serif);font-size:1.4rem;color:var(--charcoal);margin-bottom:0.5rem}
+.map-strip p{font-size:14px;color:var(--text-muted);margin-bottom:1.5rem}
+.map-placeholder{
+  max-width:900px;margin:0 auto;height:260px;border-radius:var(--radius);
+  background:linear-gradient(135deg,#e8e4df 0%,#d8d2cc 100%);
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  border:1px solid var(--border);color:var(--text-muted);font-size:14px;font-weight:500;
+}
+.map-placeholder svg{width:24px;height:24px;stroke:var(--text-muted);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── RESPONSIVE ── */
+@media(max-width:800px){
+  .contact-wrap{grid-template-columns:1fr;gap:2.5rem}
+  .form-row{grid-template-columns:1fr}
+  .contact-form-wrap{padding:1.6rem}
+}
+@media(max-width:500px){
+  .contact-hero{padding:120px 1.5rem 40px}
+  .contact-wrap{padding:2.5rem 1.5rem 4rem}
+}
+</style>
+</head>
+<body>
+
+<nav id="main-nav"></nav>
+
+<!-- HERO -->
+<section class="contact-hero">
+  <span class="eyebrow">Nous contacter</span>
+  <h1>Une question ? <em>On est là.</em></h1>
+  <p>Notre équipe est disponible pour vous aider à choisir, commander ou simplement discuter de ce qui convient le mieux à votre bébé.</p>
+</section>
+
+<!-- MAIN CONTENT -->
+<div class="contact-wrap">
+
+  <!-- INFO -->
+  <div class="contact-info">
+
+    <div class="info-card">
+      <div class="info-icon">
+        <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      </div>
+      <div>
+        <div class="info-label">Adresse</div>
+        <div class="info-value">Avenue Habib Bourguiba, Tunis</div>
+        <div class="info-sub">Tunisie — 1000</div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-icon">
+        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.38 2 2 0 0 1 3.6 1.2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/></svg>
+      </div>
+      <div>
+        <div class="info-label">Téléphone</div>
+        <div class="info-value">+216 70 000 000</div>
+        <div class="info-sub">Lun – Sam, 9h – 18h</div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-icon">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </div>
+      <div>
+        <div class="info-label">E-mail</div>
+        <div class="info-value">bonjour@littlesymphony.tn</div>
+        <div class="info-sub">Réponse sous 24 h ouvrées</div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div>
+        <div class="info-label">Horaires</div>
+        <div class="info-value">Lundi – Samedi : 9h – 18h</div>
+        <div class="info-sub">Dimanche : fermé</div>
+      </div>
+    </div>
+
+    <div class="contact-social">
+      <p>Retrouvez-nous sur les réseaux</p>
+      <div class="social-row">
+        <button class="social-btn" title="Instagram">
+          <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+        </button>
+        <button class="social-btn" title="Facebook">
+          <svg viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+        </button>
+        <button class="social-btn" title="TikTok">
+          <svg viewBox="0 0 24 24"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
+        </button>
+        <button class="social-btn" title="WhatsApp">
+          <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FORM -->
+  <div class="contact-form-wrap">
+    <div id="contact-form-inner">
+      <div class="form-title">Envoyez-nous un message</div>
+      <div class="form-subtitle">Nous vous répondrons dans les plus brefs délais.</div>
+
+      <form id="contact-form" onsubmit="submitContact(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Prénom *</label>
+            <input class="form-input" type="text" placeholder="Marie" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nom *</label>
+            <input class="form-input" type="text" placeholder="Dupont" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">E-mail *</label>
+          <input class="form-input" type="email" placeholder="marie@exemple.com" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Téléphone</label>
+          <input class="form-input" type="tel" placeholder="+216 XX XXX XXX">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Sujet *</label>
+          <select class="form-select" required>
+            <option value="" disabled selected>Choisir un sujet…</option>
+            <option>Question sur un produit</option>
+            <option>Suivi de commande</option>
+            <option>Retour / échange</option>
+            <option>Livraison</option>
+            <option>Partenariat</option>
+            <option>Autre</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Message *</label>
+          <textarea class="form-textarea" placeholder="Décrivez votre demande…" required></textarea>
+        </div>
+
+        <button type="submit" class="submit-btn">Envoyer le message</button>
+      </form>
+    </div>
+
+    <div class="form-success" id="form-success">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
+      <h3>Message envoyé !</h3>
+      <p>Merci pour votre message. Notre équipe vous répondra dans les 24 heures ouvrées.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- MAP STRIP -->
+<div class="map-strip">
+  <h3>Nous trouver</h3>
+  <p>Avenue Habib Bourguiba, Tunis — Tunisie</p>
+  <div class="map-placeholder">
+    <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    Carte interactive à intégrer
+  </div>
+</div>
+
+<div id="main-footer"></div>
+
+<script src="_shared.js"></script>
+<script>
+renderNav('contact');
+renderFooter();
+
+function submitContact(e) {
+  e.preventDefault();
+  document.getElementById('contact-form-inner').style.display = 'none';
+  document.getElementById('form-success').style.display = 'block';
+}
+</script>
+</body>
+</html>

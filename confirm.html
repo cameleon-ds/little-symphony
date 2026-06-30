@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="logo/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commande confirmée — Little Symphony</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="main.css">
+<style>
+/* → variables in main.css */
+body{font-family:var(--sans);background:var(--primary-xlight);color:var(--charcoal);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+img{display:block;max-width:100%}
+a{text-decoration:none;color:inherit}
+nav{background:rgba(255,255,255,0.93);backdrop-filter:blur(20px);border-bottom:1px solid rgba(237,230,227,0.7)}
+.nav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:68px;padding:0 2rem}
+.logo img{height:48px;width:auto}
+.nav-step{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted)}
+.step{display:flex;align-items:center;gap:6px;font-weight:500}
+.step.done{color:#C9A09A}
+.step-dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.step.done .step-dot{background:#C9A09A;color:#fff;border-color:#C9A09A}
+.step-sep{width:24px;height:1px;background:var(--border)}
+.page{flex:1;max-width:700px;margin:0 auto;padding:4rem 2rem;text-align:center}
+/* SUCCESS ICON */
+.success-ring{width:96px;height:96px;border-radius:50%;background:#E8F5E9;
+  display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;
+  animation:scaleIn 0.5s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes scaleIn{from{transform:scale(0)}to{transform:scale(1)}}
+.success-ring svg{width:48px;height:48px;stroke:#2E7D32;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.confirm-title{font-family:var(--serif);font-size:2rem;margin-bottom:0.6rem}
+.confirm-sub{font-size:15px;color:var(--text-soft);margin-bottom:2rem;line-height:1.7}
+/* ORDER CARD */
+.order-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);
+  padding:1.5rem;text-align:left;margin-bottom:1.5rem}
+.order-id{font-size:12px;color:var(--text-muted);margin-bottom:0.6rem;letter-spacing:0.06em;text-transform:uppercase}
+.order-id strong{color:var(--charcoal);font-size:15px;display:block;margin-top:2px;letter-spacing:0}
+.order-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.2rem}
+.order-info dt{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
+.order-info dd{font-size:14px;color:var(--charcoal);font-weight:500}
+/* ITEMS */
+.order-items{border-top:1px solid var(--border);margin-top:1.2rem;padding-top:1.2rem}
+.order-item{display:flex;align-items:center;gap:12px;padding:8px 0}
+.order-item-img{width:48px;height:48px;border-radius:8px;object-fit:cover;background:var(--primary-xlight);flex-shrink:0}
+.order-item-name{font-size:13px;font-weight:500;flex:1}
+.order-item-qty{font-size:12px;color:var(--text-muted)}
+.order-item-price{font-size:13px;font-weight:700}
+.order-total-row{border-top:1px solid var(--border);margin-top:0.8rem;padding-top:0.8rem;
+  display:flex;justify-content:space-between;font-size:15px;font-weight:700}
+/* STATUS */
+.status-track{background:var(--primary-xlight);border-radius:var(--radius-sm);padding:1.2rem;margin-top:1.2rem}
+.status-step{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.status-step:last-child{margin-bottom:0}
+.status-dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.status-dot.done{background:var(--primary);border-color:var(--primary)}
+.status-dot.done::after{content:'✓';font-size:10px;color:#fff;font-weight:700}
+.status-dot.active{background:#fff;border-color:var(--primary)}
+.status-dot.active::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--primary);display:block}
+.status-label{font-size:13px;color:var(--text-soft)}
+.status-label strong{color:var(--charcoal);display:block;font-size:13px;margin-bottom:1px}
+/* BUTTONS */
+.actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:2rem}
+.btn-primary{padding:14px 28px;border-radius:40px;background:var(--primary);color:#fff;
+  border:none;font-size:14px;font-weight:600;transition:all 0.25s;box-shadow:0 4px 20px rgba(201,160,154,0.35)}
+.btn-primary:hover{background:var(--primary-dark);transform:translateY(-2px)}
+.btn-outline{padding:13px 28px;border-radius:40px;background:transparent;color:var(--charcoal);
+  border:1.5px solid var(--border);font-size:14px;font-weight:500;transition:all 0.2s}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary)}
+.footer-mini{border-top:1px solid var(--border);padding:2rem;text-align:center;font-size:12px;color:var(--text-muted);background:#fff}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="index.html"><img src="logo/logo.png" alt="Little Symphony"></a>
+    <div class="nav-step">
+      <div class="step done"><span class="step-dot">✓</span> Panier</div>
+      <div class="step-sep"></div>
+      <div class="step done"><span class="step-dot">✓</span> Livraison</div>
+      <div class="step-sep"></div>
+      <div class="step done"><span class="step-dot">✓</span> Confirmation</div>
+    </div>
+    <div id="confirm-nav-right" style="display:flex;align-items:center;gap:4px;min-width:120px;justify-content:flex-end"></div>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="success-ring">
+    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <h1 class="confirm-title">Merci pour votre commande !</h1>
+  <p class="confirm-sub">
+    Votre commande a bien été enregistrée. Vous recevrez une confirmation par email sous quelques minutes.
+  </p>
+
+  <div class="order-card">
+    <div class="order-id">Numéro de commande<strong id="order-id">—</strong></div>
+    <div class="order-grid">
+      <dl class="order-info">
+        <dt>Date</dt><dd id="order-date">—</dd>
+      </dl>
+      <dl class="order-info">
+        <dt>Mode de réception</dt><dd id="order-delivery">—</dd>
+      </dl>
+      <dl class="order-info">
+        <dt>Paiement</dt><dd id="order-payment">—</dd>
+      </dl>
+      <dl class="order-info">
+        <dt>Adresse / Lieu</dt><dd id="order-address">—</dd>
+      </dl>
+    </div>
+    <div class="order-items" id="order-items"></div>
+    <div class="order-total-row">
+      <span>Total payé</span><span id="order-total">—</span>
+    </div>
+    <div class="status-track">
+      <div class="status-step"><div class="status-dot done"></div><div class="status-label"><strong>Commande reçue</strong>Votre commande a été enregistrée</div></div>
+      <div class="status-step"><div class="status-dot active"></div><div class="status-label"><strong>En préparation</strong>Nos équipes préparent votre colis</div></div>
+      <div class="status-step"><div class="status-dot"></div><div class="status-label"><strong>En livraison</strong>—</div></div>
+      <div class="status-step"><div class="status-dot"></div><div class="status-label"><strong>Livré</strong>—</div></div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <a href="orders.html" class="btn-primary">Voir mes commandes</a>
+    <a href="index.html" class="btn-outline">Continuer mes achats</a>
+  </div>
+</div>
+
+<div class="footer-mini">© 2025 Little Symphony — Tous droits réservés</div>
+
+<script src="_shared.js"></script>
+<script>
+document.getElementById('confirm-nav-right').innerHTML = _profileDropdownHTML();
+function parsePrice(str){ return parseFloat((str||'0').replace(/[^\d,]/g,'').replace(',','.')) || 0; }
+
+const order = JSON.parse(localStorage.getItem('ls_last_order') || 'null');
+if (order) {
+  document.getElementById('order-id').textContent = order.id;
+  document.getElementById('order-date').textContent = order.date;
+  document.getElementById('order-delivery').textContent = order.delivery === 'retrait' ? 'Retrait en boutique' : 'Livraison à domicile';
+  document.getElementById('order-payment').textContent = order.payment || '—';
+  document.getElementById('order-address').textContent = order.address || '—';
+  document.getElementById('order-total').textContent = order.total;
+  document.getElementById('order-items').innerHTML = (order.items||[]).map(i => `
+    <div class="order-item">
+      <img class="order-item-img" src="${i.img}" alt="" onerror="this.style.background='var(--primary-xlight)'">
+      <div class="order-item-name">${i.name}<div class="order-item-qty">× ${i.qty}</div></div>
+      <div class="order-item-price">${i.price}</div>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>

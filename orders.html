@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="logo/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mes Commandes — Little Symphony</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="main.css">
+<style>
+/* → base styles in main.css */
+
+/* PAGE */
+.page{max-width:860px;margin:0 auto;padding:96px 2rem 5rem}
+.page-title{font-family:var(--serif);font-size:2rem;margin-bottom:0.3rem}
+.page-sub{font-size:14px;color:var(--text-muted);margin-bottom:2rem}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem}
+@media(max-width:580px){.stats-row{grid-template-columns:1fr 1fr}}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem;text-align:center}
+.stat-val{font-family:var(--serif);font-size:2rem;color:var(--primary);margin-bottom:4px}
+.stat-label{font-size:12px;color:var(--text-muted)}
+
+/* TABS */
+.sub-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1.5rem}
+.sub-tab{padding:10px 20px;font-size:13px;font-weight:500;color:var(--text-muted);
+  border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.2s}
+.sub-tab.active{color:var(--primary-dark);border-bottom-color:var(--primary)}
+.sub-tab:hover:not(.active){color:var(--charcoal)}
+.sub-panel{display:none}
+.sub-panel.active{display:block}
+
+/* ORDER ROWS */
+.order-row{background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:1.2rem;margin-bottom:0.8rem;display:grid;grid-template-columns:1fr auto;
+  gap:1rem;align-items:center;transition:box-shadow 0.2s}
+.order-row:hover{box-shadow:var(--shadow-sm)}
+.order-num{font-size:13px;font-weight:700;margin-bottom:3px}
+.order-meta{font-size:12px;color:var(--text-muted);margin-top:3px}
+.order-thumbs{display:flex;gap:4px;margin-top:8px;align-items:center}
+.order-thumb{width:32px;height:32px;border-radius:6px;object-fit:cover;border:1px solid var(--border)}
+.order-badge{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;white-space:nowrap}
+.badge-pending   {background:#FFF8E1;color:#F57F17;border:1px solid #F9A825}
+.badge-confirmed {background:#E3F2FD;color:#1565C0;border:1px solid #90CAF9}
+.badge-shipped   {background:#EDE7F6;color:#4527A0;border:1px solid #B39DDB}
+.badge-delivered {background:#E8F5E9;color:#2E7D32;border:1px solid #A5D6A7}
+.badge-cancelled {background:#FFEBEE;color:#C62828;border:1px solid #EF9A9A}
+.order-total-val{font-size:14px;font-weight:700;text-align:right;margin-top:6px}
+
+/* EMPTY */
+.empty{text-align:center;padding:3rem;background:#fff;border-radius:var(--radius);border:1px solid var(--border)}
+.empty svg{width:52px;height:52px;stroke:var(--border);fill:none;stroke-width:1.2;margin:0 auto 1rem}
+.empty p{font-size:14px;color:var(--text-muted);margin-bottom:1.5rem}
+
+/* BOUTON DÉTAIL */
+.btn-detail{margin-top:10px;padding:7px 16px;border-radius:20px;
+  border:1.5px solid var(--border);background:#fff;font-size:12px;
+  font-weight:500;color:var(--text-soft);transition:all 0.15s;cursor:pointer}
+.btn-detail:hover{border-color:var(--primary);color:var(--primary-dark);background:var(--primary-xlight)}
+
+/* PANEL DÉTAIL */
+#order-detail{display:none;background:#fff;border:1px solid var(--border);
+  border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem}
+.detail-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;
+  color:var(--text-muted);background:none;border:none;padding:0;
+  margin-bottom:1.2rem;cursor:pointer;transition:color 0.2s}
+.detail-back:hover{color:var(--charcoal)}
+.detail-back svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.detail-title{font-family:var(--serif);font-size:1.3rem;margin-bottom:1.2rem;color:var(--charcoal)}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+@media(max-width:600px){.detail-grid{grid-template-columns:1fr}}
+.detail-section{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:0.08em;color:var(--text-muted);margin-bottom:0.6rem}
+.detail-row{display:flex;justify-content:space-between;font-size:13px;
+  padding:6px 0;border-bottom:1px solid var(--border-light,#F5F0EE)}
+.detail-row:last-child{border-bottom:none}
+.detail-row span:first-child{color:var(--text-muted)}
+.detail-row span:last-child{font-weight:600;color:var(--charcoal)}
+.item-line{display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--border-light,#F5F0EE);font-size:13px}
+.item-line:last-child{border-bottom:none}
+.item-line-name{color:var(--charcoal);font-weight:500}
+.item-line-qty{font-size:12px;color:var(--text-muted)}
+.item-line-price{font-weight:700;color:var(--charcoal)}
+.detail-total-row{display:flex;justify-content:space-between;
+  font-size:15px;font-weight:700;padding-top:10px;margin-top:6px;
+  border-top:1px solid var(--border);color:var(--charcoal)}
+.detail-total-row span:last-child{color:var(--primary-dark)}
+</style>
+</head>
+<body>
+<nav id="main-nav"></nav>
+
+<div class="page">
+  <div id="not-logged" style="display:none;text-align:center;padding:4rem 0">
+    <h2 style="font-family:var(--serif);margin-bottom:1rem">Connectez-vous</h2>
+    <p style="color:var(--text-muted);margin-bottom:1.5rem">Vous devez être connecté pour voir vos commandes.</p>
+    <a href="login.html?next=orders.html" style="display:inline-block;padding:14px 32px;background:var(--primary);color:#fff;border-radius:40px;font-size:14px;font-weight:600">Se connecter</a>
+  </div>
+
+  <!-- PANEL DÉTAIL -->
+  <div id="order-detail">
+    <button class="detail-back" onclick="closeDetail()">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Retour à mes commandes
+    </button>
+    <div class="detail-title" id="detail-title">—</div>
+    <div style="margin-bottom:1.5rem">
+      <div class="detail-section">Articles commandés</div>
+      <div id="detail-items"></div>
+      <div class="detail-total-row">
+        <span>Total</span>
+        <span id="detail-total">—</span>
+      </div>
+    </div>
+    <div class="detail-grid">
+      <div>
+        <div class="detail-section">Informations</div>
+        <div class="detail-row"><span>N° commande</span><span id="d-id">—</span></div>
+        <div class="detail-row"><span>Date</span><span id="d-date">—</span></div>
+        <div class="detail-row"><span>Statut</span><span id="d-status">—</span></div>
+        <div class="detail-row"><span>Mode de réception</span><span id="d-delivery">—</span></div>
+      </div>
+      <div>
+        <div class="detail-section">Livraison</div>
+        <div id="d-address" style="font-size:13px;color:var(--text-soft);line-height:1.8">—</div>
+        <div class="detail-row" style="margin-top:0.6rem"><span>Téléphone</span><span id="d-phone" style="font-size:13px">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="orders-wrap">
+    <h1 class="page-title">Mes commandes</h1>
+    <p class="page-sub" id="orders-sub">—</p>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val" id="stat-total">0</div><div class="stat-label">Commandes</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-spent">—</div><div class="stat-label">Total dépensé</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-items">0</div><div class="stat-label">Articles achetés</div></div>
+    </div>
+
+    <div class="sub-tabs">
+      <button class="sub-tab active" id="tab-encours" onclick="showTab('encours',this)">En cours</button>
+      <button class="sub-tab" id="tab-passees" onclick="showTab('passees',this)">Passées</button>
+    </div>
+
+    <div class="sub-panel active" id="panel-encours">
+      <div id="list-encours"></div>
+    </div>
+    <div class="sub-panel" id="panel-passees">
+      <div id="list-passees"></div>
+    </div>
+  </div>
+</div>
+
+<div id="main-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="_shared.js"></script>
+<script>
+renderNav('orders');
+renderFooter();
+
+function parsePrice(str){ return parseFloat((str||'0').replace(/[^\d,]/g,'').replace(',','.')) || 0; }
+
+function showTab(name, btn) {
+  document.querySelectorAll('.sub-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+let ALL_ORDERS = [];
+const BADGE = s => ({
+  'En attente':'badge-pending', 'Confirmée':'badge-confirmed',
+  'En livraison':'badge-shipped', 'Livrée':'badge-delivered', 'Annulée':'badge-cancelled'
+})[s] || 'badge-pending';
+
+function orderCard(o, idx) {
+  return `<div class="order-row">
+    <div>
+      <div class="order-num">${o.id}</div>
+      <div class="order-meta">${o.dateTime || o.date} · ${o.delivery==='retrait'?'Retrait en boutique':'Livraison à domicile'} · ${(o.items||[]).reduce((s,i)=>s+i.qty,0)} article(s)</div>
+      <div class="order-thumbs">
+        ${(o.items||[]).slice(0,5).map(i=>`<img class="order-thumb" src="${i.img||''}" alt="" onerror="this.style.background='#F5EDED'">`).join('')}
+        ${(o.items||[]).length>5?`<span style="font-size:11px;color:var(--text-muted)">+${o.items.length-5}</span>`:''}
+      </div>
+      <button class="btn-detail" onclick="showDetail(${idx})">Voir les détails →</button>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <span class="order-badge ${BADGE(o.status)}">${o.status}</span>
+      <div class="order-total-val">${o.total}</div>
+    </div>
+  </div>`;
+}
+
+function showDetail(idx) {
+  const o = ALL_ORDERS[idx];
+  if (!o) return;
+  document.getElementById('detail-title').textContent  = 'Commande ' + o.id;
+  document.getElementById('d-id').textContent          = o.id;
+  document.getElementById('d-date').textContent        = o.dateTime || o.date;
+  document.getElementById('d-status').innerHTML        = `<span class="order-badge ${BADGE(o.status)}" style="font-size:11px">${o.status}</span>`;
+  document.getElementById('d-delivery').textContent    = o.delivery==='retrait'?'Retrait en boutique':'Livraison à domicile';
+  document.getElementById('detail-total').textContent  = o.total;
+  const addr = o.delivery === 'retrait'
+    ? '<em style="color:var(--text-muted)">Retrait en boutique</em>'
+    : [o.address, o.city, o.zip].filter(Boolean).join('<br>') || 'Non renseignée';
+  document.getElementById('d-address').innerHTML = addr;
+  document.getElementById('d-phone').textContent = o.phone || '—';
+  const items = o.items || [];
+  document.getElementById('detail-items').innerHTML = items.length
+    ? items.map(i=>`
+        <div class="item-line" style="align-items:center;gap:12px">
+          ${i.img
+            ? `<img src="${i.img}" style="width:52px;height:52px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid var(--border-light)">`
+            : `<div style="width:52px;height:52px;border-radius:10px;background:var(--primary-xlight);flex-shrink:0;border:1px solid var(--border-light)"></div>`}
+          <div style="flex:1">
+            <div class="item-line-name">${i.name||i.product_name||'—'}</div>
+            <div class="item-line-qty">Qté : ${i.qty||i.quantity||1}</div>
+          </div>
+          <div class="item-line-price">${i.price||'—'}</div>
+        </div>`).join('')
+    : '<p style="font-size:13px;color:var(--text-muted)">Aucun article</p>';
+  document.getElementById('order-detail').style.display = 'block';
+  document.getElementById('orders-wrap').style.display  = 'none';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function closeDetail() {
+  document.getElementById('order-detail').style.display = 'none';
+  document.getElementById('orders-wrap').style.display  = 'block';
+}
+
+function emptyState(msg) {
+  return `<div class="empty">
+    <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+    <p>${msg}</p>
+    <a href="index.html" style="display:inline-block;padding:12px 28px;background:var(--primary);color:#fff;border-radius:40px;font-size:13px;font-weight:600">Découvrir la boutique</a>
+  </div>`;
+}
+
+// Mapping statut Supabase → affichage
+function statusLabel(s) {
+  return { pending:'En attente', confirmed:'Confirmée',
+           shipped:'En livraison', delivered:'Livrée', cancelled:'Annulée' }[s] || s;
+}
+
+// Adapter une commande Supabase au format attendu par orderCard()
+function adaptOrder(o) {
+  return {
+    id:       'LS-' + o.id.substring(0,8).toUpperCase(),
+    date:     new Date(o.created_at).toLocaleDateString('fr-FR'),
+    dateTime: new Date(o.created_at).toLocaleDateString('fr-FR') + ' à ' + new Date(o.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}),
+    delivery: o.address_line1 === 'Retrait boutique' ? 'retrait' : 'livraison',
+    address:  o.address_line1 !== 'Retrait boutique' ? (o.address_line1 || '') : '',
+    city:     o.city          || '',
+    zip:      o.postal_code   || '',
+    phone:    o.customer_phone || '',
+    items:    (o.items || o.order_items || []).map(i => ({
+      name:  i.product_name,
+      img:   (i.products?.images?.[0]) || '',
+      qty:   i.quantity,
+      price: Number(i.unit_price).toFixed(3).replace('.', ',') + ' DT'
+    })),
+    status:   statusLabel(o.status),
+    total:    parseFloat(o.total).toFixed(3).replace('.',',') + ' DT'
+  };
+}
+
+async function init() {
+  const user = Auth.getUser();
+  if (!user) {
+    document.getElementById('not-logged').style.display = 'block';
+    document.getElementById('orders-wrap').style.display = 'none';
+    return;
+  }
+
+  let orders = [];
+
+  // Charger depuis Supabase
+  if (typeof _supabase !== 'undefined') {
+    const { data: { user: sbUser } } = await _supabase.auth.getUser();
+    if (sbUser) {
+      const { data, error } = await _supabase
+        .from('orders')
+        .select(`id, status, total, address_line1, city, postal_code, customer_phone, created_at,
+          order_items(product_name, quantity, unit_price, products(images))`)
+        .eq('user_id', sbUser.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        orders = data.map(o => adaptOrder({
+          ...o,
+          items: o.order_items || []
+        }));
+      } else {
+        orders = Orders.get();
+      }
+    } else {
+      orders = Orders.get();
+    }
+  } else {
+    orders = Orders.get();
+  }
+
+  // Stats
+  document.getElementById('stat-total').textContent = orders.length;
+  const spent = orders.reduce((s,o) => s + parsePrice(o.total), 0);
+  document.getElementById('stat-spent').textContent = spent.toFixed(3).replace('.',',') + ' DT';
+  const itemCount = orders.reduce((s,o) => s + (o.items||[]).reduce((a,i)=>a+i.qty,0), 0);
+  document.getElementById('stat-items').textContent = itemCount;
+  document.getElementById('orders-sub').textContent = orders.length
+    ? `${orders.length} commande${orders.length>1?'s':''} au total`
+    : 'Aucune commande pour le moment';
+
+  ALL_ORDERS = orders;
+
+  const enCours = orders.map((o,i)=>({o,i})).filter(({o})=> o.status!=='Livrée'&&o.status!=='Annulée');
+  const passees = orders.map((o,i)=>({o,i})).filter(({o})=> o.status==='Livrée'||o.status==='Annulée');
+
+  document.getElementById('list-encours').innerHTML = enCours.length
+    ? enCours.map(({o,i})=>orderCard(o,i)).join('')
+    : emptyState('Aucune commande en cours');
+
+  document.getElementById('list-passees').innerHTML = passees.length
+    ? passees.map(({o,i})=>orderCard(o,i)).join('')
+    : emptyState('Aucune commande passée');
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="logo/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon Panier — Little Symphony</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="main.css">
+<style>
+/* → variables in main.css */
+body{font-family:var(--sans);background:var(--primary-xlight);color:var(--charcoal);-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+button{cursor:pointer;font-family:var(--sans)}
+a{text-decoration:none;color:inherit}
+
+/* PAGE */
+.page{max-width:1100px;margin:0 auto;padding:96px 2rem 5rem}
+.page-title{font-family:var(--serif);font-size:2rem;margin-bottom:0.4rem}
+.page-sub{font-size:14px;color:var(--text-muted);margin-bottom:2rem}
+
+/* LAYOUT */
+.cart-layout{display:grid;grid-template-columns:1fr 360px;gap:2rem;align-items:start}
+@media(max-width:900px){.cart-layout{grid-template-columns:1fr}}
+
+/* CART ITEMS */
+.cart-items{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.cart-header{padding:1.2rem 1.5rem;border-bottom:1px solid var(--border);
+  font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em}
+.cart-item{display:grid;grid-template-columns:80px 1fr auto;gap:1rem;
+  padding:1.2rem 1.5rem;border-bottom:1px solid var(--border-light);align-items:center}
+.cart-item:last-child{border-bottom:none}
+.item-img{width:80px;height:80px;border-radius:10px;object-fit:cover;background:var(--primary-xlight)}
+.item-name{font-size:14px;font-weight:600;margin-bottom:3px}
+.item-sub{font-size:12px;color:var(--text-muted);margin-bottom:10px}
+.item-remove{font-size:11px;color:var(--text-muted);background:none;border:none;
+  padding:0;transition:color 0.2s;display:flex;align-items:center;gap:4px}
+.item-remove:hover{color:#E65100}
+.item-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.item-price{font-size:15px;font-weight:700}
+.qty-ctrl{display:flex;align-items:center;gap:8px;background:var(--primary-xlight);
+  border-radius:40px;padding:3px 5px}
+.qty-btn{width:28px;height:28px;border-radius:50%;border:none;background:#fff;
+  font-size:16px;display:flex;align-items:center;justify-content:center;
+  box-shadow:var(--shadow-sm);transition:all 0.2s}
+.qty-btn:hover{background:var(--primary);color:#fff}
+.qty-val{font-size:13px;font-weight:600;min-width:20px;text-align:center}
+
+/* EMPTY */
+.cart-empty{padding:4rem 1.5rem;text-align:center}
+.cart-empty svg{width:64px;height:64px;stroke:var(--border);fill:none;stroke-width:1.2;
+  stroke-linecap:round;stroke-linejoin:round;margin:0 auto 1rem}
+.cart-empty h3{font-family:var(--serif);font-size:1.4rem;margin-bottom:0.5rem;color:var(--text-soft)}
+.cart-empty p{font-size:14px;color:var(--text-muted);margin-bottom:1.5rem}
+
+/* SUMMARY */
+.summary{background:#fff;border-radius:var(--radius);border:1px solid var(--border);
+  padding:1.5rem;position:sticky;top:88px}
+.summary h3{font-family:var(--serif);font-size:1.2rem;margin-bottom:1.4rem}
+.summary-row{display:flex;justify-content:space-between;align-items:center;
+  font-size:14px;color:var(--text-soft);margin-bottom:0.8rem}
+.summary-row.total{font-size:17px;font-weight:700;color:var(--charcoal);
+  border-top:1px solid var(--border);padding-top:1rem;margin-top:0.4rem}
+.summary-row span:last-child{font-weight:600}
+.promo-box{background:var(--primary-xlight);border-radius:var(--radius-sm);
+  padding:12px 14px;margin:1rem 0;display:flex;gap:8px}
+.promo-input{flex:1;border:none;background:transparent;font-size:13px;outline:none;
+  color:var(--charcoal);font-family:var(--sans)}
+.promo-input::placeholder{color:var(--text-muted)}
+.promo-btn{font-size:12px;font-weight:600;color:var(--primary-dark);background:none;border:none}
+.btn-checkout{width:100%;padding:16px;border-radius:40px;background:var(--primary);color:#fff;
+  border:none;font-size:15px;font-weight:600;
+  box-shadow:0 4px 20px rgba(201,160,154,0.4);transition:all 0.25s;margin-top:1rem}
+.btn-checkout:hover{background:var(--primary-dark);transform:translateY(-2px)}
+.continue{display:block;text-align:center;font-size:13px;color:var(--text-muted);
+  margin-top:1rem;transition:color 0.2s}
+.continue:hover{color:var(--charcoal)}
+.trust-mini{display:flex;flex-direction:column;gap:8px;margin-top:1.2rem;
+  border-top:1px solid var(--border);padding-top:1.2rem}
+.trust-item{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-muted)}
+.trust-item svg{width:15px;height:15px;stroke:var(--primary);fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+
+</style>
+</head>
+<body>
+
+<nav id="main-nav"></nav>
+
+<div class="page">
+  <h1 class="page-title">Mon Panier</h1>
+  <p class="page-sub" id="cart-sub">Chargement…</p>
+
+  <div class="cart-layout">
+    <div class="cart-items" id="cart-items-wrap"></div>
+    <div class="summary">
+      <h3>Récapitulatif</h3>
+      <div class="summary-row"><span>Sous-total</span><span id="subtotal">—</span></div>
+      <div class="summary-row"><span>Livraison</span><span id="shipping">—</span></div>
+      <div class="summary-row total"><span>Total</span><span id="total">—</span></div>
+      <div class="promo-box">
+        <input class="promo-input" placeholder="Code promo" id="promo-input">
+        <button class="promo-btn" onclick="applyPromo()">Appliquer</button>
+      </div>
+      <button class="btn-checkout" onclick="goCheckout()">Commander →</button>
+      <a href="index.html" class="continue">← Continuer mes achats</a>
+      <div class="trust-mini">
+        <div class="trust-item"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Livraison offerte dès 80 DT</div>
+        <div class="trust-item"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Paiement 100% sécurisé</div>
+        <div class="trust-item"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Retours sous 30 jours</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="main-footer"></div>
+
+<script src="_shared.js"></script>
+<script>
+renderNav('cart');
+renderFooter();
+
+function parsePrice(str){ if (typeof str === 'number') return str; return parseFloat((String(str||'0')).replace(/[^\d,]/g,'').replace(',','.')) || 0; }
+function fmt(n){ return n.toFixed(3).replace('.',',') + ' DT'; }
+
+function render() {
+  const items = Cart.get();
+  const wrap = document.getElementById('cart-items-wrap');
+  const n = items.reduce((s,i)=>s+i.qty,0);
+  document.getElementById('cart-sub').textContent =
+    n === 0 ? '' : `${n} article${n>1?'s':''} dans votre panier`;
+
+  if (items.length === 0) {
+    wrap.innerHTML = `<div class="cart-empty">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <h3>Votre panier est vide</h3>
+      <p>Ajoutez des produits pour commencer vos achats</p>
+      <a href="index.html" style="display:inline-block;padding:14px 32px;background:var(--primary);color:#fff;border-radius:40px;font-size:14px;font-weight:600">Découvrir la boutique</a>
+    </div>`;
+    document.getElementById('subtotal').textContent = '0,000 DT';
+    document.getElementById('shipping').textContent = 'Gratuite';
+    document.getElementById('total').textContent = '0,000 DT';
+    return;
+  }
+
+  const safeId = id => id.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+  wrap.innerHTML = `<div class="cart-header">${n} article${n>1?'s':''}</div>` +
+    items.map(item => `
+    <div class="cart-item">
+      <img class="item-img" src="${item.img}" alt="${item.name}"
+           onerror="this.style.background='var(--primary-xlight)'">
+      <div>
+        <div class="item-name">${item.name}</div>
+        <div class="item-sub">${item.sub}</div>
+        <button class="item-remove" onclick="removeItem('${safeId(item.id)}')">
+          <svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Supprimer
+        </button>
+      </div>
+      <div class="item-right">
+        <div class="item-price">${fmt(parsePrice(item.price) * item.qty)}</div>
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="updateQty('${safeId(item.id)}', ${item.qty-1})">−</button>
+          <span class="qty-val">${item.qty}</span>
+          <button class="qty-btn" onclick="updateQty('${safeId(item.id)}', ${item.qty+1})">+</button>
+        </div>
+      </div>
+    </div>`).join('');
+
+  const sub = items.reduce((s,i) => s + parsePrice(i.price)*i.qty, 0);
+  const shipping = sub >= 80 ? 0 : 7;
+  document.getElementById('subtotal').textContent = fmt(sub);
+  document.getElementById('shipping').textContent = shipping === 0 ? 'Gratuite 🎉' : fmt(shipping);
+  document.getElementById('total').textContent = fmt(sub + shipping);
+
+  const cc = document.getElementById('cart-count');
+  cc.textContent = n; cc.style.display = n > 0 ? 'flex' : 'none';
+}
+
+function removeItem(id) { Cart.remove(id.replace(/&quot;/g,'"')); render(); }
+function updateQty(id, qty) {
+  const realId = id.replace(/&quot;/g,'"');
+  if (qty < 1) { Cart.remove(realId); } else { Cart.updateQty(realId, qty); }
+  render();
+}
+function applyPromo() {
+  const v = document.getElementById('promo-input').value.trim().toUpperCase();
+  if (v === 'SYMPHONY10') alert('Code appliqué : -10% sur votre commande !');
+  else alert('Code promo invalide.');
+}
+function goCheckout() {
+  if (Cart.count() === 0) return;
+  if (!Auth.isLoggedIn()) { window.location.href = 'login.html?next=checkout.html'; return; }
+  window.location.href = 'checkout.html';
+}
+
+render();
+</script>
+</body>
+</html>

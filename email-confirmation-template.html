@@ -1,0 +1,160 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmez votre email — Little Symphony</title>
+</head>
+<body style="margin:0;padding:0;background:#FBF9F9;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+
+  <!-- Wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FBF9F9;padding:40px 20px;">
+    <tr>
+      <td align="center">
+
+        <!-- Card -->
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,0.07);">
+
+          <!-- Header fond blanc + logo couleur -->
+          <tr>
+            <td align="center" style="background:#ffffff;padding:36px 40px;border-bottom:1px solid #EDE6E3;">
+              <img src="https://little-symphony-demo.netlify.app/logo/logo.png"
+                   alt="Little Symphony"
+                   width="320"
+                   style="display:block;margin:0 auto;max-width:320px;height:auto;"
+              />
+            </td>
+          </tr>
+
+          <!-- Corps du message -->
+          <tr>
+            <td style="padding:28px 48px 32px;">
+
+              <!-- Titre -->
+              <h1 style="margin:0 0 12px;font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:700;color:#1C1C1E;text-align:center;line-height:1.2;">
+                Bienvenue dans la famille !
+              </h1>
+
+              <!-- Sous-titre -->
+              <p style="margin:0 0 28px;font-size:15px;color:#6E6460;text-align:center;line-height:1.7;">
+                Merci de rejoindre Little Symphony.<br>
+                Confirmez votre adresse email pour accéder à votre compte et profiter de toutes nos offres.
+              </p>
+
+              <!-- Séparateur -->
+              <div style="height:1px;background:#EDE6E3;margin:0 0 32px;"></div>
+
+              <!-- Bouton de confirmation -->
+              <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 32px;">
+                <tr>
+                  <td align="center" style="background:#C9A09A;border-radius:40px;box-shadow:0 4px 20px rgba(201,160,154,0.4);">
+                    <a href="{{ .ConfirmationURL }}"
+                       style="display:inline-block;padding:16px 48px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:0.03em;">
+                      Confirmer mon email →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Note expiration -->
+              <p style="margin:0 0 32px;font-size:12px;color:#A09590;text-align:center;">
+                Ce lien est valable pendant <strong>24 heures</strong>.
+              </p>
+
+              <!-- Séparateur -->
+              <div style="height:1px;background:#EDE6E3;margin:0 0 28px;"></div>
+
+              <!-- Avantages membres -->
+              <p style="margin:0 0 16px;font-size:13px;font-weight:600;color:#1C1C1E;text-align:center;letter-spacing:0.05em;text-transform:uppercase;">Ce qui vous attend chez nous</p>
+
+              <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                <tr>
+                  <td style="padding:10px 12px;background:#FBF9F9;border-radius:12px;margin-bottom:8px;">
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                      <tr>
+                        <td width="32" style="color:#C9A09A;font-size:18px;">🚚</td>
+                        <td style="font-size:13px;color:#6E6460;padding-left:8px;line-height:1.5;"><strong style="color:#1C1C1E;">Livraison offerte</strong> dès 80 DT d'achat partout en Tunisie</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr><td height="8"></td></tr>
+                <tr>
+                  <td style="padding:10px 12px;background:#FBF9F9;border-radius:12px;">
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                      <tr>
+                        <td width="32" style="color:#C9A09A;font-size:18px;">⭐</td>
+                        <td style="font-size:13px;color:#6E6460;padding-left:8px;line-height:1.5;"><strong style="color:#1C1C1E;">Offres exclusives membres</strong> — promotions et nouveautés en avant-première</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr><td height="8"></td></tr>
+                <tr>
+                  <td style="padding:10px 12px;background:#FBF9F9;border-radius:12px;">
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                      <tr>
+                        <td width="32" style="color:#C9A09A;font-size:18px;">📦</td>
+                        <td style="font-size:13px;color:#6E6460;padding-left:8px;line-height:1.5;"><strong style="color:#1C1C1E;">Suivi de commandes</strong> en temps réel depuis votre espace personnel</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Lien de secours -->
+          <tr>
+            <td style="padding:0 48px 40px;">
+              <div style="background:#FBF9F9;border-radius:12px;padding:16px;border:1px solid #EDE6E3;">
+                <p style="margin:0 0 6px;font-size:12px;color:#A09590;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :</p>
+                <p style="margin:0;font-size:11px;color:#C9A09A;word-break:break-all;">{{ .ConfirmationURL }}</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#1C1C1E;padding:28px 48px;border-radius:0 0 20px 20px;">
+              <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                <tr>
+                  <td>
+                    <img src="https://little-symphony-demo.netlify.app/logo/logo-white.png"
+                         alt="Little Symphony"
+                         width="120"
+                         style="display:block;margin:0 0 12px;max-width:120px;height:auto;"
+                    />
+                    <p style="margin:0;font-size:11px;color:#6E6460;line-height:1.6;">
+                      La boutique enfants de référence en Tunisie<br>
+                      Des produits soigneusement sélectionnés pour les premières années de votre enfant.
+                    </p>
+                  </td>
+                </tr>
+                <tr><td height="20"></td></tr>
+                <tr>
+                  <td style="border-top:1px solid #3A3A3C;padding-top:16px;">
+                    <p style="margin:0;font-size:11px;color:#6E6460;">
+                      Vous recevez cet email car une inscription a été effectuée avec l'adresse <strong style="color:#A09590;">{{ .Email }}</strong>.<br>
+                      Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+        <!-- Fin card -->
+
+        <!-- Copyright -->
+        <p style="margin:24px 0 0;font-size:11px;color:#A09590;text-align:center;">
+          © 2025 Little Symphony — Tous droits réservés
+        </p>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="logo/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Créer un compte — Little Symphony</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="main.css">
+<style>
+/* → variables in main.css */
+body{font-family:var(--sans);background:var(--primary-xlight);color:var(--charcoal);
+  -webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+img{display:block;max-width:100%}
+a{text-decoration:none;color:inherit}
+nav{background:rgba(255,255,255,0.93);backdrop-filter:blur(20px);border-bottom:1px solid rgba(237,230,227,0.7)}
+.nav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:center;height:68px;padding:0 2rem}
+.logo img{height:48px;width:auto}
+.split{flex:1;display:flex;min-height:calc(100vh - 68px)}
+.split-visual{flex:1;background:linear-gradient(135deg,#d4a0a0 0%,#e8c5c0 50%,#f5e8e6 100%);
+  display:flex;align-items:center;justify-content:center;padding:3rem;position:relative;overflow:hidden}
+.split-visual::before{content:'';position:absolute;inset:0;
+  background:url('https://images.pexels.com/photos/3662667/pexels-photo-3662667.jpeg?auto=compress&cs=tinysrgb&w=800') center/cover;
+  opacity:0.3}
+.visual-content{position:relative;text-align:center;color:#fff}
+.visual-tag{font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;
+  background:rgba(255,255,255,0.25);border-radius:20px;padding:6px 16px;display:inline-block;margin-bottom:1.5rem}
+.visual-title{font-family:var(--serif);font-size:2.6rem;font-weight:700;line-height:1.1;margin-bottom:1rem}
+.visual-sub{font-size:14px;opacity:0.85;line-height:1.6;max-width:320px}
+.visual-perks{margin-top:2rem;display:flex;flex-direction:column;gap:10px;text-align:left}
+.perk{display:flex;align-items:center;gap:10px;font-size:13px;background:rgba(255,255,255,0.15);
+  border-radius:10px;padding:8px 14px;backdrop-filter:blur(4px)}
+.perk svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0}
+.split-form{width:540px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  padding:3rem 2.5rem;background:#fff;overflow-y:auto}
+@media(max-width:900px){.split-visual{display:none}.split-form{width:100%}}
+.form-box{width:100%;max-width:420px}
+.form-title{font-family:var(--serif);font-size:2rem;margin-bottom:0.4rem}
+.form-sub{font-size:14px;color:var(--text-muted);margin-bottom:2rem}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-group{margin-bottom:1.1rem}
+label{display:block;font-size:13px;font-weight:500;margin-bottom:6px}
+.required{color:var(--primary)}
+input,textarea{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  font-size:14px;color:var(--charcoal);background:#fff;outline:none;transition:border-color 0.2s;font-family:var(--sans)}
+input:focus,textarea:focus{border-color:var(--primary)}
+.input-wrap{position:relative}
+.eye-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--text-muted);display:flex;align-items:center}
+.eye-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.strength-bar{height:3px;border-radius:2px;margin-top:5px;background:var(--border);overflow:hidden}
+.strength-fill{height:100%;border-radius:2px;width:0;transition:width 0.3s,background 0.3s}
+.strength-label{font-size:11px;color:var(--text-muted);margin-top:3px}
+.check-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:1.2rem}
+.check-row input[type=checkbox]{width:16px;height:16px;margin-top:2px;accent-color:var(--primary);flex-shrink:0}
+.check-label{font-size:12px;color:var(--text-soft);line-height:1.5}
+.check-label a{color:var(--primary-dark);font-weight:500}
+.btn-submit{width:100%;padding:15px;background:var(--primary);color:#fff;border:none;
+  border-radius:40px;font-size:15px;font-weight:600;transition:all 0.25s;
+  box-shadow:0 4px 20px rgba(201,160,154,0.35);margin-bottom:1rem}
+.btn-submit:hover{background:var(--primary-dark);transform:translateY(-2px)}
+.login-link{text-align:center;font-size:13px;color:var(--text-soft)}
+.login-link a{color:var(--primary-dark);font-weight:600}
+.error-msg{background:#FFF3F0;border:1px solid #FFCCC7;border-radius:8px;
+  padding:10px 14px;font-size:13px;color:#C62828;display:none;margin-bottom:1rem}
+.field-error{font-size:11px;color:#E65100;margin-top:3px;display:none}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="index.html"><img src="logo/logo.png" alt="Little Symphony"></a>
+  </div>
+</nav>
+
+<div class="split">
+  <div class="split-visual">
+    <div class="visual-content">
+      <div class="visual-tag">✦ Bienvenue</div>
+      <h2 class="visual-title">Rejoignez la<br><em>Little Symphony</em></h2>
+      <p class="visual-sub">Créez votre compte pour suivre vos commandes et profiter d'avantages exclusifs.</p>
+      <div class="visual-perks">
+        <div class="perk"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Livraison offerte dès 80 DT</div>
+        <div class="perk"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Suivi de commandes en temps réel</div>
+        <div class="perk"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Accès aux offres exclusives membres</div>
+        <div class="perk"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Historique de vos achats</div>
+      </div>
+    </div>
+  </div>
+  <div class="split-form">
+    <div class="form-box">
+      <h1 class="form-title">Créer un compte</h1>
+      <p class="form-sub">Rejoignez Little Symphony en quelques secondes</p>
+
+      <div class="error-msg" id="error-msg"></div>
+
+      <form onsubmit="doRegister(event)" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Prénom <span class="required">*</span></label>
+            <input type="text" id="firstName" placeholder="Marie" required>
+            <div class="field-error" id="err-firstName">Requis</div>
+          </div>
+          <div class="form-group">
+            <label>Nom <span class="required">*</span></label>
+            <input type="text" id="lastName" placeholder="Dupont" required>
+            <div class="field-error" id="err-lastName">Requis</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Adresse email <span class="required">*</span></label>
+          <input type="email" id="email" placeholder="votre@email.com" required>
+          <div class="field-error" id="err-email">Email invalide</div>
+        </div>
+        <div class="form-group">
+          <label>Téléphone</label>
+          <input type="tel" id="phone" placeholder="+216 XX XXX XXX">
+        </div>
+        <div class="form-group">
+          <label>Adresse de livraison</label>
+          <input type="text" id="address" placeholder="123 rue de la Paix, Tunis">
+        </div>
+        <div class="form-group">
+          <label>Mot de passe <span class="required">*</span></label>
+          <div class="input-wrap">
+            <input type="password" id="password" placeholder="••••••••" oninput="checkStrength(this.value)" required>
+            <button type="button" class="eye-btn" onclick="togglePwd('password')">
+              <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+          <div class="strength-label" id="strength-label"></div>
+          <div class="field-error" id="err-password">6 caractères minimum</div>
+        </div>
+        <div class="form-group">
+          <label>Confirmer le mot de passe <span class="required">*</span></label>
+          <div class="input-wrap">
+            <input type="password" id="confirm" placeholder="••••••••" required>
+            <button type="button" class="eye-btn" onclick="togglePwd('confirm')">
+              <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="field-error" id="err-confirm">Les mots de passe ne correspondent pas</div>
+        </div>
+        <div class="check-row">
+          <input type="checkbox" id="terms" required>
+          <label class="check-label" for="terms">J'accepte les <a href="#">Conditions générales</a> et la <a href="#">Politique de confidentialité</a></label>
+        </div>
+        <button type="submit" class="btn-submit">Créer mon compte →</button>
+      </form>
+
+      <p class="login-link">Déjà un compte ? <a href="login.html">Se connecter</a></p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="_shared.js"></script>
+<script>
+function togglePwd(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+function checkStrength(pwd) {
+  const fill  = document.getElementById('strength-fill');
+  const label = document.getElementById('strength-label');
+  const levels = [
+    { test: () => pwd.length === 0, width: '0%',   color: 'transparent', text: '' },
+    { test: () => pwd.length < 6,   width: '25%',  color: '#E65100',     text: 'Trop court' },
+    { test: () => pwd.length < 8,   width: '50%',  color: '#F9A825',     text: 'Moyen' },
+    { test: () => !/[A-Z]/.test(pwd) || !/\d/.test(pwd), width: '75%', color: '#43A047', text: 'Bien' },
+    { test: () => true,              width: '100%', color: '#2E7D32',     text: 'Excellent' }
+  ];
+  const level = levels.find(l => l.test());
+  fill.style.width  = level.width;
+  fill.style.background = level.color;
+  label.textContent = level.text;
+}
+
+function showErr(id, show) {
+  document.getElementById(id).style.display = show ? 'block' : 'none';
+}
+
+async function doRegister(e) {
+  e.preventDefault();
+  const firstName = document.getElementById('firstName').value.trim();
+  const lastName  = document.getElementById('lastName').value.trim();
+  const email     = document.getElementById('email').value.trim();
+  const phone     = document.getElementById('phone').value.trim();
+  const address   = document.getElementById('address').value.trim();
+  const password  = document.getElementById('password').value;
+  const confirm   = document.getElementById('confirm').value;
+  const terms     = document.getElementById('terms').checked;
+  const err       = document.getElementById('error-msg');
+  const btn       = document.querySelector('.btn-submit');
+
+  // Validation côté client
+  let valid = true;
+  showErr('err-firstName', !firstName); if (!firstName) valid = false;
+  showErr('err-lastName',  !lastName);  if (!lastName)  valid = false;
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  showErr('err-email', !emailOk); if (!emailOk) valid = false;
+  showErr('err-password', password.length < 6); if (password.length < 6) valid = false;
+  showErr('err-confirm', password !== confirm);  if (password !== confirm) valid = false;
+
+  if (!terms) {
+    err.textContent = 'Veuillez accepter les conditions générales.';
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+  if (!valid) return;
+
+  btn.textContent = 'Création du compte…';
+  btn.disabled = true;
+
+  // Inscription Supabase Auth
+  const { data, error } = await _supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { first_name: firstName, last_name: lastName }
+    }
+  });
+
+  btn.textContent = 'Créer mon compte →';
+  btn.disabled = false;
+
+  if (error) {
+    err.textContent = error.message === 'User already registered'
+      ? 'Un compte existe déjà avec cet email.'
+      : 'Erreur : ' + (error.message || error.status || JSON.stringify(error));
+    err.style.display = 'block';
+    console.error('Supabase signUp error:', error);
+    return;
+  }
+
+  if (data.session) {
+    // Connexion directe (confirm email désactivé)
+    await _supabase.from('profiles').update({ phone, address_line1: address }).eq('id', data.user.id);
+    Auth.setUser({ id: data.user.id, email, firstName, lastName, phone, address });
+    const next = new URLSearchParams(window.location.search).get('next') || 'profile.html';
+    window.location.href = next;
+  } else {
+    // Email de confirmation envoyé — ne pas connecter l'utilisateur
+    err.style.background = '#F0FFF4';
+    err.style.borderColor = '#C6F6D5';
+    err.style.color = '#276749';
+    err.textContent = '✓ Compte créé ! Vérifiez votre email pour confirmer votre inscription.';
+    err.style.display = 'block';
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="logo/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commander — Little Symphony</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="main.css">
+<style>
+/* → variables in main.css */
+body{font-family:var(--sans);background:var(--primary-xlight);color:var(--charcoal);-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+button{cursor:pointer;font-family:var(--sans)}
+a{text-decoration:none;color:inherit}
+input,select,textarea{font-family:var(--sans)}
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(255,255,255,0.93);
+  backdrop-filter:blur(20px);border-bottom:1px solid rgba(237,230,227,0.7)}
+.nav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;
+  justify-content:space-between;height:68px;padding:0 2rem}
+.logo img{height:48px;width:auto}
+.nav-step{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted)}
+.step{display:flex;align-items:center;gap:6px;font-weight:500}
+.step.active{color:var(--primary-dark)}
+.step.done{color:#C9A09A}
+.step-dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.step.active .step-dot{background:var(--primary);color:#fff;border-color:var(--primary)}
+.step.done .step-dot{background:#C9A09A;color:#fff;border-color:#C9A09A}
+.step-sep{width:24px;height:1px;background:var(--border)}
+/* PAGE */
+.page{max-width:1100px;margin:0 auto;padding:96px 2rem 5rem}
+.page-title{font-family:var(--serif);font-size:1.8rem;margin-bottom:2rem}
+.layout{display:grid;grid-template-columns:1fr 360px;gap:2rem;align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+/* CARD */
+.card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);
+  padding:1.5rem;margin-bottom:1.2rem}
+.card-title{font-size:15px;font-weight:700;margin-bottom:1.2rem;display:flex;align-items:center;gap:10px}
+.card-title-num{width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;
+  font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* DELIVERY OPTIONS */
+.delivery-opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.2rem}
+.delivery-opt{border:2px solid var(--border);border-radius:var(--radius-sm);
+  padding:1.2rem;cursor:pointer;transition:all 0.22s;position:relative}
+.delivery-opt.selected{border-color:var(--primary);background:var(--primary-xlight)}
+.delivery-opt input[type=radio]{position:absolute;opacity:0;pointer-events:none}
+.delivery-icon{width:44px;height:44px;border-radius:12px;background:var(--primary-xlight);
+  display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.delivery-icon svg{width:22px;height:22px;stroke:var(--primary-dark);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.delivery-opt.selected .delivery-icon{background:var(--primary);display:flex}
+.delivery-opt.selected .delivery-icon svg{stroke:#fff}
+.delivery-label{font-size:14px;font-weight:600;margin-bottom:4px}
+.delivery-desc{font-size:12px;color:var(--text-muted)}
+.delivery-price{font-size:13px;font-weight:700;color:var(--primary-dark);margin-top:6px}
+/* FORM */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.form-row{grid-template-columns:1fr}}
+.form-group{margin-bottom:1rem}
+.form-label{display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:var(--charcoal)}
+.form-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);font-size:14px;color:var(--charcoal);background:#fff;
+  transition:border-color 0.2s;outline:none}
+.form-input:focus{border-color:var(--primary)}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23A09590' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center}
+/* PAYMENT */
+.payment-opts{display:flex;flex-direction:column;gap:10px}
+.payment-opt{border:2px solid var(--border);border-radius:var(--radius-sm);
+  padding:1rem 1.2rem;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px}
+.payment-opt.selected{border-color:var(--primary);background:var(--primary-xlight)}
+.payment-opt input{accent-color:var(--primary)}
+.payment-info{flex:1}
+.payment-name{font-size:14px;font-weight:600;margin-bottom:2px}
+.payment-detail{font-size:12px;color:var(--text-muted)}
+.payment-icon{font-size:22px}
+/* ORDER SUMMARY */
+.summary{background:#fff;border-radius:var(--radius);border:1px solid var(--border);
+  padding:1.5rem;position:sticky;top:88px}
+.summary h3{font-family:var(--serif);font-size:1.2rem;margin-bottom:1.2rem}
+.summary-items{margin-bottom:1.2rem;max-height:280px;overflow-y:auto}
+.sum-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-light)}
+.sum-item:last-child{border-bottom:none}
+.sum-img{width:52px;height:52px;border-radius:8px;object-fit:cover;background:var(--primary-xlight);flex-shrink:0}
+.sum-name{font-size:13px;font-weight:500;flex:1;line-height:1.3}
+.sum-qty{font-size:11px;color:var(--text-muted)}
+.sum-price{font-size:13px;font-weight:700;flex-shrink:0}
+.sum-row{display:flex;justify-content:space-between;font-size:14px;color:var(--text-soft);margin-bottom:8px}
+.sum-row.total{font-size:16px;font-weight:700;color:var(--charcoal);
+  border-top:1px solid var(--border);padding-top:10px;margin-top:4px}
+.btn-confirm{width:100%;padding:16px;border-radius:40px;background:var(--primary);color:#fff;
+  border:none;font-size:15px;font-weight:600;box-shadow:0 4px 20px rgba(201,160,154,0.4);
+  transition:all 0.25s;margin-top:1rem}
+.btn-confirm:hover{background:var(--primary-dark);transform:translateY(-2px)}
+.back-link{display:block;text-align:center;font-size:13px;color:var(--text-muted);margin-top:1rem;transition:color 0.2s}
+.back-link:hover{color:var(--charcoal)}
+/* FOOTER */
+.footer-mini{border-top:1px solid var(--border);padding:2rem;text-align:center;font-size:12px;color:var(--text-muted);background:#fff;margin-top:2rem}
+</style>
+</head>
+<body>
+
+<nav id="main-nav">
+  <div class="nav-inner">
+    <a class="logo" href="index.html"><img src="logo/logo.png" alt="Little Symphony"></a>
+    <div class="nav-step">
+      <div class="step done"><span class="step-dot">✓</span> Panier</div>
+      <div class="step-sep"></div>
+      <div class="step active"><span class="step-dot">2</span> Livraison</div>
+      <div class="step-sep"></div>
+      <div class="step"><span class="step-dot">3</span> Confirmation</div>
+    </div>
+    <div id="checkout-nav-right" style="display:flex;align-items:center;gap:4px;min-width:120px;justify-content:flex-end"></div>
+  </div>
+</nav>
+
+<div class="page">
+  <h1 class="page-title">Finaliser la commande</h1>
+  <div class="layout">
+    <div>
+      <!-- DELIVERY METHOD -->
+      <div class="card">
+        <div class="card-title"><span class="card-title-num">1</span> Mode de réception</div>
+        <div class="delivery-opts">
+          <label class="delivery-opt selected" id="opt-livraison" onclick="selectDelivery('livraison')">
+            <input type="radio" name="delivery" value="livraison" checked>
+            <div class="delivery-icon">
+              <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <div class="delivery-label">Livraison à domicile</div>
+            <div class="delivery-desc">2–4 jours ouvrables</div>
+            <div class="delivery-price" id="delivery-price-tag">Gratuite dès 80 DT</div>
+          </label>
+          <label class="delivery-opt" id="opt-retrait" onclick="selectDelivery('retrait')">
+            <input type="radio" name="delivery" value="retrait">
+            <div class="delivery-icon">
+              <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <div class="delivery-label">Retrait en boutique</div>
+            <div class="delivery-desc">Disponible sous 24h</div>
+            <div class="delivery-price">Gratuit</div>
+          </label>
+        </div>
+      </div>
+
+      <!-- ADDRESS / STORE -->
+      <div class="card" id="address-card">
+        <div class="card-title"><span class="card-title-num">2</span> Adresse de livraison</div>
+        <!-- Adresses sauvegardées (visible si le client en a) -->
+        <div id="saved-addr-block" style="display:none;margin-bottom:1.2rem">
+          <label class="form-label">Choisir une adresse enregistrée</label>
+          <select class="form-input form-select" id="saved-addr-select" onchange="applySavedAddr(this.value)" style="margin-bottom:0.6rem">
+            <option value="">— Remplir manuellement —</option>
+          </select>
+          <!-- Bouton ajouter -->
+          <button type="button" id="btn-new-addr" onclick="toggleNewAddrForm()"
+            style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--primary-dark);background:none;border:1.5px dashed var(--primary);border-radius:8px;padding:8px 14px;cursor:pointer;width:100%;margin-bottom:0.8rem;transition:background 0.2s"
+            onmouseover="this.style.background='var(--primary-xlight)'" onmouseout="this.style.background='none'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Ajouter une nouvelle adresse
+          </button>
+          <!-- Formulaire accordéon -->
+          <div id="new-addr-form" style="display:none;border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:0.8rem;background:#fff">
+            <div style="font-size:13px;font-weight:600;color:var(--charcoal);margin-bottom:12px">Nouvelle adresse</div>
+            <div class="form-group">
+              <label class="form-label">Nom de l'adresse</label>
+              <input class="form-input" id="na-label" placeholder="Domicile, Bureau…">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Adresse</label>
+              <input class="form-input" id="na-line1" placeholder="12 rue des Jasmins, Apt. 3">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Ville</label>
+                <select class="form-input form-select" id="na-city">
+                  <option>Tunis</option><option>Sfax</option><option>Sousse</option>
+                  <option>Monastir</option><option>Nabeul</option><option>Hammamet</option>
+                  <option>Bizerte</option><option>Ariana</option><option>Ben Arous</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Code postal</label>
+                <input class="form-input" id="na-zip" placeholder="1000">
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <input type="checkbox" id="na-default" style="width:auto;margin:0;accent-color:var(--primary-dark)">
+              <label for="na-default" style="font-size:13px;margin:0;font-weight:400;cursor:pointer">Définir comme adresse par défaut</label>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button type="button" onclick="saveNewAddrInCheckout()"
+                style="flex:1;padding:10px;background:var(--charcoal);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+                Enregistrer et sélectionner
+              </button>
+              <button type="button" onclick="toggleNewAddrForm()"
+                style="padding:10px 14px;background:none;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-muted);cursor:pointer">
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Prénom</label>
+            <input class="form-input" id="f-first" placeholder="John" value="">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nom</label>
+            <input class="form-input" id="f-last" placeholder="Doe" value="">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Adresse</label>
+          <input class="form-input" id="f-addr" placeholder="12 rue des Jasmins, Apt. 3">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Ville</label>
+            <select class="form-input form-select" id="f-city">
+              <option>Tunis</option><option>Sfax</option><option>Sousse</option>
+              <option>Monastir</option><option>Nabeul</option><option>Hammamet</option>
+              <option>Bizerte</option><option>Ariana</option><option>Ben Arous</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Code postal</label>
+            <input class="form-input" id="f-zip" placeholder="1000">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Téléphone</label>
+          <input class="form-input" id="f-phone" placeholder="+216 99 000 000" type="tel">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Note pour le livreur (optionnel)</label>
+          <textarea class="form-input" id="f-note" rows="2" placeholder="Sonner au interphone…" style="resize:vertical"></textarea>
+        </div>
+      </div>
+
+      <!-- STORE INFO (hidden by default) -->
+      <div class="card" id="store-card" style="display:none">
+        <div class="card-title"><span class="card-title-num">2</span> Notre boutique</div>
+        <div style="display:flex;gap:1.2rem;align-items:flex-start">
+          <div style="width:56px;height:56px;border-radius:12px;background:var(--primary-xlight);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary-dark)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div>
+            <div style="font-weight:700;margin-bottom:4px">Little Symphony — Boutique Principale</div>
+            <div style="font-size:13px;color:var(--text-muted);line-height:1.7">
+              12 Avenue Habib Bourguiba, Tunis 1001<br>
+              Lun–Sam : 9h00 – 19h00<br>
+              📞 +216 71 000 000
+            </div>
+            <div style="margin-top:10px;font-size:12px;background:#E8F5E9;color:#2E7D32;padding:6px 12px;border-radius:20px;display:inline-block;font-weight:600">
+              ✓ Votre commande sera prête sous 24h
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAYMENT -->
+      <div class="card">
+        <div class="card-title"><span class="card-title-num" id="payment-num">3</span> Mode de paiement</div>
+        <div class="payment-opts">
+          <label class="payment-opt selected" onclick="selectPayment(this)">
+            <input type="radio" name="payment" checked>
+            <span class="payment-icon">💵</span>
+            <div class="payment-info">
+              <div class="payment-name">Paiement à la livraison</div>
+              <div class="payment-detail">Espèces ou chèque à la réception de votre colis</div>
+            </div>
+          </label>
+          <label class="payment-opt" onclick="selectPayment(this)">
+            <input type="radio" name="payment">
+            <span class="payment-icon">💳</span>
+            <div class="payment-info">
+              <div class="payment-name">Carte bancaire</div>
+              <div class="payment-detail">Visa, Mastercard — paiement sécurisé SSL</div>
+            </div>
+          </label>
+          <label class="payment-opt" onclick="selectPayment(this)">
+            <input type="radio" name="payment">
+            <span class="payment-icon">📱</span>
+            <div class="payment-info">
+              <div class="payment-name">Virement bancaire</div>
+              <div class="payment-detail">Coordonnées bancaires envoyées par email</div>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="summary">
+      <h3>Votre commande</h3>
+      <div class="summary-items" id="summary-items"></div>
+      <div class="sum-row"><span>Sous-total</span><span id="sum-sub">—</span></div>
+      <div class="sum-row"><span>Livraison</span><span id="sum-ship">—</span></div>
+      <div class="sum-row total"><span>Total</span><span id="sum-total">—</span></div>
+      <button class="btn-confirm" onclick="confirm()">Confirmer la commande →</button>
+      <a href="cart.html" class="back-link">← Retour au panier</a>
+    </div>
+  </div>
+</div>
+
+<div class="footer-mini">© 2025 Little Symphony — Tous droits réservés</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="_shared.js"></script>
+<script>
+document.getElementById('checkout-nav-right').innerHTML = _profileDropdownHTML();
+var deliveryMode = 'livraison';
+
+function parsePrice(str){ if (typeof str === 'number') return str; return parseFloat((String(str||'0')).replace(/[^\d,]/g,'').replace(',','.')) || 0; }
+function fmt(n){ return n.toFixed(3).replace('.',',') + ' DT'; }
+
+function selectDelivery(mode) {
+  deliveryMode = mode;
+  document.getElementById('opt-livraison').classList.toggle('selected', mode==='livraison');
+  document.getElementById('opt-retrait').classList.toggle('selected', mode==='retrait');
+  document.getElementById('address-card').style.display = mode==='livraison' ? '' : 'none';
+  document.getElementById('store-card').style.display   = mode==='retrait'   ? '' : 'none';
+  document.getElementById('payment-num').textContent = mode==='livraison' ? '3' : '3';
+  renderSummary();
+}
+
+function selectPayment(el) {
+  document.querySelectorAll('.payment-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input').checked = true;
+}
+
+function renderSummary() {
+  const items = Cart.get();
+  document.getElementById('summary-items').innerHTML = items.map(i => `
+    <div class="sum-item">
+      <img class="sum-img" src="${i.img}" alt="" onerror="this.style.background='var(--primary-xlight)'">
+      <div class="sum-name">${i.name}<div class="sum-qty">Qté : ${i.qty}</div></div>
+      <div class="sum-price">${fmt(parsePrice(i.price)*i.qty)}</div>
+    </div>`).join('');
+  const sub = items.reduce((s,i) => s + parsePrice(i.price)*i.qty, 0);
+  const ship = deliveryMode === 'retrait' ? 0 : (sub >= 80 ? 0 : 7);
+  document.getElementById('sum-sub').textContent = fmt(sub);
+  document.getElementById('sum-ship').textContent = ship === 0 ? 'Gratuite 🎉' : fmt(ship);
+  document.getElementById('sum-total').textContent = fmt(sub + ship);
+}
+
+async function confirm() {
+  const items = Cart.get();
+  if (!items.length) { alert('Votre panier est vide.'); return; }
+
+  const sub  = items.reduce((s,i) => s + parsePrice(i.price)*i.qty, 0);
+  const ship = deliveryMode === 'retrait' ? 0 : (sub >= 80 ? 0 : 7);
+  const total = sub + ship;
+  const user = Auth.getUser() || {};
+
+  const firstName = document.getElementById('f-first')?.value || user.firstName || '';
+  const lastName  = document.getElementById('f-last')?.value  || user.lastName  || '';
+  const phone     = document.getElementById('f-phone')?.value || user.phone     || '';
+  const addr      = document.getElementById('f-addr')?.value  || '';
+  const city      = document.getElementById('f-city')?.value  || '';
+
+  // ── Sauvegarde dans Supabase ──────────────────────────────
+  let supabaseOrderId = null;
+  if (typeof _supabase !== 'undefined' && user.id) {
+    const { data: { user: sbUser } } = await _supabase.auth.getUser();
+    if (sbUser) {
+      // 1. Créer la commande
+      const { data: order, error: orderErr } = await _supabase
+        .from('orders')
+        .insert({
+          user_id:        sbUser.id,
+          status:         'pending',
+          total:          total,
+          address_line1:  deliveryMode === 'livraison' ? addr : 'Retrait boutique',
+          city:           deliveryMode === 'livraison' ? city : '',
+          country:        'TN',
+          customer_name:  `${firstName} ${lastName}`.trim(),
+          customer_phone: phone,
+          customer_email: sbUser.email
+        })
+        .select('id')
+        .single();
+
+      if (!orderErr && order) {
+        supabaseOrderId = order.id;
+
+        // 2. Résoudre les UUIDs manquants via Supabase (articles ajoutés avant le fix)
+        const resolvedItems = await Promise.all(items.map(async i => {
+          const uuidOk = i.id && /^[0-9a-f-]{36}$/i.test(i.id);
+          if (uuidOk) return i;
+          // Chercher le produit par nom
+          const { data: found } = await _supabase
+            .from('products').select('id, slug').eq('name', i.name).single();
+          if (found) return { ...i, id: found.id, slug: found.slug };
+          return null; // produit introuvable → on ignore
+        }));
+
+        const orderItems = resolvedItems
+          .filter(i => i && i.id && /^[0-9a-f-]{36}$/i.test(i.id))
+          .map(i => ({
+            order_id:     order.id,
+            product_id:   i.id,
+            product_name: i.name,
+            product_slug: i.slug || i.name.toLowerCase().replace(/\s+/g,'-'),
+            unit_price:   parsePrice(i.price),
+            quantity:     i.qty
+          }));
+
+        if (orderItems.length) {
+          await _supabase.from('order_items').insert(orderItems);
+        }
+      } else if (orderErr) {
+        console.error('Supabase order error:', orderErr);
+      }
+    }
+  }
+
+  // ── Sauvegarde locale (fallback + page confirm) ───────────
+  const localId = supabaseOrderId
+    ? 'LS-' + supabaseOrderId.substring(0,8).toUpperCase()
+    : 'LS-' + Date.now().toString(36).toUpperCase();
+
+  const localOrder = {
+    id: localId, supabaseId: supabaseOrderId,
+    date: new Date().toLocaleDateString('fr-FR'),
+    items: [...items], total: fmt(total),
+    subTotal: fmt(sub), shipping: fmt(ship),
+    delivery: deliveryMode,
+    address: deliveryMode === 'livraison'
+      ? `${firstName} ${lastName}, ${addr}, ${city}`
+      : 'Retrait boutique',
+    status: 'En préparation',
+    payment: document.querySelector('.payment-opt.selected .payment-name')?.textContent || ''
+  };
+
+  Orders.add(localOrder);
+  localStorage.setItem('ls_last_order', JSON.stringify(localOrder));
+  Cart.clear();
+  window.location.href = 'confirm.html';
+}
+
+// Prefill + charger les adresses sauvegardées
+let _savedAddresses = [];
+
+(async () => {
+  const user = Auth.getUser();
+  if (user) {
+    if (document.getElementById('f-first')) document.getElementById('f-first').value = user.firstName || '';
+    if (document.getElementById('f-last'))  document.getElementById('f-last').value  = user.lastName  || '';
+    if (document.getElementById('f-phone')) document.getElementById('f-phone').value = user.phone     || '';
+  }
+
+  if (typeof _supabase !== 'undefined') {
+    const { data: { user: sbUser } } = await _supabase.auth.getUser();
+    if (sbUser) {
+      const { data: addrs } = await _supabase
+        .from('addresses').select('*')
+        .eq('user_id', sbUser.id)
+        .order('is_default', { ascending: false })
+        .order('created_at');
+
+      _savedAddresses = addrs || [];
+
+      if (_savedAddresses.length > 0) {
+        const sel = document.getElementById('saved-addr-select');
+        _savedAddresses.forEach(a => {
+          const opt = document.createElement('option');
+          opt.value = a.id;
+          opt.textContent = a.label + ' — ' + a.address_line1 + (a.city ? ', ' + a.city : '');
+          sel.appendChild(opt);
+        });
+        document.getElementById('saved-addr-block').style.display = 'block';
+
+        // Pré-sélectionner l'adresse par défaut
+        const def = _savedAddresses.find(a => a.is_default) || _savedAddresses[0];
+        if (def) { sel.value = def.id; applySavedAddr(def.id); }
+      }
+    }
+  }
+})();
+
+function applySavedAddr(id) {
+  if (!id) {
+    document.getElementById('f-addr').value = '';
+    document.getElementById('f-city').value = document.getElementById('f-city').options[0]?.value || '';
+    document.getElementById('f-zip').value  = '';
+    return;
+  }
+  const a = _savedAddresses.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('f-addr').value = a.address_line1 || '';
+  const cityEl = document.getElementById('f-city');
+  const opt = Array.from(cityEl.options).find(o => o.value === a.city || o.textContent === a.city);
+  if (opt) cityEl.value = opt.value; else cityEl.options[0].selected = true;
+  document.getElementById('f-zip').value = a.postal_code || '';
+}
+
+function toggleNewAddrForm() {
+  const form = document.getElementById('new-addr-form');
+  const open = form.style.display !== 'none';
+  form.style.display = open ? 'none' : 'block';
+  if (!open) {
+    // Réinitialiser les champs
+    document.getElementById('na-label').value = '';
+    document.getElementById('na-line1').value = '';
+    document.getElementById('na-city').selectedIndex = 0;
+    document.getElementById('na-zip').value = '';
+    document.getElementById('na-default').checked = false;
+    document.getElementById('na-label').focus();
+  }
+}
+
+async function saveNewAddrInCheckout() {
+  const label = document.getElementById('na-label').value.trim() || 'Domicile';
+  const line1 = document.getElementById('na-line1').value.trim();
+  const city  = document.getElementById('na-city').value;
+  const zip   = document.getElementById('na-zip').value.trim();
+  const isDef = document.getElementById('na-default').checked;
+
+  if (!line1) { alert('L\'adresse est obligatoire.'); return; }
+
+  const { data: { user: sbUser } } = await _supabase.auth.getUser();
+  if (!sbUser) { alert('Vous devez être connecté pour sauvegarder une adresse.'); return; }
+
+  const { data: newAddr, error } = await _supabase.from('addresses')
+    .insert({ label, address_line1: line1, city, postal_code: zip, is_default: isDef, user_id: sbUser.id })
+    .select().single();
+
+  if (error) { alert('Erreur : ' + error.message); return; }
+
+  // Ajouter à la liste locale
+  _savedAddresses.push(newAddr);
+
+  // Ajouter l'option dans le select
+  const sel = document.getElementById('saved-addr-select');
+  const opt = document.createElement('option');
+  opt.value = newAddr.id;
+  opt.textContent = newAddr.label + ' — ' + newAddr.address_line1 + (newAddr.city ? ', ' + newAddr.city : '');
+  sel.appendChild(opt);
+
+  // Sélectionner et appliquer la nouvelle adresse
+  sel.value = newAddr.id;
+  applySavedAddr(newAddr.id);
+
+  // Fermer le formulaire
+  document.getElementById('new-addr-form').style.display = 'none';
+}
+
+window.addEventListener('scroll', () =>
+  document.getElementById('main-nav').classList.toggle('scrolled', scrollY > 20));
+renderSummary();
+</script>
+</body>
+</html>

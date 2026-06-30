@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="logo/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon Profil — Little Symphony</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="main.css">
+<style>
+body{font-family:var(--sans);background:var(--primary-xlight);color:var(--charcoal);
+  -webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;margin:0}
+img{display:block;max-width:100%}
+a{text-decoration:none;color:inherit}
+
+/* SPLIT LAYOUT */
+.split{flex:1;display:flex;min-height:calc(100vh - 68px);margin-top:68px}
+
+/* PARTIE GAUCHE — IMAGE */
+.split-visual{flex:1;position:relative;overflow:hidden;
+  display:flex;align-items:flex-start;justify-content:flex-start;padding:3rem}
+.split-visual::before{content:'';position:absolute;inset:0;
+  background:url('images/banner/music.jpg') center/cover no-repeat}
+.split-visual::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.4) 100%)}
+.visual-content{position:relative;z-index:1;color:#fff}
+.avatar-large{width:80px;height:80px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(255,255,255,0.3),rgba(255,255,255,0.15));
+  border:2px solid rgba(255,255,255,0.5);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-size:2rem;color:#fff;font-weight:700;
+  margin-bottom:1rem;backdrop-filter:blur(8px)}
+.visual-tagline{font-family:var(--serif);font-size:2.4rem;font-weight:700;line-height:1.15;margin-bottom:12px}
+.visual-tagline em{font-style:italic;font-weight:400}
+.visual-sub{font-size:16px;opacity:0.85;line-height:1.7;margin-bottom:2rem;max-width:340px}
+.visual-divider{height:1px;background:rgba(255,255,255,0.25);margin-bottom:1.5rem}
+.visual-name{font-family:var(--serif);font-size:1.2rem;font-weight:700;margin-bottom:4px;line-height:1.2}
+.visual-email{font-size:12px;opacity:0.7;margin-bottom:1.2rem}
+.visual-links{display:flex;flex-direction:column;gap:8px}
+.visual-link{display:flex;align-items:center;gap:10px;font-size:13px;
+  background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
+  border-radius:10px;padding:9px 14px;backdrop-filter:blur(6px);
+  color:#fff;transition:background 0.2s;text-decoration:none}
+.visual-link:hover{background:rgba(255,255,255,0.22)}
+.visual-link svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+/* PARTIE DROITE — FORMULAIRE */
+.split-form{flex:1;background:#fff;overflow-y:auto;
+  display:flex;align-items:flex-start;justify-content:center;padding:3rem 2.5rem}
+@media(max-width:900px){
+  .split{flex-direction:column}
+  .split-visual{
+    width:100%;height:220px;flex:none;
+    align-items:flex-start;justify-content:flex-start;
+    padding:1.5rem 1.25rem
+  }
+  .visual-tagline{display:none}
+  .visual-sub{display:none}
+  .visual-divider{display:none}
+  .avatar-large{width:56px;height:56px;font-size:1.4rem;margin-bottom:0.6rem}
+  .visual-name{font-size:1.8rem}
+  .visual-email{font-size:16px;font-weight:700;opacity:1}
+  .visual-links{flex-direction:row;gap:8px}
+  .visual-link{font-size:12px;padding:7px 11px}
+  .split-form{width:100%;flex:1}
+}
+
+.form-box{width:100%;max-width:400px}
+.form-title{font-family:var(--serif);font-size:1.8rem;margin-bottom:0.3rem;color:var(--charcoal)}
+.form-sub{font-size:13px;color:var(--text-muted);margin-bottom:2rem}
+
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
+  color:var(--text-muted);margin:1.8rem 0 1rem;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.section-label:first-of-type{margin-top:0}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:580px){.form-row{grid-template-columns:1fr}}
+.form-group{margin-bottom:1rem}
+label{display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:var(--charcoal)}
+input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  font-size:14px;color:var(--charcoal);background:#fff;outline:none;
+  transition:border-color 0.2s;font-family:var(--sans);box-sizing:border-box}
+input:focus{border-color:var(--primary)}
+input[readonly]{background:var(--primary-xlight);color:var(--text-muted);cursor:default}
+
+.btn-save{width:100%;padding:14px;background:var(--primary);color:#fff;border:none;
+  border-radius:40px;font-size:14px;font-weight:600;transition:all 0.25s;
+  box-shadow:0 4px 16px rgba(201,160,154,0.35);margin-top:0.5rem}
+.btn-save:hover{background:var(--primary-dark);transform:translateY(-2px)}
+.save-ok{display:none;text-align:center;font-size:13px;color:#2E7D32;
+  margin-top:10px;font-weight:500}
+
+.btn-logout{width:100%;padding:13px;background:transparent;color:var(--text-muted);
+  border:1.5px solid var(--border);border-radius:40px;font-size:14px;font-weight:500;
+  transition:all 0.2s;margin-top:0.8rem}
+.btn-logout:hover{border-color:#E65100;color:#E65100}
+
+/* ADRESSES */
+.addr-list{display:flex;flex-direction:column;gap:10px;margin-bottom:1rem}
+.addr-card{border:1.5px solid var(--border);border-radius:12px;overflow:hidden;
+  position:relative;background:#fff;transition:border-color 0.2s}
+.addr-card.is-default{border-color:var(--primary);background:#FBF9F9}
+.addr-card > div:first-child{padding:14px 16px}
+.addr-inline-edit{border-top:1.5px solid var(--border);padding:14px 16px;background:#fff}
+.btn-save{flex:1;padding:9px;background:var(--charcoal);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.btn-cancel{padding:9px 14px;background:none;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-muted);cursor:pointer;font-family:var(--sans)}
+.addr-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
+  color:var(--primary-dark);display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.addr-default-badge{background:var(--primary);color:#fff;font-size:10px;
+  padding:2px 8px;border-radius:20px;font-weight:600;letter-spacing:0.05em}
+.addr-text{font-size:13px;color:var(--text-soft);line-height:1.6}
+.addr-actions{display:flex;gap:8px;margin-top:10px}
+.addr-btn{font-size:12px;font-weight:500;padding:5px 12px;border-radius:6px;
+  border:1.5px solid var(--border);background:none;cursor:pointer;transition:all 0.2s;font-family:var(--sans)}
+.addr-btn:hover{border-color:var(--primary-dark);color:var(--primary-dark)}
+.addr-btn.danger:hover{border-color:#C62828;color:#C62828}
+.addr-btn.default-btn{border-color:var(--primary);color:var(--primary-dark)}
+
+.addr-form{background:var(--primary-xlight);border:1.5px solid var(--border);
+  border-radius:12px;padding:16px;margin-bottom:1rem;display:none}
+.addr-form.open{display:block}
+.addr-form-title{font-size:13px;font-weight:600;color:var(--charcoal);margin-bottom:12px}
+.btn-add-addr{width:100%;padding:12px;background:none;border:1.5px dashed var(--border);
+  border-radius:10px;font-size:13px;font-weight:500;color:var(--text-muted);
+  cursor:pointer;transition:all 0.2s;font-family:var(--sans);display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-add-addr:hover{border-color:var(--primary);color:var(--primary-dark);background:#FBF9F9}
+
+/* NON CONNECTÉ */
+.not-logged{text-align:center;padding:4rem 2rem}
+.not-logged h2{font-family:var(--serif);font-size:1.8rem;margin-bottom:0.8rem}
+.not-logged p{color:var(--text-muted);margin-bottom:1.5rem;font-size:14px}
+.not-logged a{display:inline-block;padding:14px 32px;background:var(--primary);
+  color:#fff;border-radius:40px;font-size:14px;font-weight:600}
+</style>
+</head>
+<body>
+
+<nav id="main-nav"></nav>
+
+<div class="split">
+
+  <!-- GAUCHE : image + infos utilisateur -->
+  <div class="split-visual">
+    <div class="visual-content">
+      <div class="visual-tagline">Chaque début est<br><em>une mélodie</em></div>
+      <p class="visual-sub">Des produits soigneusement sélectionnés pour les premières années de votre enfant.</p>
+      <div class="visual-divider"></div>
+      <div class="avatar-large" id="avatar-initials">?</div>
+      <div class="visual-name" id="hero-name">—</div>
+      <div class="visual-email" id="hero-email">—</div>
+      <div class="visual-links">
+        <a href="orders.html" class="visual-link">
+          <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+          Mes commandes
+        </a>
+        <a href="boutique.html" class="visual-link">
+          <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+          Continuer mes achats
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- DROITE : formulaire -->
+  <div class="split-form">
+
+    <!-- Non connecté -->
+    <div id="not-logged" style="display:none" class="not-logged">
+      <h2>Connectez-vous</h2>
+      <p>Vous devez être connecté pour accéder à votre profil.</p>
+      <a href="login.html">Se connecter</a>
+    </div>
+
+    <!-- Formulaire profil -->
+    <div class="form-box" id="profile-wrap">
+
+      <p class="form-title">Mon profil</p>
+      <p class="form-sub">Gérez vos informations et votre adresse de livraison</p>
+
+      <!-- Informations personnelles -->
+      <div class="section-label">Informations personnelles</div>
+      <div class="form-row">
+        <div class="form-group"><label>Prénom</label><input type="text" id="edit-firstName" placeholder="Marie"></div>
+        <div class="form-group"><label>Nom</label><input type="text" id="edit-lastName" placeholder="Dupont"></div>
+      </div>
+      <div class="form-group"><label>Adresse email</label><input type="email" id="edit-email" readonly></div>
+      <div class="form-group"><label>Téléphone</label><input type="tel" id="edit-phone" placeholder="+216 XX XXX XXX"></div>
+      <button class="btn-save" onclick="saveInfo()">Enregistrer les modifications</button>
+      <div class="save-ok" id="save-ok-info">✓ Informations sauvegardées</div>
+
+      <!-- Mes adresses -->
+      <div class="section-label">Mes adresses de livraison</div>
+
+      <div class="addr-list" id="addr-list">
+        <p style="font-size:13px;color:var(--text-muted)">Chargement…</p>
+      </div>
+
+      <!-- Formulaire ajout / édition -->
+      <div class="addr-form" id="addr-form">
+        <div class="addr-form-title" id="addr-form-title">Nouvelle adresse</div>
+        <input type="hidden" id="addr-edit-id">
+        <div class="form-group">
+          <label>Nom de l'adresse</label>
+          <input type="text" id="addr-f-label" placeholder="ex : Domicile, Bureau, Parents…">
+        </div>
+        <div class="form-group">
+          <label>Adresse</label>
+          <input type="text" id="addr-f-line1" placeholder="123 rue de la Paix">
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Ville</label><input type="text" id="addr-f-city" placeholder="Tunis"></div>
+          <div class="form-group"><label>Code postal</label><input type="text" id="addr-f-zip" placeholder="1000"></div>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+          <input type="checkbox" id="addr-f-default" style="width:auto;padding:0;margin:0">
+          <label for="addr-f-default" style="margin:0;font-size:13px">Définir comme adresse par défaut</label>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-save" style="flex:1;margin-top:0" onclick="saveAddrForm()">Enregistrer</button>
+          <button class="addr-btn" onclick="closeAddrForm()">Annuler</button>
+        </div>
+      </div>
+
+      <button class="btn-add-addr" id="btn-add-addr" onclick="openAddrForm()">
+        <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Ajouter une adresse
+      </button>
+
+      <!-- Déconnexion -->
+      <button class="btn-logout" onclick="Auth.logout()">Se déconnecter</button>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="_shared.js"></script>
+<script>
+renderNav('profile');
+
+async function saveInfo() {
+  const user = Auth.getUser() || {};
+  user.firstName = document.getElementById('edit-firstName').value.trim();
+  user.lastName  = document.getElementById('edit-lastName').value.trim();
+  user.phone     = document.getElementById('edit-phone').value.trim();
+
+  // Récupérer l'ID depuis la session Supabase active (plus fiable que localStorage)
+  if (typeof _supabase !== 'undefined') {
+    const { data: { user: sbUser } } = await _supabase.auth.getUser();
+    const uid = sbUser?.id || user.id;
+    if (uid) {
+      const { error } = await _supabase.from('profiles').update({
+        first_name: user.firstName,
+        last_name:  user.lastName,
+        phone:      user.phone
+      }).eq('id', uid);
+      if (error) {
+        console.error('Supabase profile update error:', error);
+        alert('Erreur lors de la sauvegarde : ' + (error.message || JSON.stringify(error)));
+        return;
+      }
+      user.id = uid;
+    }
+  }
+
+  Auth.setUser(user);
+  updateVisual(user);
+  const ok = document.getElementById('save-ok-info');
+  ok.style.display = 'block';
+  setTimeout(() => ok.style.display = 'none', 2500);
+}
+
+// ── ADRESSES ─────────────────────────────────────────────────
+let _sbUserId = null;
+
+let _addrData = [];
+
+async function loadAddresses() {
+  if (!_sbUserId) return;
+  const { data, error } = await _supabase
+    .from('addresses').select('*')
+    .eq('user_id', _sbUserId)
+    .order('is_default', { ascending: false })
+    .order('created_at');
+
+  _addrData = data || [];
+  renderAddresses();
+}
+
+function renderAddresses() {
+  const list = document.getElementById('addr-list');
+  if (!_addrData.length) {
+    list.innerHTML = '<p style="font-size:13px;color:var(--text-muted)">Aucune adresse enregistrée.</p>';
+    return;
+  }
+  list.innerHTML = _addrData.map(a => `
+    <div class="addr-card${a.is_default ? ' is-default' : ''}" id="addr-card-${a.id}">
+      <!-- Vue -->
+      <div id="addr-view-${a.id}">
+        <div class="addr-label">
+          ${a.label}
+          ${a.is_default ? '<span class="addr-default-badge">Par défaut</span>' : ''}
+        </div>
+        <div class="addr-text">
+          ${[a.address_line1, a.city, a.postal_code].filter(Boolean).join(', ')}
+        </div>
+        <div class="addr-actions">
+          <button class="addr-btn" onclick="toggleAddrEdit('${a.id}')">Modifier</button>
+          ${!a.is_default ? `<button class="addr-btn default-btn" onclick="setDefault('${a.id}')">Par défaut</button>` : ''}
+          <button class="addr-btn danger" onclick="deleteAddr('${a.id}')">Supprimer</button>
+        </div>
+      </div>
+      <!-- Accordéon édition -->
+      <div id="addr-edit-${a.id}" class="addr-inline-edit" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Nom de l'adresse</label>
+          <input id="addr-il-label-${a.id}" type="text" class="form-control" value="${a.label}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Adresse</label>
+          <input id="addr-il-line1-${a.id}" type="text" class="form-control" value="${a.address_line1||''}">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="form-group">
+            <label class="form-label">Ville</label>
+            <input id="addr-il-city-${a.id}" type="text" class="form-control" value="${a.city||''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Code postal</label>
+            <input id="addr-il-zip-${a.id}" type="text" class="form-control" value="${a.postal_code||''}">
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <input type="checkbox" id="addr-il-def-${a.id}" ${a.is_default ? 'checked' : ''} style="width:auto;margin:0;accent-color:var(--primary-dark)">
+          <label for="addr-il-def-${a.id}" style="margin:0;font-size:13px;font-weight:400;cursor:pointer">Par défaut</label>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-save" onclick="saveAddrInline('${a.id}')">Enregistrer</button>
+          <button class="btn-cancel" onclick="toggleAddrEdit('${a.id}')">Annuler</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleAddrEdit(id) {
+  // Fermer tous les autres
+  _addrData.forEach(a => {
+    if (a.id !== id) {
+      const el = document.getElementById('addr-edit-' + a.id);
+      if (el) el.style.display = 'none';
+    }
+  });
+  const el = document.getElementById('addr-edit-' + id);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function saveAddrInline(id) {
+  const label = document.getElementById('addr-il-label-' + id).value.trim() || 'Domicile';
+  const line1 = document.getElementById('addr-il-line1-' + id).value.trim();
+  const city  = document.getElementById('addr-il-city-'  + id).value.trim();
+  const zip   = document.getElementById('addr-il-zip-'   + id).value.trim();
+  const isDef = document.getElementById('addr-il-def-'   + id).checked;
+
+  if (!line1) { alert('L\'adresse est obligatoire.'); return; }
+
+  const { error } = await _supabase.from('addresses')
+    .update({ label, address_line1: line1, city, postal_code: zip, is_default: isDef })
+    .eq('id', id);
+
+  if (error) { alert('Erreur : ' + error.message); return; }
+  await loadAddresses();
+}
+
+function openAddrForm() {
+  document.getElementById('addr-form-title').textContent = 'Nouvelle adresse';
+  document.getElementById('addr-edit-id').value  = '';
+  document.getElementById('addr-f-label').value  = '';
+  document.getElementById('addr-f-line1').value  = '';
+  document.getElementById('addr-f-city').value   = '';
+  document.getElementById('addr-f-zip').value    = '';
+  document.getElementById('addr-f-default').checked = false;
+  document.getElementById('addr-form').classList.add('open');
+  document.getElementById('btn-add-addr').style.display = 'none';
+}
+
+function closeAddrForm() {
+  document.getElementById('addr-form').classList.remove('open');
+  document.getElementById('btn-add-addr').style.display = '';
+}
+
+async function saveAddrForm() {
+  const label = document.getElementById('addr-f-label').value.trim() || 'Domicile';
+  const line1 = document.getElementById('addr-f-line1').value.trim();
+  const city  = document.getElementById('addr-f-city').value.trim();
+  const zip   = document.getElementById('addr-f-zip').value.trim();
+  const isDef = document.getElementById('addr-f-default').checked;
+
+  if (!line1) { alert('L\'adresse est obligatoire.'); return; }
+
+  const { error } = await _supabase.from('addresses')
+    .insert({ label, address_line1: line1, city, postal_code: zip, is_default: isDef, user_id: _sbUserId });
+
+  if (error) { alert('Erreur : ' + error.message); return; }
+  closeAddrForm();
+  await loadAddresses();
+}
+
+async function deleteAddr(id) {
+  if (!confirm('Supprimer cette adresse ?')) return;
+  const { error } = await _supabase.from('addresses').delete().eq('id', id);
+  if (error) { alert('Erreur : ' + error.message); return; }
+  await loadAddresses();
+}
+
+async function setDefault(id) {
+  const { error } = await _supabase.from('addresses').update({ is_default: true }).eq('id', id);
+  if (error) { alert('Erreur : ' + error.message); return; }
+  await loadAddresses();
+}
+
+function updateVisual(user) {
+  const f = user.firstName || '?';
+  const l = user.lastName  || '';
+  document.getElementById('avatar-initials').textContent = (f[0] + (l[0]||'')).toUpperCase();
+  document.getElementById('hero-name').textContent = `${f} ${l}`.trim() || user.email || '—';
+  document.getElementById('hero-email').textContent = user.email || '';
+}
+
+async function init() {
+  const user = Auth.getUser();
+  if (!user) {
+    document.getElementById('not-logged').style.display = 'flex';
+    document.getElementById('profile-wrap').style.display = 'none';
+    document.querySelector('.split-visual').style.display = 'none';
+    return;
+  }
+
+  // Recharger les données fraîches depuis Supabase
+  if (typeof _supabase !== 'undefined') {
+    const { data: { user: sbUser } } = await _supabase.auth.getUser();
+    if (sbUser) {
+      const { data: profile } = await _supabase
+        .from('profiles')
+        .select('first_name, last_name, phone')
+        .eq('id', sbUser.id)
+        .single();
+
+      if (sbUser) _sbUserId = sbUser.id;
+
+      if (profile) {
+        const meta = sbUser.user_metadata || {};
+        user.id        = sbUser.id;
+        user.firstName = profile.first_name || meta.first_name || user.firstName || '';
+        user.lastName  = profile.last_name  || meta.last_name  || user.lastName  || '';
+        user.phone     = profile.phone      || user.phone || '';
+        Auth.setUser(user);
+      }
+    }
+  }
+
+  updateVisual(user);
+  document.getElementById('edit-firstName').value = user.firstName || '';
+  document.getElementById('edit-lastName').value  = user.lastName  || '';
+  document.getElementById('edit-email').value     = user.email     || '';
+  document.getElementById('edit-phone').value     = user.phone     || '';
+
+  await loadAddresses();
+}
+
+init();
+</script>
+</body>
+</html>

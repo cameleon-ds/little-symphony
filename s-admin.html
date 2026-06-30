@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="logo/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Little Symphony</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --primary:#C9A09A;--primary-dark:#A86860;--primary-xlight:#FBF9F9;
+  --charcoal:#1C1C1E;--text-muted:#A09590;--border:#EDE6E3;
+  --serif:'Playfair Display',serif;--sans:'Inter',sans-serif;
+  --radius:16px;--radius-sm:10px;
+}
+body{font-family:var(--sans);background:#F5F0EE;min-height:100vh;
+  display:flex;align-items:center;justify-content:center;padding:2rem;
+  -webkit-font-smoothing:antialiased}
+
+.card{background:#fff;border-radius:20px;padding:2.5rem;width:100%;max-width:400px;
+  box-shadow:0 8px 40px rgba(0,0,0,0.08)}
+
+.logo-wrap{text-align:center;margin-bottom:2rem}
+.logo-wrap img{height:44px;width:auto;margin:0 auto}
+
+.admin-badge{display:inline-flex;align-items:center;gap:6px;
+  background:#F5EDED;color:var(--primary-dark);
+  font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;
+  padding:5px 12px;border-radius:20px;margin-bottom:1.2rem}
+.admin-badge svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+h1{font-family:var(--serif);font-size:1.6rem;margin-bottom:0.3rem;color:var(--charcoal)}
+.sub{font-size:13px;color:var(--text-muted);margin-bottom:1.8rem}
+
+.form-group{margin-bottom:1rem}
+label{display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:var(--charcoal)}
+input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  font-size:14px;color:var(--charcoal);background:#fff;outline:none;
+  transition:border-color 0.2s;font-family:var(--sans)}
+input:focus{border-color:var(--primary)}
+
+.error-msg{background:#FFF3F0;border:1px solid #FFCCC7;border-radius:8px;
+  padding:10px 14px;font-size:13px;color:#C62828;display:none;margin-bottom:1rem}
+
+.btn{width:100%;padding:14px;background:var(--charcoal);color:#fff;border:none;
+  border-radius:40px;font-size:14px;font-weight:600;transition:all 0.25s;
+  box-shadow:0 4px 16px rgba(0,0,0,0.15);margin-top:0.5rem}
+.btn:hover{background:#3A3A3C;transform:translateY(-2px)}
+
+/* Hint credentials */
+.hint{margin-top:1.8rem;padding:1rem 1.2rem;background:var(--primary-xlight);
+  border:1px solid var(--border);border-radius:var(--radius-sm)}
+.hint-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;
+  color:var(--text-muted);margin-bottom:8px}
+.hint-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:4px}
+.hint-row:last-child{margin-bottom:0}
+.hint-label{color:var(--text-muted)}
+.hint-val{font-weight:600;color:var(--charcoal);font-family:monospace;font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo-wrap">
+    <img src="logo/logo.png" alt="Little Symphony">
+  </div>
+
+  <div style="text-align:center">
+    <div class="admin-badge">
+      <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      Espace administrateur
+    </div>
+  </div>
+
+  <h1>Connexion admin</h1>
+  <p class="sub">Accès réservé à l'équipe Little Symphony</p>
+
+  <div class="error-msg" id="error-msg">Identifiants incorrects.</div>
+
+  <form onsubmit="doLogin(event)">
+    <div class="form-group">
+      <label>Nom d'utilisateur</label>
+      <input type="text" id="username" placeholder="admin" autocomplete="username" required>
+    </div>
+    <div class="form-group">
+      <label>Mot de passe</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="btn">Se connecter →</button>
+  </form>
+
+  <!-- Credentials hint -->
+  <div class="hint">
+    <div class="hint-title">Identifiants de connexion</div>
+    <div class="hint-row">
+      <span class="hint-label">Utilisateur</span>
+      <span class="hint-val">cissi</span>
+    </div>
+    <div class="hint-row">
+      <span class="hint-label">Mot de passe</span>
+      <span class="hint-val">admincissi</span>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script>
+// Si déjà connecté admin → rediriger directement
+(async () => {
+  const { data: { session } } = await _supabase.auth.getSession();
+  if (session) {
+    const { data: p } = await _supabase.from('profiles').select('role').eq('id', session.user.id).single();
+    if (p?.role === 'admin') { window.location.href = 'admin-panel.html'; return; }
+  }
+})();
+
+async function doLogin(e) {
+  e.preventDefault();
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const err = document.getElementById('error-msg');
+  const btn = document.querySelector('.btn');
+
+  // Seul l'identifiant "cissi" est accepté
+  if (username !== 'cissi') {
+    err.style.display = 'block';
+    document.getElementById('password').value = '';
+    return;
+  }
+
+  btn.textContent = 'Connexion…';
+  btn.disabled = true;
+  err.style.display = 'none';
+
+  // Authentification Supabase avec le compte admin réel
+  const { data, error } = await _supabase.auth.signInWithPassword({
+    email: 'nizarmadeby.pro@gmail.com',
+    password
+  });
+
+  btn.textContent = 'Se connecter →';
+  btn.disabled = false;
+
+  if (error) {
+    err.style.display = 'block';
+    document.getElementById('password').value = '';
+    return;
+  }
+
+  // Vérifier que le compte a bien le rôle admin
+  const { data: profile } = await _supabase
+    .from('profiles').select('role').eq('id', data.user.id).single();
+
+  if (!profile || profile.role !== 'admin') {
+    await _supabase.auth.signOut();
+    err.style.display = 'block';
+    document.getElementById('password').value = '';
+    return;
+  }
+
+  window.location.href = 'admin-panel.html';
+}
+</script>
+</body>
+</html>

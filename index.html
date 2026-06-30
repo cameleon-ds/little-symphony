@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="logo/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Little Symphony — Boutique bébé & enfant</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="main.css">
+<style>
+/* → variables in main.css */
+
+/* ── Category accent colors ── */
+:root{
+  --c1:#A6AEBA; /* Hygiène / Art */
+  --c2:#B7B9A3; /* Repas / Livres */
+  --c3:#D2A29C; /* Vêtements / Maternité */
+  --c4:#D3BBA8; /* Mobilier / Cadeaux */
+  --c5:#E5BAA4; /* Sécurité */
+  --c6:#A0BDC5; /* Jouets */
+  --c7:#A6AEBA; /* Musique */
+}
+
+/* ── Reset & Base ── */
+body{font-family:var(--sans);background:#fff;color:var(--charcoal);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+button{cursor:pointer;font-family:var(--sans)}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  background:rgba(255,255,255,0.93);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(237,230,227,0.7);
+  transition:box-shadow 0.3s;
+}
+nav.scrolled{box-shadow:var(--shadow-sm)}
+.nav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:68px;padding:0 2rem}
+.logo{
+  display:flex;align-items:center;text-decoration:none;
+}
+.logo img{
+  height:54px;width:auto;
+  /* fond transparent — pas de blend-mode nécessaire */
+}
+.logo-dot{display:none}
+.nav-center{display:flex;align-items:center;gap:2rem}
+.nav-link{font-size:13px;font-weight:500;color:var(--text-soft);text-decoration:none;letter-spacing:0.02em;transition:color 0.2s;border:none;background:none;padding:4px 0}
+.nav-link:hover{color:var(--charcoal)}
+.nav-right{display:flex;align-items:center;gap:4px}
+.nav-icon-btn{
+  width:40px;height:40px;border-radius:50%;border:none;background:none;
+  color:var(--charcoal);display:flex;align-items:center;justify-content:center;
+  transition:background 0.2s,color 0.2s;position:relative;
+}
+.nav-icon-btn:hover{background:var(--primary-light);color:var(--primary-dark)}
+.nav-icon-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.cart-badge-dot{
+  position:absolute;top:7px;right:7px;
+  width:16px;height:16px;border-radius:50%;
+  background:var(--primary);color:#fff;
+  font-size:9px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid #fff;
+}
+
+/* ── HERO ── */
+.hero{
+  position:relative;height:100vh;min-height:600px;max-height:900px;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.hero-bg{
+  position:absolute;inset:0;
+  background-image:url('https://images.pexels.com/photos/28096440/pexels-photo-28096440.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop');
+  background-size:cover;background-position:center 30%;
+  transform:scale(1.04);transition:transform 8s ease-out;
+}
+.hero-bg.loaded{transform:scale(1)}
+.hero-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(
+    160deg,
+    rgba(28,28,30,0.55) 0%,
+    rgba(28,28,30,0.30) 50%,
+    rgba(201,160,154,0.20) 100%
+  );
+}
+.hero-content{
+  position:relative;z-index:2;text-align:center;
+  max-width:680px;padding:0 2rem;
+}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,0.15);
+  backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,0.25);
+  color:#fff;font-size:11px;font-weight:600;
+  letter-spacing:0.14em;text-transform:uppercase;
+  padding:7px 18px;border-radius:30px;
+  margin-bottom:1.5rem;
+}
+.hero-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--primary-light);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(0.8)}}
+.hero h1{
+  font-family:var(--serif);
+  font-size:clamp(2.4rem,5.5vw,4rem);
+  color:#fff;line-height:1.12;
+  margin-bottom:1.2rem;
+  text-shadow:0 2px 24px rgba(0,0,0,0.25);
+}
+.hero h1 em{color:#F3D9D6;font-style:italic}
+.hero-desc{
+  font-size:1rem;color:rgba(255,255,255,0.82);
+  line-height:1.75;margin-bottom:2.2rem;
+  font-weight:300;max-width:520px;margin-left:auto;margin-right:auto;
+}
+.hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:2.5rem}
+.btn-white{
+  background:#fff;color:var(--charcoal);
+  border:none;padding:15px 32px;border-radius:40px;
+  font-size:14px;font-weight:600;letter-spacing:0.02em;
+  transition:all 0.25s;box-shadow:0 4px 20px rgba(0,0,0,0.15);
+}
+.btn-white:hover{background:var(--primary-xlight);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.2)}
+.btn-ghost{
+  background:rgba(255,255,255,0.12);color:#fff;
+  border:1.5px solid rgba(255,255,255,0.45);
+  padding:14px 32px;border-radius:40px;
+  font-size:14px;font-weight:500;
+  backdrop-filter:blur(8px);
+  transition:all 0.25s;
+}
+.btn-ghost:hover{background:rgba(255,255,255,0.22);border-color:rgba(255,255,255,0.7)}
+.hero-scroll{
+  position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  color:rgba(255,255,255,0.6);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;
+  animation:fadeInUp 1s 1.5s both;z-index:2;
+}
+.scroll-line{width:1px;height:40px;background:linear-gradient(to bottom,rgba(255,255,255,0.6),transparent);animation:scrollLine 2s ease-in-out infinite}
+@keyframes scrollLine{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+@keyframes fadeInUp{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
+
+/* Floating notes */
+.note{position:absolute;font-size:1.4rem;opacity:0;animation:floatNote 7s ease-in-out infinite;user-select:none;pointer-events:none;color:rgba(255,255,255,0.45)}
+@keyframes floatNote{0%{opacity:0;transform:translateY(0) rotate(-10deg)}20%{opacity:0.6}80%{opacity:0.4}100%{opacity:0;transform:translateY(-140px) rotate(15deg)}}
+
+/* ── CAT BAR ── */
+.cat-bar-wrap{
+  position:sticky;top:68px;z-index:100;
+  background:#fff;border-bottom:1px solid var(--border);
+  display:flex;align-items:stretch;
+}
+.cat-bar{
+  flex:1;overflow-x:auto;scrollbar-width:none;scroll-behavior:smooth;
+}
+.cat-bar::-webkit-scrollbar{display:none}
+.cat-bar-inner{max-width:1280px;margin:0 auto;display:flex;justify-content:center;padding:0 2rem}
+.cat-btn{
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:12px 18px;border:none;background:none;
+  font-family:var(--sans);font-size:10.5px;font-weight:500;
+  color:var(--text-muted);white-space:nowrap;
+  border-bottom:2.5px solid transparent;
+  transition:all 0.2s;letter-spacing:0.03em;
+}
+.cat-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:stroke 0.2s}
+.cat-btn:hover{color:var(--charcoal);border-bottom-color:var(--c,var(--primary))}
+.cat-btn.active{color:var(--c,var(--primary));border-bottom-color:var(--c,var(--primary))}
+.cat-btn.active svg{stroke:var(--c,var(--primary))}
+
+/* Cat bar arrows */
+.cat-bar-arrow{
+  display:none;align-items:center;justify-content:center;
+  width:40px;flex-shrink:0;border:none;background:#fff;
+  color:var(--text-muted);cursor:pointer;
+  transition:color 0.2s,background 0.2s;
+}
+.cat-bar-arrow:hover{background:var(--primary-xlight);color:var(--charcoal)}
+.cat-bar-arrow svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cat-bar-prev{border-right:1px solid var(--border)}
+.cat-bar-next{border-left:1px solid var(--border)}
+
+@media(max-width:900px){
+  .cat-bar-arrow{display:flex}
+  .cat-bar-inner{justify-content:flex-start;padding:0 0.5rem;min-width:max-content}
+  .cat-btn{flex:0 0 calc(25vw - 20px);padding:14px 8px;font-size:12px;gap:7px}
+  .cat-btn svg{width:24px;height:24px}
+}
+
+/* ── SECTION ── */
+.section{max-width:1280px;margin:0 auto;padding:3rem 2rem}
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:1.8rem}
+.section-head-left{display:flex;flex-direction:column;gap:4px}
+.section-eyebrow{font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--primary)}
+.section-head h2{font-family:var(--serif);font-size:1.8rem;color:var(--charcoal);font-weight:500}
+.see-all-wrap{display:flex;justify-content:center;margin-top:2.5rem}
+.see-all-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:14px 36px;
+  background:#fff;
+  color:var(--primary-dark);
+  border:1.5px solid var(--primary);
+  border-radius:40px;
+  font-size:14px;font-weight:600;
+  cursor:pointer;
+  transition:all 0.25s;
+}
+.see-all-btn:hover{background:var(--primary);color:#fff;transform:translateY(-2px);box-shadow:0 4px 20px rgba(201,160,154,0.35)}
+
+/* ── PILLS ── */
+.sub-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:2rem}
+.pill{
+  background:#fff;border:1.5px solid var(--border);
+  color:var(--text-soft);font-size:12px;font-weight:500;
+  padding:7px 16px;border-radius:30px;
+  transition:all 0.2s;font-family:var(--sans);
+}
+.pill:hover{border-color:var(--cat-color);color:var(--charcoal)}
+.pill.active{background:var(--cat-color);color:#fff;border-color:var(--cat-color)}
+
+/* ── PRODUCT GRID ── */
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1.2rem}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.product-card{
+  background:#fff;border-radius:var(--radius);
+  overflow:hidden;border:1px solid var(--border);
+  transition:transform 0.2s ease,box-shadow 0.2s ease;
+  cursor:pointer;position:relative;
+}
+.product-card:hover{
+  transform:translateY(-3px);
+  box-shadow:var(--shadow-md);
+}
+
+.product-img{
+  height:210px;position:relative;overflow:hidden;
+  background:var(--primary-xlight);
+}
+.product-img img{
+  width:100%;height:100%;object-fit:cover;object-position:center;
+  transition:transform 0.5s ease;
+}
+.product-card:hover .product-img img{transform:scale(1.06)}
+.product-img-fallback{
+  width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--primary-xlight);
+  font-size:3rem;
+}
+
+.product-badge{
+  position:absolute;top:12px;left:12px;
+  font-size:9.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+  padding:5px 11px;border-radius:20px;backdrop-filter:blur(8px);z-index:1;
+}
+.badge-new{background:rgba(255,255,255,0.92);color:var(--primary-dark)}
+.badge-promo{background:rgba(255,242,224,0.95);color:#9A6B30}
+
+
+.product-info{padding:1.1rem 1.2rem 1.3rem}
+.product-name{font-family:var(--serif);font-size:1.05rem;font-weight:500;color:var(--charcoal);margin-bottom:3px;line-height:1.35}
+.product-sub{font-size:11.5px;color:var(--text-muted);margin-bottom:14px;line-height:1.4}
+.product-footer{display:flex;align-items:center;justify-content:space-between}
+.product-price{font-size:1rem;font-weight:700;color:var(--charcoal);display:flex;align-items:baseline;gap:6px}
+.product-price s{font-size:11px;font-weight:400;color:var(--text-muted)}
+.add-btn{
+  width:34px;height:34px;border-radius:50%;
+  border:1.5px solid var(--cat-color);
+  background:none;display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s;color:var(--cat-color);
+}
+.add-btn:hover{background:var(--cat-color);color:#fff;transform:scale(1.1)}
+.add-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round}
+
+/* ── PROMO BANNER ── */
+/* ── HERO SLIDER ── */
+.hero-slider{position:relative;width:100%;height:100vh;overflow:hidden}
+.slider-track{display:flex;height:100%;transition:transform 0.8s cubic-bezier(0.77,0,0.175,1)}
+.slide{
+  flex:0 0 100%;height:100%;position:relative;overflow:hidden;
+}
+.slide-bg{
+  position:absolute;inset:0;
+  background-size:cover;background-position:center;
+  transform:scale(1);transform-origin:center;
+  will-change:transform;
+}
+.slide-bg.kb{animation:kenBurns 7s ease-out forwards}
+@keyframes kenBurns{from{transform:scale(1.08)}to{transform:scale(1)}}
+.slide::before{
+  content:'';position:absolute;inset:0;z-index:1;
+  background:linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0.65) 100%);
+}
+.slide-content{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;
+  z-index:2;padding:2rem;
+}
+.slide-tag{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(255,255,255,0.18);
+  border:1px solid rgba(255,255,255,0.45);
+  color:#fff;
+  font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;
+  padding:7px 18px;border-radius:20px;margin-bottom:1.4rem;
+  backdrop-filter:blur(8px);
+}
+.slide-tag svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.slide h2{
+  font-family:var(--serif);font-size:clamp(2.2rem,5.5vw,4rem);
+  color:#fff;margin-bottom:1rem;font-style:italic;line-height:1.15;
+  text-shadow:0 2px 20px rgba(0,0,0,0.3);
+}
+.slide p{
+  color:rgba(255,255,255,0.82);font-size:clamp(14px,1.6vw,17px);
+  line-height:1.75;margin-bottom:2rem;max-width:520px;
+  text-shadow:0 1px 8px rgba(0,0,0,0.3);
+}
+.btn-slide{
+  background:transparent;color:#fff;
+  border:2px solid rgba(255,255,255,0.8);
+  padding:14px 38px;border-radius:40px;
+  font-size:14px;font-weight:600;letter-spacing:0.04em;
+  transition:all 0.28s;cursor:pointer;
+  backdrop-filter:blur(4px);
+}
+.btn-slide:hover{background:#fff;color:var(--primary-dark);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.2)}
+/* arrows */
+.slider-btn{
+  position:absolute;top:50%;transform:translateY(-50%);
+  background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);
+  color:#fff;width:52px;height:52px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:10;transition:all 0.22s;
+  backdrop-filter:blur(8px);
+}
+.slider-btn:hover{background:rgba(255,255,255,0.28);transform:translateY(-50%) scale(1.08)}
+.slider-btn.prev{left:28px}
+.slider-btn.next{right:28px}
+/* dots */
+.slider-dots{
+  position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
+  display:flex;gap:10px;z-index:10;
+}
+.dot{
+  width:8px;height:8px;border-radius:50%;
+  background:rgba(255,255,255,0.45);border:none;cursor:pointer;
+  transition:all 0.25s;padding:0;
+}
+.dot.active{background:#fff;width:24px;border-radius:4px}
+/* progress bar */
+.slider-progress{
+  position:absolute;bottom:0;left:0;height:3px;
+  background:var(--primary-light);z-index:10;
+  animation:slideProgress 5s linear infinite;
+}
+@keyframes slideProgress{from{width:0}to{width:100%}}
+
+
+/* ── ATELIERS ── */
+.ateliers-outer{
+  background:linear-gradient(135deg,#F9F5F3 0%,var(--primary-xlight) 100%);
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  padding:4rem 2rem;
+}
+.ateliers-section{
+  max-width:1280px;margin:0 auto;
+}
+.ateliers-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:2.5rem;flex-wrap:wrap;gap:1rem}
+.ateliers-head-left .section-eyebrow{color:var(--primary)}
+.ateliers-head-left h2{font-family:var(--serif);font-size:1.8rem;color:var(--charcoal);font-weight:500;margin-top:4px}
+.ateliers-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1.5rem;
+}
+.atelier-card{
+  background:#fff;
+  border-radius:var(--radius);
+  border:1px solid var(--border);
+  overflow:hidden;
+  display:flex;flex-direction:column;
+  transition:box-shadow 0.25s, transform 0.25s;
+}
+.atelier-card:hover{box-shadow:var(--shadow-md);transform:translateY(-4px)}
+.atelier-img-wrap{position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;flex-shrink:0}
+.atelier-img-wrap img{width:100%;height:100%;object-fit:cover;transition:transform 0.5s ease}
+.atelier-card:hover .atelier-img-wrap img{transform:scale(1.05)}
+.atelier-badge{
+  position:absolute;top:12px;left:12px;
+  background:rgba(255,255,255,0.93);backdrop-filter:blur(8px);
+  color:var(--primary-dark);font-size:10px;font-weight:700;
+  letter-spacing:0.08em;text-transform:uppercase;
+  padding:4px 10px;border-radius:20px;
+}
+.atelier-spots{
+  position:absolute;top:12px;right:12px;
+  background:rgba(201,160,154,0.15);border:1px solid rgba(201,160,154,0.4);
+  color:var(--primary-dark);font-size:10px;font-weight:600;
+  padding:4px 10px;border-radius:20px;backdrop-filter:blur(8px);
+}
+.atelier-spots.full{background:rgba(200,60,60,0.12);border-color:rgba(200,60,60,0.3);color:#c03030}
+.atelier-body{padding:1.2rem 1.4rem 1.4rem;display:flex;flex-direction:column;flex:1}
+.atelier-meta{display:flex;gap:1rem;margin-bottom:0.8rem;flex-wrap:wrap}
+.atelier-meta-item{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-muted)}
+.atelier-meta-item svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.atelier-name{font-family:var(--serif);font-size:1.05rem;font-weight:500;color:var(--charcoal);margin-bottom:0.5rem;line-height:1.3}
+.atelier-desc{font-size:13px;color:var(--text-soft);line-height:1.65;flex:1;margin-bottom:1rem}
+.atelier-tarif{font-size:13px;font-weight:400;color:var(--charcoal);margin-top:auto;padding-top:0.9rem;border-top:1px solid var(--border-light)}
+.atelier-footer{display:flex;align-items:center;justify-content:space-between;gap:0.8rem;margin-top:auto}
+.atelier-price{font-size:14px;font-weight:700;color:var(--charcoal)}
+.atelier-price span{font-size:11px;font-weight:400;color:var(--text-muted)}
+.atelier-cta{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:10px 20px;
+  background:var(--primary-light);color:var(--primary-dark);
+  border:1.5px solid var(--primary);border-radius:40px;
+  font-size:12.5px;font-weight:600;
+  transition:all 0.22s;white-space:nowrap;
+}
+.atelier-cta:hover{background:var(--primary);color:#fff}
+.atelier-cta.full-cta{background:#f5f0f0;color:#999;border-color:#ddd;pointer-events:none}
+@media(max-width:1024px){.ateliers-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.ateliers-grid{grid-template-columns:1fr}}
+
+/* ── PROMO BANNER ── */
+.promo-banner{
+  position:relative;overflow:hidden;
+  background:linear-gradient(135deg,#2C1F1E 0%,#4A2E2C 50%,#3D2622 100%);
+  padding:5rem 2rem;
+  text-align:center;
+}
+.promo-banner::before{
+  content:'';position:absolute;inset:0;
+  background-image:url('https://images.pexels.com/photos/7282619/pexels-photo-7282619.jpeg?auto=compress&cs=tinysrgb&w=1200&fit=crop');
+  background-size:cover;background-position:center;
+  opacity:0.25;
+}
+.promo-inner{position:relative;z-index:1;max-width:560px;margin:0 auto}
+.promo-tag{
+  display:inline-block;
+  background:rgba(201,160,154,0.25);
+  border:1px solid rgba(201,160,154,0.4);
+  color:var(--primary-light);
+  font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;
+  padding:6px 16px;border-radius:20px;margin-bottom:1.2rem;
+}
+.promo-banner h2{
+  font-family:var(--serif);font-size:clamp(1.8rem,4vw,2.8rem);
+  color:#fff;margin-bottom:1rem;font-style:italic;line-height:1.2;
+}
+.promo-banner p{color:rgba(255,255,255,0.72);font-size:14.5px;line-height:1.8;margin-bottom:2rem}
+.btn-promo{
+  background:var(--primary);color:#fff;border:none;
+  padding:15px 36px;border-radius:40px;
+  font-size:14px;font-weight:600;
+  transition:all 0.25s;box-shadow:0 4px 20px rgba(201,160,154,0.35);
+}
+.btn-promo:hover{background:var(--primary-dark);transform:translateY(-2px);box-shadow:0 8px 32px rgba(201,160,154,0.5)}
+
+
+/* ── PRODUCT DETAIL PAGE ── */
+#shopContent{display:block}
+#productPage{display:none;min-height:60vh}
+.detail-header{
+  position:sticky;top:0;z-index:10;
+  background:rgba(255,255,255,0.92);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  padding:0 2rem;height:64px;
+  display:flex;align-items:center;gap:1rem;
+}
+.detail-back{
+  display:flex;align-items:center;gap:8px;
+  background:none;border:none;
+  font-size:13px;font-weight:500;color:var(--text-muted);
+  cursor:pointer;padding:8px 0;transition:color 0.2s;
+}
+.detail-back:hover{color:var(--charcoal)}
+.detail-back svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.detail-breadcrumb{font-size:12px;color:var(--text-muted);margin-left:auto}
+.detail-breadcrumb span{color:var(--charcoal);font-weight:500}
+.detail-body{
+  max-width:1100px;margin:0 auto;
+  padding:3rem 2rem 5rem;
+  display:grid;grid-template-columns:1fr 1fr;gap:4rem;
+}
+@media(max-width:720px){.detail-body{grid-template-columns:1fr;gap:2rem;padding:1.5rem 1rem 4rem}}
+/* image side */
+.detail-img-wrap{
+  position:sticky;top:80px;align-self:start;
+}
+.detail-img-main{
+  width:100%;aspect-ratio:1;border-radius:20px;
+  object-fit:cover;background:var(--primary-xlight);
+}
+.detail-img-thumbs{display:flex;gap:10px;margin-top:12px}
+.detail-thumb{
+  width:68px;height:68px;border-radius:10px;object-fit:cover;
+  border:2px solid transparent;cursor:pointer;transition:border-color 0.2s;
+  background:var(--primary-xlight);
+}
+.detail-thumb.active{border-color:var(--primary)}
+/* info side */
+.detail-badge-row{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.detail-badge{
+  display:inline-block;font-size:10px;font-weight:700;
+  letter-spacing:0.1em;text-transform:uppercase;
+  padding:4px 12px;border-radius:20px;
+}
+.detail-badge.new{background:#E8F5E9;color:#2E7D32}
+.detail-badge.promo{background:#FFF3E0;color:#E65100}
+.detail-tag{background:var(--primary-xlight);color:var(--primary-dark);font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;padding:4px 12px;border-radius:20px}
+.detail-name{font-family:var(--serif);font-size:clamp(1.6rem,3vw,2.2rem);color:var(--charcoal);margin-bottom:0.4rem;line-height:1.2}
+.detail-sub{font-size:14px;color:var(--text-muted);margin-bottom:1.2rem}
+.detail-stars{display:flex;align-items:center;gap:6px;margin-bottom:1.2rem}
+.detail-stars svg{width:15px;height:15px;fill:#F59E0B;stroke:none}
+.detail-stars span{font-size:13px;color:var(--text-muted)}
+.detail-price-row{display:flex;align-items:baseline;gap:12px;margin-bottom:1.6rem}
+.detail-price{font-size:1.8rem;font-weight:700;color:var(--charcoal)}
+.detail-old-price{font-size:1.1rem;color:var(--text-muted);text-decoration:line-through}
+.detail-promo-pct{font-size:13px;font-weight:700;color:#E65100;background:#FFF3E0;padding:2px 10px;border-radius:20px}
+.detail-desc{font-size:14.5px;color:var(--text-muted);line-height:1.85;margin-bottom:2rem;border-top:1px solid var(--border);padding-top:1.4rem}
+.detail-attrs{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin-bottom:2rem}
+.detail-attr{font-size:13px;color:var(--text-muted)}
+.detail-attr strong{color:var(--charcoal);font-weight:600;display:block;margin-bottom:2px}
+.detail-qty-row{display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem}
+.qty-btn{
+  width:38px;height:38px;border-radius:50%;
+  border:1.5px solid var(--border);background:#fff;
+  font-size:18px;font-weight:300;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s;color:var(--charcoal);
+}
+.qty-btn:hover{border-color:var(--primary);color:var(--primary)}
+.qty-val{font-size:16px;font-weight:600;min-width:24px;text-align:center}
+.detail-add{
+  width:100%;padding:16px;border-radius:40px;
+  background:var(--primary);color:#fff;border:none;
+  font-size:15px;font-weight:600;letter-spacing:0.02em;
+  cursor:pointer;transition:all 0.25s;
+  box-shadow:0 4px 20px rgba(201,160,154,0.4);
+  margin-bottom:0.8rem;
+}
+.detail-add:hover{background:var(--primary-dark);transform:translateY(-2px);box-shadow:0 8px 32px rgba(201,160,154,0.5)}
+.detail-wish-DISABLED{
+  width:100%;padding:14px;border-radius:40px;
+  background:transparent;color:var(--charcoal);
+  border:1.5px solid var(--border);
+  font-size:14px;font-weight:500;cursor:pointer;
+  transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.detail-wish:hover{border-color:var(--primary);color:var(--primary)}
+.detail-wish svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8}
+
+/* ── TRUST BAR ── */
+.trust{background:var(--primary-xlight);padding:2rem 2rem;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.trust-inner{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.trust-item{display:flex;align-items:center;gap:14px;padding:0.8rem 0}
+.trust-icon{
+  width:44px;height:44px;border-radius:50%;
+  background:#fff;border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  box-shadow:var(--shadow-sm);
+}
+.trust-icon svg{width:20px;height:20px;stroke:var(--primary);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.trust-text strong{display:block;font-size:13px;font-weight:600;color:var(--charcoal);margin-bottom:2px}
+.trust-text span{font-size:11.5px;color:var(--text-muted)}
+
+/* ── FOOTER ── */
+footer{background:var(--charcoal);color:#B0A8A3;padding:4rem 2rem 2rem}
+.footer-inner{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
+.footer-logo{margin-bottom:0.8rem;display:flex;align-items:center;}
+.footer-logo img{height:46px;width:auto;filter:brightness(0) invert(1);opacity:0.9;}
+.footer-logo-dot{display:none}
+.footer-brand p{font-size:13px;line-height:1.75;color:#807870;max-width:280px}
+.footer-social{display:flex;gap:10px;margin-top:1.2rem}
+.social-btn{
+  width:34px;height:34px;border-radius:50%;
+  border:1px solid #3A3A3C;
+  background:none;color:#807870;
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s;
+}
+.social-btn:hover{border-color:var(--primary);color:var(--primary)}
+.social-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+footer h4{font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#fff;margin-bottom:1.2rem}
+footer ul{list-style:none}
+footer ul li{margin-bottom:8px;font-size:13px;cursor:pointer;transition:color 0.2s;color:#807870}
+footer ul li:hover{color:#fff}
+.footer-bottom{
+  max-width:1280px;margin:0 auto;
+  border-top:1px solid #2A2A2C;padding-top:1.5rem;
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:12px;color:#555;flex-wrap:wrap;gap:1rem;
+}
+.footer-bottom a{color:#555;text-decoration:none;transition:color 0.2s}
+.footer-bottom a:hover{color:#fff}
+
+
+/* ── ANIMATIONS ── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.animate-in{animation:fadeIn 0.4s ease both}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .nav-center{display:none}
+  .footer-inner{grid-template-columns:1fr 1fr;gap:2rem}
+  .trust-inner{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  .hero h1{font-size:2rem}
+  .footer-inner{grid-template-columns:1fr}
+  .trust-inner{grid-template-columns:1fr}
+  .product-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+  .product-img{height:160px}
+}
+</style>
+</head>
+<body>
+
+<!-- SVG ICON DEFS -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="icon-person" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="icon-bag" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></symbol>
+    <symbol id="icon-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="icon-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+    <symbol id="icon-truck" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></symbol>
+    <symbol id="icon-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></symbol>
+    <symbol id="icon-gift" viewBox="0 0 24 24"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></symbol>
+    <symbol id="icon-refresh" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
+    <symbol id="icon-pin" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+    <symbol id="icon-palette" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.1 0 2-.9 2-2v-.5c0-.28.22-.5.5-.5H17c2.76 0 5-2.24 5-5 0-5.52-4.48-10-10-10z"/></symbol>
+    <symbol id="icon-sparkle" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></symbol>
+    <symbol id="icon-arrow" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <!-- categories -->
+    <symbol id="icon-hygiene" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></symbol>
+    <symbol id="icon-bottle" viewBox="0 0 24 24"><path d="M8 2h8"/><path d="M9 2v2.789a4 4 0 0 1-.672 2.219l-.656.984A4 4 0 0 0 7 10.212V20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-9.789a4 4 0 0 0-.672-2.219l-.656-.984A4 4 0 0 1 15 4.788V2"/><path d="M7 15h10"/></symbol>
+    <symbol id="icon-shirt" viewBox="0 0 24 24"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></symbol>
+    <symbol id="icon-bed" viewBox="0 0 24 24"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="icon-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+    <symbol id="icon-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></symbol>
+    <symbol id="icon-hearth" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+    <symbol id="icon-giftcat" viewBox="0 0 24 24"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></symbol>
+    <symbol id="icon-guitar" viewBox="0 0 24 24"><line x1="12" y1="3" x2="12" y2="16"/><path d="M12 3c4 1.5 6 4 4 8"/><circle cx="9" cy="18" r="3"/></symbol>
+    <symbol id="icon-instagram" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></symbol>
+    <symbol id="icon-fb" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></symbol>
+  </defs>
+</svg>
+
+<!-- NAV -->
+<nav id="main-nav"></nav>
+
+
+<div id="shopContent">
+<!-- HERO SLIDER -->
+<section class="hero-slider" id="heroSlider">
+  <div class="slider-track" id="sliderTrack">
+
+    <!-- Slide 1 : Jouets -->
+    <div class="slide">
+      <div class="slide-bg kb" style="background-image:url('images/banner/jouets.jpg')"></div>
+      <div class="slide-content">
+        <span class="slide-tag"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Éveil & Motricité</span>
+        <h2>Les jouets qui font<br><em>grandir</em></h2>
+        <p>Chaque jouet est une invitation à explorer, toucher, construire. En stimulant la motricité fine et globale dès les premiers mois, le bon jouet devient le premier outil de développement de votre enfant.</p>
+        <button class="btn-slide" onclick="showCatScroll('Jouets')">Découvrir les jouets →</button>
+      </div>
+    </div>
+
+    <!-- Slide 2 : Musique -->
+    <div class="slide">
+      <div class="slide-bg" style="background-image:url('images/banner/music.jpg')"></div>
+      <div class="slide-content">
+        <span class="slide-tag"><svg viewBox="0 0 24 24"><line x1="12" y1="3" x2="12" y2="16"/><path d="M12 3c4 1.5 6 4 4 8"/><circle cx="9" cy="18" r="3"/></svg>Éveil Musical</span>
+        <h2>La musique,<br><em>dès le premier souffle</em></h2>
+        <p>Les études le confirment : l'exposition à la musique dès le plus jeune âge développe le langage, la mémoire et l'intelligence émotionnelle. Offrez à votre enfant ce cadeau pour la vie.</p>
+        <button class="btn-slide" onclick="showCatScroll('Musique')">Explorer la musique →</button>
+      </div>
+    </div>
+
+    <!-- Slide 3 : Livres -->
+    <div class="slide">
+      <div class="slide-bg" style="background-image:url('images/banner/livres.jpg')"></div>
+      <div class="slide-content">
+        <span class="slide-tag"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Lecture & Histoires</span>
+        <h2>Une histoire partagée,<br><em>un lien pour toujours</em></h2>
+        <p>Lire ensemble, c'est bien plus qu'une histoire. C'est un moment de connexion unique qui enrichit le vocabulaire, stimule l'imagination et construit la complicité parent-enfant dès les premières pages.</p>
+        <button class="btn-slide" onclick="showCatScroll('Livres')">Explorer les livres →</button>
+      </div>
+    </div>
+
+    <!-- Slide 4 : Art -->
+    <div class="slide">
+      <div class="slide-bg" style="background-image:url('images/banner/art.jpg')"></div>
+      <div class="slide-content">
+        <span class="slide-tag"><svg viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.1 0 2-.9 2-2v-.5c0-.28.22-.5.5-.5H17c2.76 0 5-2.24 5-5 0-5.52-4.48-10-10-10z"/></svg>Créativité & Expression</span>
+        <h2>La créativité,<br><em>une intelligence à cultiver</em></h2>
+        <p>Dessiner, peindre, modeler… Ces gestes simples développent la confiance en soi, la concentration et la pensée créative. Plus tôt on encourage l'expression artistique, plus elle s'épanouit librement.</p>
+        <button class="btn-slide" onclick="showCatScroll('Art')">Découvrir l'art →</button>
+      </div>
+    </div>
+
+    <!-- Slide 5 : Bébé -->
+    <div class="slide">
+      <div class="slide-bg" style="background-image:url('images/banner/bebe.jpg')"></div>
+      <div class="slide-content">
+        <span class="slide-tag"><svg viewBox="0 0 24 24"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>Sélection Premium</span>
+        <h2>Le meilleur pour<br><em>les premiers instants</em></h2>
+        <p>Poussettes, sièges auto, porte-bébés… Chaque produit de notre sélection bébé est rigoureusement choisi pour sa sécurité, son confort et sa durabilité. Parce que votre bébé ne mérite que le meilleur.</p>
+        <button class="btn-slide" onclick="showCatScroll('Mobilier')">Voir la sélection →</button>
+      </div>
+    </div>
+
+    <!-- Slide 6 : Maternité -->
+    <div class="slide">
+      <div class="slide-bg" style="background-image:url('images/banner/biberon.jpg')"></div>
+      <div class="slide-content">
+        <span class="slide-tag"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Maternité & Bien-être</span>
+        <h2>Prendre soin de soi,<br><em>c'est prendre soin de bébé</em></h2>
+        <p>De la grossesse aux premiers mois, notre gamme maternité vous accompagne à chaque étape. Coussins d'allaitement, soins naturels, biberons certifiés… des produits pensés pour le confort de la maman et la santé de bébé.</p>
+        <button class="btn-slide" onclick="showCatScroll('Maternité')">Découvrir la maternité →</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Navigation arrows -->
+  <button class="slider-btn prev" onclick="sliderMove(-1)" aria-label="Précédent">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <button class="slider-btn next" onclick="sliderMove(1)" aria-label="Suivant">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+
+  <!-- Dots -->
+  <div class="slider-dots" id="sliderDots">
+    <button class="dot active" onclick="sliderGo(0)"></button>
+    <button class="dot" onclick="sliderGo(1)"></button>
+    <button class="dot" onclick="sliderGo(2)"></button>
+    <button class="dot" onclick="sliderGo(3)"></button>
+    <button class="dot" onclick="sliderGo(4)"></button>
+    <button class="dot" onclick="sliderGo(5)"></button>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="slider-progress" id="sliderProgress"></div>
+</section>
+
+<!-- CATEGORY BAR -->
+<div class="cat-bar-wrap">
+  <button class="cat-bar-arrow cat-bar-prev" id="cat-bar-prev" onclick="catBarScroll(-1)" aria-label="Précédent">
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <div class="cat-bar" id="cat-bar">
+    <div class="cat-bar-inner" id="cat-bar-inner"></div>
+  </div>
+  <button class="cat-bar-arrow cat-bar-next" id="cat-bar-next" onclick="catBarScroll(1)" aria-label="Suivant">
+    <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+</div>
+
+<!-- PRODUCTS SECTION -->
+<div class="section">
+  <div class="section-head">
+    <div class="section-head-left">
+      <span class="section-eyebrow" id="cat-eyebrow">Hygiène & Soins</span>
+      <h2 id="cat-title">Les essentiels du quotidien</h2>
+    </div>
+  </div>
+  <div class="sub-pills" id="sub-pills"></div>
+  <div class="product-grid" id="product-grid"></div>
+  <div class="see-all-wrap">
+    <button class="see-all-btn" onclick="window.location.href='boutique.html#'+(CATS_META[_currentCatIdx]||{key:''}).key">Voir tout <svg width="14" height="14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><use href="#icon-arrow"/></svg></button>
+  </div>
+</div>
+
+<!-- ATELIERS ENFANTS -->
+<div class="ateliers-outer">
+<section class="ateliers-section">
+  <div class="ateliers-head">
+    <div class="ateliers-head-left">
+      <span class="section-eyebrow">Agenda & Activités</span>
+      <h2>Ateliers enfants</h2>
+    </div>
+  </div>
+
+  <div class="ateliers-grid">
+
+    <!-- Atelier 1 -->
+    <div class="atelier-card">
+      <div class="atelier-img-wrap">
+        <img src="https://images.unsplash.com/photo-1596464716127-f2a82984de30?w=600&auto=format&fit=crop&q=80" alt="Atelier peinture enfant" loading="lazy">
+        <div class="atelier-badge">Peinture & Créativité</div>
+      </div>
+      <div class="atelier-body">
+        <div class="atelier-meta">
+          <span class="atelier-meta-item">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Sam 5 juillet · 10h00
+          </span>
+          <span class="atelier-meta-item">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            1h30
+          </span>
+          <span class="atelier-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            3 – 6 ans
+          </span>
+        </div>
+        <h3 class="atelier-name">Aquarelles & petites mains</h3>
+        <p class="atelier-desc">Un moment créatif pour explorer les couleurs, les textures et l'expression libre. Tabliers fournis, aucun matériel nécessaire.</p>
+        <div class="atelier-tarif">20 DT par enfant</div>
+      </div>
+    </div>
+
+    <!-- Atelier 2 -->
+    <div class="atelier-card">
+      <div class="atelier-img-wrap">
+        <img src="https://images.unsplash.com/photo-1711048421235-3fcb9dcf82f7?w=600&auto=format&fit=crop&q=80" alt="Atelier musique enfant" loading="lazy">
+        <div class="atelier-badge">Musique & Éveil</div>
+      </div>
+      <div class="atelier-body">
+        <div class="atelier-meta">
+          <span class="atelier-meta-item">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Mer 9 juillet · 14h30
+          </span>
+          <span class="atelier-meta-item">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            45 min
+          </span>
+          <span class="atelier-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            6 mois – 3 ans
+          </span>
+        </div>
+        <h3 class="atelier-name">Éveil musical & percussions</h3>
+        <p class="atelier-desc">Découvrez le rythme et les sonorités à travers instruments doux, chansons et jeux sensoriels. Idéal pour les tout-petits accompagnés d'un parent.</p>
+        <div class="atelier-tarif">15 DT par enfant</div>
+      </div>
+    </div>
+
+    <!-- Atelier 3 -->
+    <div class="atelier-card">
+      <div class="atelier-img-wrap">
+        <img src="https://images.unsplash.com/photo-1533561304446-88a43deb6229?w=600&auto=format&fit=crop&q=80" alt="Atelier conte enfant" loading="lazy">
+        <div class="atelier-badge">Lecture & Imaginaire</div>
+      </div>
+      <div class="atelier-body">
+        <div class="atelier-meta">
+          <span class="atelier-meta-item">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Sam 12 juillet · 11h00
+          </span>
+          <span class="atelier-meta-item">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            1h00
+          </span>
+          <span class="atelier-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            2 – 5 ans
+          </span>
+        </div>
+        <h3 class="atelier-name">L'heure du conte illustré</h3>
+        <p class="atelier-desc">Une conteuse lit et met en scène un album jeunesse choisi par les enfants. Suivi d'un temps de dessin libre pour prolonger l'histoire.</p>
+        <div class="atelier-tarif">15 DT par enfant</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</div>
+
+<!-- PROMO BANNER -->
+<div class="promo-banner">
+  <div class="promo-inner">
+    <div class="promo-tag">✦ Exclusivité Little Symphony</div>
+    <h2>La boîte Little Symphony</h2>
+    <p>Offrez une expérience complète dès la naissance. Nos coffrets sont composés à la main, emballés dans nos sacs signature et livrés avec une carte personnalisée.</p>
+    <a href="boutique.html#cadeaux" class="btn-promo" style="display:inline-block;text-decoration:none">Voir nos coffrets →</a>
+  </div>
+</div>
+
+
+</div><!-- /#shopContent -->
+<!-- PRODUCT DETAIL PAGE -->
+<div id="productPage">
+  <div class="detail-header">
+    <button class="detail-back" onclick="closeProduct()">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Retour
+    </button>
+    <div class="detail-breadcrumb" id="detailBreadcrumb">
+      Boutique › <span id="detailBreadCat"></span> › <span id="detailBreadName"></span>
+    </div>
+  </div>
+  <div class="detail-body">
+    <div class="detail-img-wrap">
+      <img class="detail-img-main" id="detailImgMain" src="" alt="">
+      <div class="detail-img-thumbs" id="detailThumbs"></div>
+    </div>
+    <div class="detail-info">
+      <div class="detail-badge-row" id="detailBadgeRow"></div>
+      <h1 class="detail-name" id="detailName"></h1>
+      <div class="detail-sub" id="detailSub"></div>
+      <div class="detail-stars">
+        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg viewBox="0 0 24 24" style="fill:#E5E7EB"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span id="detailRating">4.0 (12 avis)</span>
+      </div>
+      <div class="detail-price-row">
+        <span class="detail-price" id="detailPrice"></span>
+        <span class="detail-old-price" id="detailOldPrice"></span>
+        <span class="detail-promo-pct" id="detailPromoPct" style="display:none"></span>
+      </div>
+      <p class="detail-desc" id="detailDesc"></p>
+      <div class="detail-attrs" id="detailAttrs"></div>
+      <div class="detail-qty-row">
+        <button class="qty-btn" onclick="changeQty(-1)">−</button>
+        <span class="qty-val" id="detailQty">1</span>
+        <button class="qty-btn" onclick="changeQty(1)">+</button>
+      </div>
+      <button class="detail-add" onclick="addToCart()">Ajouter au panier 🛒</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRUST BAR -->
+<div class="trust">
+  <div class="trust-inner">
+    <div class="trust-item">
+      <div class="trust-icon"><svg><use href="#icon-truck"/></svg></div>
+      <div class="trust-text"><strong>Livraison offerte</strong><span>dès 80 DT d'achat</span></div>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon"><svg><use href="#icon-leaf"/></svg></div>
+      <div class="trust-text"><strong>Certifiés bio</strong><span>éco-responsables</span></div>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon"><svg><use href="#icon-gift"/></svg></div>
+      <div class="trust-text"><strong>Emballage cadeau</strong><span>offert sur demande</span></div>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon"><svg><use href="#icon-refresh"/></svg></div>
+      <div class="trust-text"><strong>Retours faciles</strong><span>30 jours satisfait</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div id="main-footer"></div>
+
+<script>
+// ── Image pool — 3 images per category ──
+const P = 'https://images.pexels.com/photos/';
+const U = 'https://images.unsplash.com/photo-';
+const q = '?auto=compress&cs=tinysrgb&w=480&h=480&fit=crop';
+const qu = '?w=480&h=480&fit=crop&auto=format&q=80';
+const IMG = {
+  // Hygiène
+  diaper:    U+'1554684765-8f7175aeaf81'+qu,
+  cream:     P+'10853729/pexels-photo-10853729.jpeg'+q,
+  bath:      P+'8015811/pexels-photo-8015811.jpeg'+q,
+  // Repas
+  bottle:    P+'41222/belly-care-feeding-bottle-41222.jpeg'+q,
+  feeding:   P+'7282619/pexels-photo-7282619.jpeg'+q,
+  spoon:     P+'7566224/pexels-photo-7566224.jpeg'+q,
+  // Vêtements
+  clothes:   P+'3875080/pexels-photo-3875080.jpeg'+q,
+  clothes2:  P+'2252000/pexels-photo-2252000.jpeg'+q,
+  clothes3:  P+'4858394/pexels-photo-4858394.jpeg'+q,
+  // Mobilier
+  stroller:  P+'14771817/pexels-photo-14771817.jpeg'+q,
+  nursery:   P+'28096440/pexels-photo-28096440.jpeg'+q,
+  crib:      P+'12603180/pexels-photo-12603180.jpeg'+q,
+  // Sécurité
+  safety1:   P+'3661350/pexels-photo-3661350.jpeg'+q,
+  safety2:   P+'6942084/pexels-photo-6942084.jpeg'+q,
+  safety3:   P+'12603180/pexels-photo-12603180.jpeg'+q,
+  // Jouets
+  toys:      U+'1631541911156-0b44a12a7770'+qu,
+  toy2:      P+'26337010/pexels-photo-26337010.jpeg'+q,
+  woodtoy:   P+'6692961/pexels-photo-6692961.jpeg'+q,
+  // Art
+  music:     P+'6743155/pexels-photo-6743155.jpeg'+q,
+  pencils:   P+'4887169/pexels-photo-4887169.jpeg'+q,
+  paint:     P+'1148998/pexels-photo-1148998.jpeg'+q,
+  // Livres
+  book:      P+'4887169/pexels-photo-4887169.jpeg'+q,
+  book2:     P+'3457273/pexels-photo-3457273.jpeg'+q,
+  book3:     P+'256450/pexels-photo-256450.jpeg'+q,
+  // Maternité
+  maternity: P+'7055832/pexels-photo-7055832.jpeg'+q,
+  mom:       P+'7282619/pexels-photo-7282619.jpeg'+q,
+  nursing:   P+'10853729/pexels-photo-10853729.jpeg'+q,
+  // Cadeaux
+  giftbox:   P+'19163673/pexels-photo-19163673.jpeg'+q,
+  gift2:     P+'6693661/pexels-photo-6693661.jpeg'+q,
+  gift3:     P+'5693891/pexels-photo-5693891.jpeg'+q,
+  // Musique
+  xylophone: P+'6743155/pexels-photo-6743155.jpeg'+q,
+  ukulele:   P+'13095274/pexels-photo-13095274.jpeg'+q,
+  piano:     P+'8722689/pexels-photo-8722689.jpeg'+q,
+  guitar:    P+'7520985/pexels-photo-7520985.jpeg'+q,
+};
+
+// ── CAT BAR SCROLL ARROWS ──────────────────────────────────────────────────────
+function catBarScroll(dir) {
+  const bar = document.getElementById('cat-bar');
+  if (bar) bar.scrollBy({ left: dir * (window.innerWidth * 0.6), behavior: 'smooth' });
+}
+
+// ── CAT BAR — dynamic rendering from CATS_META ────────────────────────────────
+function buildCatBar() {
+  const inner = document.getElementById('cat-bar-inner');
+  if (!inner) return;
+  inner.innerHTML = CATS_META.map((cat, i) =>
+    `<button class="cat-btn${i===0?' active':''}" onclick="showCat(${i},this)" style="--c:${cat.color}">
+      <svg viewBox="0 0 24 24">${cat.icon}</svg>
+      ${cat.name}
+    </button>`
+  ).join('');
+}
+
+// cats sera initialisé après chargement de _shared.js (voir dernier bloc script)
+let cats = [];
+
+const PLUS_SVG = `<svg width="15" height="15" stroke="currentColor" fill="none" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><use href="#icon-plus"/></svg>`;
+const HEART_SVG = `<svg width="15" height="15" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><use href="#icon-heart"/></svg>`;
+
+// name → index mapping for slider CTAs
+const CAT_NAME_MAP = {
+  'jouets':0,
+  'livres':1,
+  'musique':2,
+  'art':3,
+  'maternité':4,'maternite':4,
+  'hygiène':5,'hygiene':5,
+  'repas':6,
+  'sécurité':7,'securite':7,
+  'vêtements':8,'vetements':8,
+  'mobilier':9,
+  'cadeaux':10
+};
+
+function showCat(idxOrName, btn) {
+  // Resolve string name to index
+  let idx = (typeof idxOrName === 'string')
+    ? (CAT_NAME_MAP[idxOrName.toLowerCase()] ?? 0)
+    : idxOrName;
+
+  // Activate the right cat-btn
+  const catBtns = document.querySelectorAll('.cat-btn');
+  catBtns.forEach(b => b.classList.remove('active'));
+  if (btn) {
+    btn.classList.add('active');
+  } else if (catBtns[idx]) {
+    catBtns[idx].classList.add('active');
+  }
+
+  const cat = cats[idx];
+  if (!cat) return;
+  const meta = CATS_META[idx];
+  document.documentElement.style.setProperty('--cat-color', meta ? meta.color : 'var(--primary)');
+  document.getElementById('cat-eyebrow').textContent = meta ? meta.nameFull : '';
+  document.getElementById('cat-title').textContent = meta ? meta.subtitle : '';
+  document.getElementById('sub-pills').innerHTML =
+    cat.subs.map((s,i) => `<button class="pill${i===0?' active':''}" onclick="activePill(this)">${s}</button>`).join('');
+  _currentCatIdx = idx;
+  renderProducts(cat.products);
+
+}
+
+function showCatScroll(name) {
+  showCat(name);
+  setTimeout(() => {
+    const target = document.querySelector('.section');
+    if (!target) return;
+    const navH = document.getElementById('main-nav')?.offsetHeight || 68;
+    const catBarH = document.querySelector('.cat-bar')?.offsetHeight || 70;
+    const top = target.getBoundingClientRect().top + window.scrollY - navH - catBarH + 6;
+    window.scrollTo({ top, behavior: 'smooth' });
+  }, 80);
+}
+
+// Track current category for pill filtering
+var _currentCatIdx = 0;
+
+function activePill(el) {
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  const label = el.textContent.trim();
+  const cat = cats[_currentCatIdx];
+  if (label === 'Tous') {
+    renderProducts(cat.products);
+  } else {
+    // Filter products whose name or sub description contains keywords from the pill label
+    const kw = label.toLowerCase();
+    const filtered = cat.products.filter(p =>
+      p.name.toLowerCase().includes(kw) ||
+      p.sub.toLowerCase().includes(kw) ||
+      // Assign products to subs by position if no keyword match
+      cat.subs.indexOf(label) > 0
+        ? cat.products.indexOf(p) % (cat.subs.length - 1) === (cat.subs.indexOf(label) - 1)
+        : false
+    );
+    renderProducts(filtered.length ? filtered : cat.products);
+  }
+}
+
+function renderProducts(products) {
+  _currentProducts = products;
+  document.getElementById('product-grid').innerHTML = products.map((p, i) => `
+    <div class="product-card animate-in" onclick="openProduct(${i})" style="cursor:pointer" onanimationend="this.classList.remove('animate-in')">
+      <div class="product-img">
+        ${p.badge ? `<div class="product-badge ${p.badge==='new'?'badge-new':'badge-promo'}">${p.badge==='new'?'NOUVEAU':'PROMO'}</div>` : ''}
+        <img
+          src="${p.img}"
+          alt="${p.name}"
+          loading="lazy"
+          onerror="this.parentNode.innerHTML='<div class=\\'product-img-fallback\\'>🛍️</div>'"
+        >
+      </div>
+      <div class="product-info">
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${CATS_META[_currentCatIdx]?.color||'var(--primary-dark)'};margin-bottom:3px">${CATS_META[_currentCatIdx]?.name||''}</div>
+        <div class="product-name">${p.name}</div>
+        <div class="product-sub">${p.sub}</div>
+        <div class="product-footer">
+          <div class="product-price">
+            ${p.price}
+            ${p.oldPrice ? `<s>${p.oldPrice}</s>` : ''}
+          </div>
+          <button class="add-btn" title="Ajouter au panier" onclick="event.stopPropagation();addToCartQuick(${i})">${PLUS_SVG}</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// Quick add to cart from grid
+function addToCartQuick(idx) {
+  const p = _currentProducts[idx];
+  if (!p) return;
+  Cart.add({ name: p.name, sub: p.sub, price: p.price, img: p.img, priceNum: p.priceNum || parseFloat((p.price||'0').replace(/[^\d,]/g,'').replace(',','.')), qty: 1 });
+  // Show mini toast
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--charcoal);color:#fff;padding:12px 24px;border-radius:40px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.2);pointer-events:none;animation:fadeInUp 0.3s ease';
+  toast.textContent = '✓ Ajouté au panier';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2000);
+  // Update badge
+  const n = Cart.count();
+  const el = document.getElementById('cart-count');
+  if (el) { el.textContent = n; el.style.display = 'flex'; }
+}
+
+// Init différée — les produits sont chargés via loadIndexProducts() dans le dernier bloc script
+
+// Hero BG with Ken Burns
+window.addEventListener('load', () => {
+  const bg = document.getElementById('hero-bg');
+  setTimeout(() => bg.classList.add('loaded'), 100);
+});
+
+// Nav scroll effect
+window.addEventListener('scroll', () => {
+  document.getElementById('main-nav').classList.toggle('scrolled', window.scrollY > 20);
+});
+
+// ── Color palette picker ──
+const PALETTE = [
+  {hex:'#A8B3C0',dark:'#6B7E94',light:'#EFF1F3',xlight:'#F8F9FA'},
+  {hex:'#B3B8A5',dark:'#7A8265',light:'#F1F2EE',xlight:'#F9F9F8'},
+  {hex:'#C9A09A',dark:'#A86860',light:'#F5EDED',xlight:'#FBF9F9'},
+  {hex:'#E0C4B0',dark:'#C4895F',light:'#F6F0EC',xlight:'#FBF9F7'},
+  {hex:'#DED8D0',dark:'#B0A490',light:'#F2F1EE',xlight:'#F9F9F8'},
+  {hex:'#B8B0C0',dark:'#8C7FA0',light:'#F1F0F4',xlight:'#F9F9FB'},
+];
+let currentPaletteIdx = 2;
+
+// ── PRODUCT DETAIL ──────────────────────────────────────────────────────────
+var _currentProducts = [];
+var _detailQty = 1;
+var _detailProduct = null;
+
+const DETAIL_DESCS = {
+  diaper:    "Formulées pour la peau ultra-sensible de bébé, nos couches allient douceur et protection maximale. Absorbance garantie jusqu'à 12h, indicateur d'humidité intégré.",
+  cream:     "Soin doux certifié hypoallergénique, testé dermatologiquement. Formule enrichie en ingrédients naturels pour protéger et nourrir la peau délicate de bébé.",
+  bath:      "Nettoyant sans savon, sans parfum et sans sulfate. Respecte le pH naturel de la peau de bébé, rince facilement et laisse une peau douce et hydratée.",
+  bottle:    "Conçu pour réduire les coliques et l'ingestion d'air. Tétine en silicone souple imitant le sein maternel. Sans BPA, stérilisable au lave-vaisselle.",
+  feeding:   "Set complet pour les repas de bébé. Matériau silicone de qualité alimentaire, antidérapant, sans BPA. Compartiments pratiques et faciles à nettoyer.",
+  spoon:     "Accessoire indispensable pour nourrir bébé en toute sécurité. Matériau doux, ergonomique et adapté aux premières bouchées comme à l'allaitement.",
+  clothes:   "Confectionné en coton biologique certifié GOTS, ce vêtement est doux, respirant et écologique. Coupe confortable pour que bébé bouge librement.",
+  clothes2:  "Vêtements soigneusement pliés et prêts à être offerts ou rangés. Tissus doux certifiés, idéaux pour la peau sensible des nourrissons.",
+  clothes3:  "Ensemble coordonné comprenant plusieurs pièces assorties. Design élégant, matières douces et confortables pour toutes les occasions.",
+  stroller:  "Poussette légère et maniable, idéale pour toutes vos sorties. Châssis robuste, siège réversible, panier de rangement spacieux.",
+  nursery:   "Mobilier conçu pour créer un espace sûr et serein pour bébé. Matériaux certifiés, bords arrondis et finitions soignées.",
+  crib:      "Lit bébé en bois massif certifié FSC, sans substances nocives. Design intemporel, barrières réglables pour accompagner la croissance.",
+  safety1:   "Kit de protection indispensable pour sécuriser votre intérieur. Coins en silicone doux, discrets et très faciles à poser.",
+  safety2:   "Protection efficace contre les risques électriques. Caches-prises en plastique résistant, encastrables et difficiles à retirer pour les enfants.",
+  safety3:   "Accessoire de sécurité essentiel pour protéger bébé des portes. Installation simple, mousse dense absorbant les chocs.",
+  toys:      "Jouet d'éveil conçu pour stimuler les sens de bébé. Matériaux sûrs et durables, couleurs vives pour attirer l'attention et développer la motricité.",
+  toy2:      "Jouet en bois naturel certifié, peint avec des colorants non toxiques. Favorise l'éveil sensoriel et le développement de la motricité fine.",
+  woodtoy:   "Blocs de construction en bois massif poncé, bords arrondis. Stimule la créativité et la coordination. Certifié CE, sans danger dès 12 mois.",
+  music:     "Instrument de musique pour enfant favorisant l'écoute et la créativité musicale. Sonorités claires et agréables, maniement facile dès le plus jeune âge.",
+  pencils:   "Kit de dessin et coloriage avec crayons de haute qualité. Couleurs vives, mines douces, idéal pour les petites mains en apprentissage.",
+  paint:     "Peinture lavable certifiée CE, sans substances nocives. Se nettoie facilement à l'eau. Idéale pour les premières créations artistiques de bébé.",
+  book:      "Livre illustré aux couleurs vives, papier cartonné résistant. Conçu pour éveiller la curiosité et enrichir le vocabulaire des tout-petits.",
+  book2:     "Histoire illustrée captivante pour les enfants. Texte accessible, illustrations poétiques. Un moment de lecture partagé inoubliable.",
+  book3:     "Encyclopédie illustrée riche en informations et découvertes. Format pratique, pages solides, idéal pour grandir en apprenant.",
+  maternity: "Soin spécialement formulé pour accompagner les changements de la grossesse. Texture légère, absorption rapide, sans perturbateurs endocriniens.",
+  mom:       "Produit conçu pour la maman, alliant efficacité et douceur. Formulé sans ingrédients nocifs, adapté à la grossesse et à l'allaitement.",
+  nursing:   "Produit doux et sécuritaire pour la période d'allaitement. Formulé sans agents agressifs, respectueux de la peau sensible.",
+  giftbox:   "Coffret cadeau soigneusement composé à la main. Emballé dans nos sacs signature Little Symphony avec une carte personnalisée incluse.",
+  gift2:     "Panier cadeau généreux regroupant une sélection de nos produits phares. Une idée cadeau unique, élégante et mémorable.",
+  gift3:     "Accessoires d'emballage de qualité aux couleurs Little Symphony. Sublimez chaque cadeau avec nos rubans, papiers et sacs signature.",
+};
+
+const DETAIL_ATTRS = {
+  diaper:    [["Taille","Voir description"],["Matière","Coton & polyester"],["Certifications","Sans chlore"],["Âge","0–5 kg"]],
+  cream:     [["Volume","75 ml"],["Certifications","Hypoallergénique"],["Ingrédients","Naturels"],["Âge","Dès la naissance"]],
+  bath:      [["Volume","250 ml"],["pH","Adapté bébé"],["Sans","Sulfate, parfum"],["Âge","Dès la naissance"]],
+  bottle:    [["Contenance","120 / 240 ml"],["Matière","Silicone & PP"],["Certifications","Sans BPA"],["Âge","0–6 mois"]],
+  feeding:   [["Pièces","3–5 selon set"],["Matière","Silicone alimentaire"],["Certifications","Sans BPA"],["Âge","4 mois +"]],
+  spoon:     [["Pièces","Lot de 3"],["Matière","Silicone doux"],["Certifications","Sans BPA"],["Âge","0–18 mois"]],
+  clothes:   [["Matière","Coton bio GOTS"],["Entretien","30°C délicat"],["Certifications","Oeko-Tex"],["Taille","Voir description"]],
+  clothes2:  [["Matière","Coton certifié"],["Entretien","30°C délicat"],["Pièces","1–3 selon article"],["Âge","Voir description"]],
+  clothes3:  [["Matière","Jersey doux"],["Pièces","Ensemble coordonné"],["Entretien","30°C délicat"],["Taille","0–6 ans"]],
+  stroller:  [["Poids","5,5 – 9 kg"],["Pliage","Compact"],["Certifications","EN 1888"],["Âge","0–4 ans"]],
+  nursery:   [["Matière","Bois & MDF"],["Certifications","FSC / EN 716"],["Dimensions","Voir fiche"],["Âge","0–6 ans"]],
+  crib:      [["Matière","Bois massif FSC"],["Fond","Réglable 3 pos."],["Certifications","EN 716-1"],["Âge","0–3 ans"]],
+  safety1:   [["Pièces","×8 / ×20"],["Matière","Silicone / plastique"],["Pose","Adhésif"],["Âge","Dès la naissance"]],
+  safety2:   [["Pièces","×20"],["Matière","ABS résistant"],["Certifications","CE"],["Âge","0–5 ans"]],
+  safety3:   [["Pièces","×4"],["Matière","Mousse dense"],["Pose","Sans outil"],["Âge","0–5 ans"]],
+  toys:      [["Matière","Coton & plastique sûr"],["Certifications","CE"],["Âge","Voir description"],["Garantie","2 ans"]],
+  toy2:      [["Matière","Bois naturel"],["Peinture","Non toxique"],["Certifications","CE"],["Âge","18 mois +"]],
+  woodtoy:   [["Pièces","Jeu de blocs"],["Matière","Bois massif"],["Certifications","CE"],["Âge","12 mois +"]],
+  music:     [["Touches / lames","Selon modèle"],["Matière","Bois & métal"],["Certifications","CE"],["Âge","18 mois +"]],
+  pencils:   [["Couleurs","12 – 48 selon set"],["Matière","Bois & pigments doux"],["Lavable","Oui"],["Âge","3 ans +"]],
+  paint:     [["Contenu","6 couleurs"],["Lavable","Oui, à l'eau"],["Certifications","CE"],["Âge","12 mois +"]],
+  book:      [["Pages","Cartonnées"],["Langue","Français"],["Format","15×15 cm"],["Âge","0–3 ans"]],
+  book2:     [["Pages","24–48 pages"],["Langue","Français"],["Format","21×21 cm"],["Âge","3–6 ans"]],
+  book3:     [["Pages","100–200 pages"],["Langue","Français"],["Format","A4"],["Âge","6–12 ans"]],
+  maternity: [["Volume","150 ml"],["Certifications","Testé grossesse"],["Sans","Perturbateurs endocriniens"],["Période","Grossesse & post-partum"]],
+  mom:       [["Volume","100 ml"],["Certifications","Adapté allaitement"],["Sans","Paraben, sulfate"],["Période","Grossesse & allaitement"]],
+  nursing:   [["Volume","250 ml"],["pH","Doux"],["Certifications","Adapté allaitement"],["Période","Allaitement"]],
+  giftbox:   [["Pièces","5 – 10 produits"],["Emballage","Sac Little Symphony"],["Personnalisable","Oui"],["Livraison","Offerte"]],
+  gift2:     [["Pièces","10 produits"],["Emballage","Panier osier"],["Personnalisable","Oui"],["Livraison","Offerte"]],
+  gift3:     [["Contenu","Papier, rubans, sacs"],["Format","Plusieurs tailles"],["Couleurs","Palette Little Symphony"],["Usage","Emballage cadeau"]],
+};
+
+function _getImgKey(imgUrl) {
+  // Extract key by matching the URL to IMG values
+  for (const [k, v] of Object.entries(IMG)) {
+    if (imgUrl === v) return k;
+  }
+  return 'toys'; // fallback
+}
+
+function slugify(s) {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+}
+
+function openProduct(idx) {
+  const p = _currentProducts[idx];
+  if (!p) return;
+
+  // Enrich product with extra data before storing
+  const imgKey = _getImgKey(p.img);
+  const ratings = ['4.8 (32 avis)','4.5 (18 avis)','4.2 (9 avis)','4.9 (47 avis)','4.6 (23 avis)'];
+  const fullProduct = {
+    ...p,
+    category: (CATS_META[_currentCatIdx]||{nameFull:''}).nameFull,
+    rating: ratings[idx % ratings.length],
+    desc: DETAIL_DESCS[imgKey] || 'Produit sélectionné avec soin par notre équipe Little Symphony pour le bien-être de votre bébé.',
+    attrs: DETAIL_ATTRS[imgKey] || [['Qualité','Premium'],['Certifié','CE'],['Garantie','2 ans'],['Origine','UE']],
+    siblings: _currentProducts.filter((_,i) => i !== idx).slice(0,4).map(s => ({
+      name: s.name, sub: s.sub, price: s.price, oldPrice: s.oldPrice||'', img: s.img, badge: s.badge||'',
+      category: (CATS_META[_currentCatIdx]||{nameFull:''}).nameFull, desc: DETAIL_DESCS[_getImgKey(s.img)]||'',
+      attrs: DETAIL_ATTRS[_getImgKey(s.img)]||[['Qualité','Premium'],['Certifié','CE']]
+    }))
+  };
+
+  // Save to localStorage and navigate
+  localStorage.setItem('ls_current_product', JSON.stringify({
+    ...fullProduct,
+    stock:       p.stock       ?? null,
+    description: p.description || null,
+    attributes:  p.attributes  || null,
+  }));
+  window.location.href = 'product.html';
+}
+
+function closeProduct() {
+  history.pushState({}, 'Little Symphony', '#');
+  document.title = 'Little Symphony';
+  document.getElementById('productPage').style.display = 'none';
+  document.getElementById('shopContent').style.display = '';
+  window.scrollTo({top:0});
+}
+
+// Handle browser back/forward
+window.addEventListener('popstate', function(e) {
+  if (location.hash && location.hash.includes('/')) {
+    if (e.state && typeof e.state.catIdx !== 'undefined') {
+      const p = cats[e.state.catIdx].products[e.state.prodIdx];
+      if (p) {
+        _currentCatIdx = e.state.catIdx;
+        _currentProducts = cats[e.state.catIdx].products;
+        openProduct(e.state.prodIdx);
+      }
+    }
+  } else {
+    document.getElementById('productPage').style.display = 'none';
+    document.getElementById('shopContent').style.display = '';
+    document.title = 'Little Symphony';
+    window.scrollTo({top:0});
+  }
+});
+
+function changeQty(delta) {
+  _detailQty = Math.max(1, _detailQty + delta);
+  document.getElementById('detailQty').textContent = _detailQty;
+}
+
+function addToCart() {
+  const btn = document.querySelector('.detail-add');
+  btn.textContent = '✓ Ajouté au panier !';
+  btn.style.background = '#2E7D32';
+  setTimeout(() => {
+    btn.textContent = 'Ajouter au panier 🛒';
+    btn.style.background = '';
+  }, 1800);
+}
+
+</script>
+
+<script>
+(function(){
+  const track = document.getElementById('sliderTrack');
+  const dots = document.querySelectorAll('#sliderDots .dot');
+  const progress = document.getElementById('sliderProgress');
+  let current = 0;
+  const total = 6;
+  let timer;
+
+  function goTo(n){
+    current = (n + total) % total;
+    track.style.transform = `translateX(-${current * 100}%)`;
+    dots.forEach((d,i) => d.classList.toggle('active', i === current));
+    // Ken Burns: restart animation on active slide
+    document.querySelectorAll('.slide-bg').forEach((bg, i) => {
+      bg.classList.remove('kb');
+      if (i === current) { void bg.offsetWidth; bg.classList.add('kb'); }
+    });
+    // restart progress animation
+    progress.style.animation = 'none';
+    progress.offsetWidth;
+    progress.style.animation = 'slideProgress 5s linear infinite';
+    resetTimer();
+  }
+
+  window.sliderMove = function(dir){ goTo(current + dir); };
+  window.sliderGo   = function(n)  { goTo(n); };
+
+  function resetTimer(){
+    clearInterval(timer);
+    timer = setInterval(() => goTo(current + 1), 5000);
+  }
+
+
+  resetTimer();
+})();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="_shared.js"></script>
+<script>
+// Dynamic nav + footer
+renderNav('home');
+renderFooter();
+// Build cat-bar from shared CATS_META
+buildCatBar();
+
+// Initialiser cats depuis CATS_META (disponible maintenant)
+cats = CATS_META.map(m => ({ subs: m.subs, products: [] }));
+
+async function loadIndexProducts() {
+  document.getElementById('product-grid').innerHTML =
+    Array(4).fill(0).map(() =>
+      `<div style="background:var(--bg-subtle);border-radius:16px;height:320px;animation:pulse 1.5s ease-in-out infinite"></div>`
+    ).join('');
+
+  const { data, error } = await _supabase
+    .from('products_full')
+    .select('*')
+    .eq('is_active', true)
+    .order('name');
+
+  if (error) {
+    console.error('Supabase index:', error.message);
+    document.getElementById('product-grid').innerHTML =
+      '<p style="color:var(--text-muted);padding:2rem">Impossible de charger les produits.</p>';
+    return;
+  }
+
+  // Respecter l'ordre DB (sort_order des catégories)
+  const catSortOrder = {};
+  data.forEach(p => { if (p.category_key && p.category_sort_order != null) catSortOrder[p.category_key] = p.category_sort_order; });
+  CATS_META.sort((a, b) => (catSortOrder[a.key] ?? 999) - (catSortOrder[b.key] ?? 999));
+
+  cats = CATS_META.map(m => ({ subs: m.subs, products: [] }));
+  buildCatBar();
+  const catUsed = {}; // { catIdx: { url: count } } pour éviter les doublons visuels
+
+  data.forEach(p => {
+    const catIdx = CATS_META.findIndex(m => m.key === p.category_key);
+    if (catIdx === -1) return;
+    const priceNum = parseFloat(p.price) || 0;
+    const imgs = p.images && p.images.length > 0 ? p.images : [];
+
+    // Toujours commencer par images[0] (image principale du produit)
+    // Si cette URL est déjà affichée par un autre produit de la même catégorie,
+    // passer à la suivante disponible — pour la variété visuelle
+    if (!catUsed[catIdx]) catUsed[catIdx] = {};
+    let img = imgs[0] || '';
+    if (img && imgs.length > 1 && catUsed[catIdx][img] >= 1) {
+      const alt = imgs.find(u => !catUsed[catIdx][u]);
+      if (alt) img = alt;
+    }
+    if (img) catUsed[catIdx][img] = (catUsed[catIdx][img] || 0) + 1;
+
+    cats[catIdx].products.push({
+      id:       p.id,
+      slug:     p.slug,
+      name:     p.name,
+      sub:      p.subtitle || '',
+      price:    priceNum.toFixed(3).replace('.', ',') + ' DT',
+      priceNum: priceNum,
+      oldPrice: p.price_old ? (parseFloat(p.price_old).toFixed(3).replace('.', ',') + ' DT') : null,
+      badge:    p.is_new ? 'new' : (p.is_promo ? 'promo' : null),
+      img:         img,
+      images:      imgs,
+      catKey:      p.category_key,
+      stock:       p.stock       ?? null,
+      description: p.description || null,
+      attributes:  p.attributes  || null,
+    });
+  });
+
+  const firstWithProducts = cats.findIndex(c => c.products.length > 0);
+  showCat(firstWithProducts >= 0 ? firstWithProducts : 0, document.querySelector('.cat-btn'));
+}
+
+loadIndexProducts();
+</script>
+</body>
+</html>
