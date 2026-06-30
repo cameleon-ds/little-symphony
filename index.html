@@ -1025,7 +1025,7 @@ function buildCatBar() {
   const inner = document.getElementById('cat-bar-inner');
   if (!inner) return;
   inner.innerHTML = CATS_META.map((cat, i) =>
-    `<button class="cat-btn${i===0?' active':''}" onclick="showCat(${i},this)" style="--c:${cat.color}">
+    `<button class="cat-btn${i===0?' active':''}" onclick="showCat(${i},this);scrollToSection()" style="--c:${cat.color}">
       <svg viewBox="0 0 24 24">${cat.icon}</svg>
       ${cat.name}
     </button>`
@@ -1091,6 +1091,15 @@ function showCatScroll(name) {
     const top = target.getBoundingClientRect().top + window.scrollY - navH - catBarH + 6;
     window.scrollTo({ top, behavior: 'smooth' });
   }, 80);
+}
+
+function scrollToSection() {
+  const target = document.querySelector('.section');
+  if (!target) return;
+  const navH = document.getElementById('main-nav')?.offsetHeight || 68;
+  const catBarH = document.querySelector('.cat-bar-wrap')?.offsetHeight || 56;
+  const top = target.getBoundingClientRect().top + window.scrollY - navH - catBarH - 8;
+  window.scrollTo({ top, behavior: 'smooth' });
 }
 
 // Track current category for pill filtering
