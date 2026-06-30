@@ -101,12 +101,7 @@ a{text-decoration:none;color:inherit}
 /* NAV SCROLLED */
 
 /* TOAST */
-.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(100px);
-  background:var(--charcoal);color:#fff;padding:14px 24px;border-radius:40px;
-  font-size:14px;font-weight:500;z-index:999;transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
-  display:flex;align-items:center;gap:10px;white-space:nowrap}
-.toast.show{transform:translateX(-50%) translateY(0)}
-.toast svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+/* Toast — via main.css */
 </style>
 </head>
 <body>
@@ -171,11 +166,6 @@ a{text-decoration:none;color:inherit}
 
 <div id="main-footer"></div>
 
-<!-- TOAST -->
-<div class="toast" id="toast">
-  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-  <span id="toast-msg">Ajouté au panier !</span>
-</div>
 
 <script src="_shared.js"></script>
 <script>
@@ -325,7 +315,7 @@ function addToCartPage() {
   const btn = document.getElementById('btn-cart');
   btn.classList.add('added');
   btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Ajouté !';
-  showToast(`${product.name} ajouté au panier`);
+  showToast('Ajouté au panier');
   setTimeout(() => {
     btn.classList.remove('added');
     btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> Ajouter au panier';
@@ -341,18 +331,9 @@ function toggleWish() {
 }
 
 function updateCartBadge() {
-  const el = document.getElementById('cart-count');
-  const n = Cart.count();
-  el.textContent = n;
-  el.style.display = n > 0 ? 'flex' : 'none';
+  LS.updateCartBadge();
 }
 
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  document.getElementById('toast-msg').textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
-}
 
 init();
 </script>

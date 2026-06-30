@@ -289,7 +289,7 @@ input,select{font-family:var(--sans)}
     Catégories & Filtres
   </button>
   <div class="active-filters" id="sticky-active-filters" style="flex:1;min-height:0;margin-bottom:0"></div>
-  <select class="sort-select" style="font-size:12px;padding:6px 10px" onchange="document.querySelector('.sort-select').value=this.value;applyFilters()">
+  <select class="sort-select" style="font-size:12px;padding:6px 10px" onchange="setSort(this.value)">
     <option value="default">Par défaut</option>
     <option value="price-asc">Prix ↑</option>
     <option value="price-desc">Prix ↓</option>
@@ -394,7 +394,7 @@ input,select{font-family:var(--sans)}
         <div class="active-filters" id="active-filters"></div>
       </div>
       <div class="toolbar-right">
-        <select class="sort-select" onchange="applyFilters()">
+        <select class="sort-select" onchange="setSort(this.value)">
           <option value="default">Trier par défaut</option>
           <option value="price-asc">Prix croissant</option>
           <option value="price-desc">Prix décroissant</option>
@@ -695,10 +695,18 @@ function resetAll() {
 let _lastFiltered = [];
 
 // ── FILTER + RENDER ────────────────────────────────────────────────────────────
+let _currentSort = 'default';
+
+function setSort(val) {
+  _currentSort = val;
+  document.querySelectorAll('.sort-select').forEach(s => s.value = val);
+  applyFilters();
+}
+
 function applyFilters() {
   const ages    = getActiveAges();
   const genders = getActiveGenders();
-  const sort    = document.querySelector('.sort-select').value;
+  const sort    = _currentSort;
 
   let filtered = ALL_PRODUCTS.filter(p => {
     if (activeCat !== null && CATS_META[activeCat].key !== p.catKey) return false;
@@ -800,11 +808,18 @@ function renderPromoBanner() {
   setInterval(() => pbMove(1), 5000);
 }
 
-function renderFeatured(list) {
+function renderFeatured(list, sort) {
   const fg = document.getElementById('featured-grid');
-  // Pick up to 2 promo products first, then new
-  const picks = list.filter(p => p.badge === 'promo').slice(0,2);
-  if (picks.length < 2) picks.push(...list.filter(p => p.badge === 'new' && !picks.includes(p)).slice(0, 2 - picks.length));
+  const banner = document.getElementById('promo-banner-wrap');
+  let picks;
+  if (sort === 'new') {
+    picks = list.filter(p => p.badge === 'new').slice(0,2);
+  } else if (sort === 'promo') {
+    picks = list.filter(p => p.badge === 'promo').slice(0,2);
+  } else {
+    picks = list.filter(p => p.badge === 'promo').slice(0,2);
+    if (picks.length < 2) picks.push(...list.filter(p => p.badge === 'new' && !picks.includes(p)).slice(0, 2 - picks.length));
+  }
   if (!picks.length) { fg.style.display = 'none'; return; }
   fg.style.display = 'grid';
   fg.innerHTML = picks.map((p, i) => {
@@ -837,7 +852,7 @@ function renderProducts(list) {
   _lastFiltered = list;
   const grid  = document.getElementById('product-grid');
   const empty = document.getElementById('empty-state');
-  renderFeatured(list);
+  renderFeatured(list, _currentSort);
   if (!list.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   grid.innerHTML = list.map((p, i) => `
@@ -935,11 +950,7 @@ function addToCart(e, idx) {
   const p = _lastFiltered[idx];
   if (!p) return;
   Cart.add({ id: p.id, slug: p.slug, name: p.name, sub: p.sub, price: fmt(p.price), img: p.img, priceNum: p.price, qty: 1 });
-  const toast = document.createElement('div');
-  toast.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--charcoal);color:#fff;padding:12px 24px;border-radius:40px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.2);pointer-events:none';
-  toast.textContent = '✓ Ajouté au panier';
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 2000);
+  showToast('Ajouté au panier');
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────────────

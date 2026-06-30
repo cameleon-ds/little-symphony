@@ -1160,12 +1160,7 @@ function addToCartQuick(idx) {
   const p = _currentProducts[idx];
   if (!p) return;
   Cart.add({ name: p.name, sub: p.sub, price: p.price, img: p.img, priceNum: p.priceNum || parseFloat((p.price||'0').replace(/[^\d,]/g,'').replace(',','.')), qty: 1 });
-  // Show mini toast
-  const toast = document.createElement('div');
-  toast.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--charcoal);color:#fff;padding:12px 24px;border-radius:40px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.2);pointer-events:none;animation:fadeInUp 0.3s ease';
-  toast.textContent = '✓ Ajouté au panier';
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 2000);
+  showToast('Ajouté au panier');
   // Update badge
   const n = Cart.count();
   const el = document.getElementById('cart-count');

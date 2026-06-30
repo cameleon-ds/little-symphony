@@ -429,3 +429,15 @@ function renderFooter() {
       </div>
     </div>`;
 }
+
+// ── TOAST GLOBAL ─────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'ls-toast';
+  t.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>${msg}`;
+  document.body.appendChild(t);
+  setTimeout(() => {
+    t.classList.add('out');
+    setTimeout(() => t.remove(), 280);
+  }, 2500);
+}
