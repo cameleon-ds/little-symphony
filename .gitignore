@@ -8,3 +8,6 @@ Thumbs.db
 # Éditeurs
 .vscode/
 .idea/
+
+# Supabase CLI (cache local, pas de secret dedans mais pas utile à versionner)
+supabase/.temp/

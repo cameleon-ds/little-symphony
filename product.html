@@ -167,6 +167,8 @@ a{text-decoration:none;color:inherit}
 <div id="main-footer"></div>
 
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
 <script src="_shared.js"></script>
 <script>
 renderNav('product');
@@ -175,6 +177,37 @@ renderFooter();
 var qty = 1;
 var product = null;
 var wished = false;
+
+// ── Chargement direct par lien (ex: depuis une publication Facebook/Instagram) ──
+// product.html a été conçu pour recevoir le produit via localStorage (posé par
+// boutique.html avant la navigation). Un lien externe arrive avec un navigateur
+// "vierge" (pas de localStorage) : on va donc chercher le produit dans Supabase
+// si l'URL contient ?slug=... et qu'il ne correspond pas à ce qui est en cache.
+function fmtPrice(n) { return Number(n).toFixed(3).replace('.', ',') + ' DT'; }
+
+async function loadProductBySlug(slug) {
+  const { data: p, error } = await _supabase
+    .from('products')
+    .select('*, categories(name)')
+    .eq('slug', slug)
+    .eq('is_active', true)
+    .single();
+  if (error || !p) return null;
+
+  return {
+    id: p.id, slug: p.slug,
+    name: p.name, sub: p.subtitle || '',
+    price: fmtPrice(p.price),
+    oldPrice: p.price_old ? fmtPrice(p.price_old) : null,
+    img: (p.images || [])[0] || '', images: p.images || [],
+    badge: p.is_promo ? 'promo' : (p.is_new ? 'new' : null),
+    catName: p.categories?.name || '',
+    stock: p.stock ?? null,
+    description: p.description || null,
+    attributes: null,
+    siblings: [],
+  };
+}
 
 const DESCS = {
   default: "Produit sélectionné avec soin par notre équipe Little Symphony pour le bien-être de votre enfant. Qualité premium, matériaux certifiés, adapté aux petits.",
@@ -188,8 +221,18 @@ function parsePrice(str) {
   return parseFloat((str||'0').replace(/[^\d,]/g,'').replace(',','.')) || 0;
 }
 
-function init() {
+async function init() {
+  const urlSlug = new URLSearchParams(window.location.search).get('slug');
   product = CurrentProduct.get();
+
+  if (urlSlug && (!product || product.slug !== urlSlug)) {
+    const fetched = await loadProductBySlug(urlSlug);
+    if (fetched) {
+      product = fetched;
+      CurrentProduct.set(product);
+    }
+  }
+
   if (!product) { window.location.href = 'index.html'; return; }
 
   // Breadcrumb

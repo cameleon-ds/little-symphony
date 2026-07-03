@@ -1,0 +1,11 @@
+# Configuration Supabase CLI — Little Symphony
+# Ce fichier ne contient que ce qui est nécessaire au module Réseaux sociaux :
+# le logo est bundlé avec la fonction "social-publish" pour être incrusté
+# sur l'image générée, sans dépendre d'une URL externe.
+
+[functions.social-publish]
+static_files = [ "./functions/social-publish/logo.png" ]
+# Équivalent permanent du flag --no-verify-jwt utilisé jusqu'ici : la fonction
+# gère elle-même son authentification (voir index.ts), plus besoin de le
+# repréciser à chaque déploiement.
+verify_jwt = false

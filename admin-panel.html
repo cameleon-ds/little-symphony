@@ -74,6 +74,7 @@ img{display:block;max-width:100%}
 #toast-container{position:fixed;top:72px;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none}
 .toast{display:flex;align-items:center;gap:10px;background:#1a1a2e;color:#fff;padding:12px 16px;border-radius:12px;font-size:13px;font-family:var(--sans);font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.25);pointer-events:all;cursor:pointer;transform:translateX(120%);opacity:0;transition:transform 0.3s cubic-bezier(.4,0,.2,1),opacity 0.3s ease;min-width:220px}
 .toast.show{transform:translateX(0);opacity:1}
+.toast.toast-success{background:#2E7D32}
 .toast-icon{font-size:18px;flex-shrink:0}
 .toast-body{flex:1}
 .toast-title{font-weight:700;font-size:13px}
@@ -317,6 +318,42 @@ tbody tr:hover{background:var(--primary-xlight)}
   border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;
   font-family:var(--sans);white-space:nowrap}
 .cancel-btn:hover{border-color:var(--charcoal);color:var(--charcoal)}
+
+/* ── APERÇU PUBLICATION RÉSEAUX SOCIAUX ── */
+.rs-preview-overlay{display:none;position:fixed;inset:0;background:rgba(28,28,30,0.55);
+  z-index:500;align-items:center;justify-content:center;padding:20px}
+.rs-preview-overlay.show{display:flex}
+.rs-preview-card{background:#fff;border-radius:16px;max-width:420px;width:100%;
+  max-height:90vh;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  display:flex;flex-direction:column}
+.rs-preview-head{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.rs-preview-head-title{font-size:13px;font-weight:700;color:var(--charcoal)}
+.rs-preview-close{border:none;background:none;color:var(--text-muted);cursor:pointer;
+  font-size:20px;line-height:1;padding:2px 6px}
+.rs-preview-close:hover{color:var(--charcoal)}
+.rs-preview-img{width:100%;aspect-ratio:1/1;object-fit:cover;background:#f0f0f0;display:block}
+#rs-preview-content{overflow-y:auto;min-height:0;flex:1}
+.rs-preview-body{padding:16px 18px;overflow-y:auto;min-height:0;flex:1}
+.rs-preview-platform{font-size:11px;font-weight:600;color:var(--primary-dark);
+  text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
+.rs-preview-caption{font-size:13px;color:var(--charcoal);white-space:pre-wrap;line-height:1.5}
+.rs-preview-loading{padding:3rem 1rem;text-align:center;color:var(--text-muted);font-size:13px}
+
+/* ── Animation réordonnancement file d'attente ── */
+#tbl-social-queue tbody tr{transition:background-color 0.4s ease}
+#tbl-social-queue tbody tr.rs-row-flash{background-color:var(--primary-xlight)}
+
+/* ── Bouton CTA "Module actif" (même style que les CTA de la vue client) ── */
+.rs-cta-toggle{border:none;padding:12px 28px;border-radius:40px;
+  font-size:14px;font-weight:600;letter-spacing:0.02em;cursor:pointer;
+  transition:all 0.25s;display:inline-flex;align-items:center;gap:8px;
+  background:var(--primary);color:#fff;box-shadow:0 4px 20px rgba(201,160,154,0.35)}
+.rs-cta-toggle:hover{background:var(--primary-dark);transform:translateY(-2px);box-shadow:0 8px 32px rgba(201,160,154,0.5)}
+.rs-cta-toggle.inactive{background:#fff;color:var(--text-muted);
+  border:1.5px solid var(--border);box-shadow:none}
+.rs-cta-toggle.inactive:hover{border-color:var(--primary);color:var(--primary-dark);
+  transform:none;box-shadow:none}
 </style>
 </head>
 <body>
@@ -356,6 +393,11 @@ tbody tr:hover{background:var(--primary-xlight)}
     <button class="nav-item" onclick="showPanel('categories', this);closeSidebar()">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       Catégories
+    </button>
+
+    <button class="nav-item" onclick="showPanel('reseaux-sociaux', this);closeSidebar();loadSocialModule()">
+      <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+      Réseaux sociaux
     </button>
   </nav>
 
@@ -890,6 +932,184 @@ tbody tr:hover{background:var(--primary-xlight)}
       </div>
     </div>
 
+    <!-- RÉSEAUX SOCIAUX -->
+    <div class="panel" id="panel-reseaux-sociaux">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div>
+          <h1 class="page-title">Réseaux sociaux</h1>
+          <p class="page-sub">Publication automatique Facebook &amp; Instagram</p>
+        </div>
+        <button type="button" class="rs-cta-toggle" id="rs-active-btn" onclick="handleSocialActiveToggle()">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="rs-active-icon"><polyline points="20 6 9 17 4 12"/></svg>
+          <span id="rs-active-label">Module actif</span>
+        </button>
+      </div>
+
+      <div class="detail-grid" style="grid-template-columns:1fr 1fr">
+
+        <!-- Connexion (résumé) -->
+        <div class="detail-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+            <div class="detail-card-title" style="margin-bottom:0;padding-bottom:0;border-bottom:none">Connexion Facebook / Instagram</div>
+            <button class="btn-detail" onclick="openSocialConnectionModal()">
+              <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Modifier
+            </button>
+          </div>
+          <div id="rs-connection-summary" style="font-size:13px;color:var(--text-muted);display:flex;flex-direction:column;gap:6px">Chargement…</div>
+        </div>
+
+        <!-- Planification (résumé) -->
+        <div class="detail-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+            <div class="detail-card-title" style="margin-bottom:0;padding-bottom:0;border-bottom:none">Planification des publications</div>
+            <button class="btn-detail" onclick="openSocialScheduleModal()">
+              <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Modifier
+            </button>
+          </div>
+          <div id="rs-schedule-summary" style="font-size:13px;color:var(--text-muted)">Chargement…</div>
+        </div>
+      </div>
+
+      <!-- Catégories publiées -->
+      <div class="detail-card" style="margin-top:1.5rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+          <div class="detail-card-title" style="margin-bottom:0;padding-bottom:0;border-bottom:none">Catégories publiées automatiquement</div>
+          <button class="btn-detail" onclick="openSocialCategoriesModal()">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Modifier
+          </button>
+        </div>
+        <div id="rs-categories-summary" style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--text-muted)">Chargement…</div>
+      </div>
+
+      <!-- File d'attente -->
+      <div class="table-wrap" style="margin-top:1.5rem">
+        <div class="table-header" style="cursor:pointer" onclick="toggleSocialQueueAccordion()">
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="cat-toggle open" id="rs-queue-toggle-btn" onclick="event.stopPropagation();toggleSocialQueueAccordion()" title="Ouvrir/fermer">
+              <svg viewBox="0 0 24 24" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <span class="table-title">File d'attente (ordre de publication) <span id="rs-queue-count" class="sub-count">0</span></span>
+          </div>
+          <span style="font-size:12px;color:var(--text-muted)" class="col-hide-mobile">Un nouveau produit passe automatiquement en tête de file</span>
+        </div>
+        <div id="rs-queue-collapse">
+          <table id="tbl-social-queue">
+            <thead><tr>
+              <th>Produit</th><th>Plateforme</th><th>Priorité</th><th>Prévu le</th><th></th>
+            </tr></thead>
+            <tbody id="rs-queue-body"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem">Chargement…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Historique -->
+      <div class="table-wrap" style="margin-top:1.5rem">
+        <div class="table-header">
+          <span class="table-title">Historique des publications</span>
+        </div>
+        <table id="tbl-social-history">
+          <thead><tr>
+            <th>Produit</th><th>Plateforme</th><th>Statut</th><th>Date</th><th class="col-hide-mobile">Détail</th>
+          </tr></thead>
+          <tbody id="rs-history-body"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- APERÇU PUBLICATION RÉSEAUX SOCIAUX -->
+<div class="rs-preview-overlay" id="rs-preview-overlay" onclick="if(event.target===this)closeSocialPreview()">
+  <div class="rs-preview-card">
+    <div class="rs-preview-head">
+      <span class="rs-preview-head-title">Aperçu de la publication</span>
+      <button class="rs-preview-close" onclick="closeSocialPreview()">&times;</button>
+    </div>
+    <div id="rs-preview-content">
+      <div class="rs-preview-loading">Génération de l'aperçu…</div>
+    </div>
+  </div>
+</div>
+
+<!-- SÉLECTION DES CATÉGORIES RÉSEAUX SOCIAUX -->
+<div class="rs-preview-overlay" id="rs-categories-overlay" onclick="if(event.target===this)closeSocialCategoriesModal()">
+  <div class="rs-preview-card" style="max-width:520px">
+    <div class="rs-preview-head">
+      <span class="rs-preview-head-title">Catégories publiées automatiquement</span>
+      <button class="rs-preview-close" onclick="closeSocialCategoriesModal()">&times;</button>
+    </div>
+    <div class="rs-preview-body">
+      <div style="display:flex;justify-content:flex-end;gap:14px;font-size:12px;margin-bottom:10px">
+        <button class="cancel-btn" style="border:none;padding:0" onclick="toggleAllSocialCategories(true)">Tout sélectionner</button>
+        <button class="cancel-btn" style="border:none;padding:0" onclick="toggleAllSocialCategories(false)">Tout désélectionner</button>
+      </div>
+      <div id="rs-categories-modal-list" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;margin-bottom:16px">Chargement…</div>
+      <button class="save-btn" style="width:100%;padding:10px" onclick="saveSocialCategories()">Enregistrer</button>
+      <div id="rs-categories-modal-status" style="font-size:12px;margin-top:8px;color:var(--text-muted)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CONNEXION FACEBOOK / INSTAGRAM -->
+<div class="rs-preview-overlay" id="rs-connection-overlay" onclick="if(event.target===this)closeSocialConnectionModal()">
+  <div class="rs-preview-card">
+    <div class="rs-preview-head">
+      <span class="rs-preview-head-title">Connexion Facebook / Instagram</span>
+      <button class="rs-preview-close" onclick="closeSocialConnectionModal()">&times;</button>
+    </div>
+    <div class="rs-preview-body">
+      <p style="font-size:12px;color:var(--text-muted);margin:0 0 14px">
+        Renseigne les identifiants obtenus via Meta for Developers
+        (voir le guide de mise en service). Le token Facebook sert
+        aussi à publier sur Instagram.
+      </p>
+      <label class="detail-label">ID de la page Facebook</label>
+      <input class="detail-input" id="rs-fb-page-id" placeholder="ex: 123456789012345" style="margin-bottom:12px">
+
+      <label class="detail-label">Token d'accès Facebook (longue durée)</label>
+      <input class="detail-input" id="rs-fb-token" type="password" placeholder="EAAG..." style="margin-bottom:12px">
+
+      <label class="detail-label">ID du compte Instagram Business</label>
+      <input class="detail-input" id="rs-ig-id" placeholder="ex: 17841400000000000" style="margin-bottom:16px">
+
+      <label class="detail-label">Adresse du site (pour le lien produit)</label>
+      <input class="detail-input" id="rs-site-url" placeholder="https://little-symphony.com" style="margin-bottom:16px">
+
+      <button class="save-btn" style="width:100%;padding:10px" onclick="saveSocialConnection()">Enregistrer</button>
+      <div id="rs-connection-status" style="font-size:12px;margin-top:8px;color:var(--text-muted)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PLANIFICATION DES PUBLICATIONS -->
+<div class="rs-preview-overlay" id="rs-schedule-overlay" onclick="if(event.target===this)closeSocialScheduleModal()">
+  <div class="rs-preview-card">
+    <div class="rs-preview-head">
+      <span class="rs-preview-head-title">Planification des publications</span>
+      <button class="rs-preview-close" onclick="closeSocialScheduleModal()">&times;</button>
+    </div>
+    <div class="rs-preview-body">
+      <label class="detail-label">Jours de publication</label>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" value="1" class="rs-day" style="width:auto;margin:0;accent-color:var(--primary-dark)"> Lundi</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" value="2" class="rs-day" style="width:auto;margin:0;accent-color:var(--primary-dark)"> Mardi</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" value="3" class="rs-day" style="width:auto;margin:0;accent-color:var(--primary-dark)"> Mercredi</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" value="4" class="rs-day" style="width:auto;margin:0;accent-color:var(--primary-dark)"> Jeudi</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" value="5" class="rs-day" style="width:auto;margin:0;accent-color:var(--primary-dark)"> Vendredi</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" value="6" class="rs-day" style="width:auto;margin:0;accent-color:var(--primary-dark)"> Samedi</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" value="7" class="rs-day" style="width:auto;margin:0;accent-color:var(--primary-dark)"> Dimanche</label>
+      </div>
+
+      <label class="detail-label">Heure de publication</label>
+      <input class="detail-input" id="rs-post-time" type="time" style="margin-bottom:16px;max-width:160px">
+
+      <button class="save-btn" style="width:100%;padding:10px" onclick="saveSocialSchedule()">Enregistrer</button>
+      <div id="rs-schedule-status" style="font-size:12px;margin-top:8px;color:var(--text-muted)"></div>
+    </div>
   </div>
 </div>
 
@@ -912,7 +1132,7 @@ const SVG_EDIT  = `<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2
 const SVG_TRASH = `<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`;
 
 // ── NAVIGATION ───────────────────────────────────────────────────
-const titles = { commandes:'Commandes', clients:'Clients', produits:'Produits', categories:'Catégories' };
+const titles = { commandes:'Commandes', clients:'Clients', produits:'Produits', categories:'Catégories', 'reseaux-sociaux':'Réseaux sociaux' };
 
 function setBreadcrumb(root, sub) {
   const el = document.getElementById('topbar-title');
@@ -2220,6 +2440,396 @@ async function saveNewSub(i) {
   renderCategories();
 }
 
+// ── RÉSEAUX SOCIAUX ──────────────────────────────────────────────
+let SOCIAL_SETTINGS = null;
+let _socialLoaded = false;
+
+async function loadSocialModule() {
+  await loadSocialSettings();
+  await Promise.all([loadSocialQueue(), loadSocialHistory()]);
+  _socialLoaded = true;
+}
+
+async function loadSocialSettings() {
+  const { data, error } = await _supabase
+    .from('social_settings').select('*').eq('id', true).single();
+  if (error) { console.error(error); return; }
+  SOCIAL_SETTINGS = data;
+
+  renderSocialActiveButton(!!data.is_active);
+
+  renderSocialConnectionSummary(data);
+  renderSocialScheduleSummary(data);
+  renderSocialCategoriesSummary(data.enabled_categories || []);
+}
+
+// ── Connexion (résumé + modal) ──────────────────────────────────
+function renderSocialConnectionSummary(data) {
+  const el = document.getElementById('rs-connection-summary');
+  const row = (label, value) => `<div><strong style="color:var(--charcoal)">${label} :</strong> ${
+    value ? value : '<span style="color:#C62828">Non configuré</span>'
+  }</div>`;
+  el.innerHTML = [
+    row('Page Facebook', data.facebook_page_id),
+    row('Token Facebook', data.facebook_page_token ? 'Configuré ✓' : ''),
+    row('Instagram', data.instagram_business_id),
+    row('Site web', data.site_url),
+  ].join('');
+}
+
+function openSocialConnectionModal() {
+  const d = SOCIAL_SETTINGS || {};
+  document.getElementById('rs-fb-page-id').value = d.facebook_page_id || '';
+  document.getElementById('rs-fb-token').value = d.facebook_page_token || '';
+  document.getElementById('rs-ig-id').value = d.instagram_business_id || '';
+  document.getElementById('rs-site-url').value = d.site_url || 'https://little-symphony.com';
+  document.getElementById('rs-connection-status').textContent = '';
+  document.getElementById('rs-connection-overlay').classList.add('show');
+}
+
+function closeSocialConnectionModal() {
+  document.getElementById('rs-connection-overlay').classList.remove('show');
+}
+
+// ── Planification (résumé + modal) ──────────────────────────────
+function renderSocialScheduleSummary(data) {
+  const el = document.getElementById('rs-schedule-summary');
+  const days = (data.post_days || []).map(d => SOCIAL_DAY_FULL[d]).filter(Boolean);
+  const time = (data.post_time || '10:00').slice(0, 5);
+  el.textContent = days.length ? `${days.join(', ')} à ${time}` : 'Aucun jour sélectionné — rien ne sera publié';
+}
+
+function openSocialScheduleModal() {
+  const d = SOCIAL_SETTINGS || {};
+  document.querySelectorAll('.rs-day').forEach(chk => {
+    chk.checked = (d.post_days || []).includes(Number(chk.value));
+  });
+  document.getElementById('rs-post-time').value = (d.post_time || '10:00').slice(0, 5);
+  document.getElementById('rs-schedule-status').textContent = '';
+  document.getElementById('rs-schedule-overlay').classList.add('show');
+}
+
+function closeSocialScheduleModal() {
+  document.getElementById('rs-schedule-overlay').classList.remove('show');
+}
+
+// ── Catégories publiées (résumé + modal) ────────────────────────
+function renderSocialCategoriesSummary(selectedIds) {
+  const el = document.getElementById('rs-categories-summary');
+  if (!CATEGORIES.length) { el.textContent = 'Aucune catégorie créée pour le moment.'; return; }
+  const selected = CATEGORIES.filter(c => selectedIds.includes(c.id));
+  if (!selected.length) {
+    el.innerHTML = '<span style="color:#C62828">Aucune catégorie sélectionnée — rien ne sera publié</span>';
+    return;
+  }
+  el.innerHTML = selected.map(c =>
+    `<span class="badge badge-delivered">${c.nom}</span>`
+  ).join('');
+}
+
+function openSocialCategoriesModal() {
+  const wrap = document.getElementById('rs-categories-modal-list');
+  const selectedIds = SOCIAL_SETTINGS?.enabled_categories || [];
+  if (!CATEGORIES.length) {
+    wrap.innerHTML = '<span style="font-size:13px;color:var(--text-muted)">Aucune catégorie créée pour le moment.</span>';
+  } else {
+    wrap.innerHTML = CATEGORIES.map(c => `
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px">
+        <input type="checkbox" class="rs-cat-modal" value="${c.id}" ${selectedIds.includes(c.id) ? 'checked' : ''} style="width:auto;margin:0;accent-color:var(--primary-dark)">
+        ${c.nom}
+      </label>`).join('');
+  }
+  document.getElementById('rs-categories-modal-status').textContent = '';
+  document.getElementById('rs-categories-overlay').classList.add('show');
+}
+
+function closeSocialCategoriesModal() {
+  document.getElementById('rs-categories-overlay').classList.remove('show');
+}
+
+function toggleAllSocialCategories(checked) {
+  document.querySelectorAll('.rs-cat-modal').forEach(chk => chk.checked = checked);
+}
+
+async function saveSocialCategories() {
+  const ids = Array.from(document.querySelectorAll('.rs-cat-modal:checked')).map(c => c.value);
+  const statusEl = document.getElementById('rs-categories-modal-status');
+  const { error } = await _supabase.from('social_settings').update({ enabled_categories: ids }).eq('id', true);
+  if (error) {
+    statusEl.textContent = 'Erreur: ' + error.message;
+    statusEl.style.color = '#C62828';
+    return;
+  }
+  closeSocialCategoriesModal();
+  await loadSocialModule();
+  showToast('Informations enregistrées', 'Vos informations ont bien été modifiées', null, 'success');
+}
+
+function renderSocialActiveButton(isActive) {
+  const btn = document.getElementById('rs-active-btn');
+  const label = document.getElementById('rs-active-label');
+  const icon = document.getElementById('rs-active-icon');
+  btn.classList.toggle('inactive', !isActive);
+  btn.dataset.active = isActive ? '1' : '0';
+  label.textContent = isActive ? 'Module actif' : 'Module inactif';
+  icon.innerHTML = isActive
+    ? '<polyline points="20 6 9 17 4 12"/>'
+    : '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
+}
+
+async function handleSocialActiveToggle() {
+  const btn = document.getElementById('rs-active-btn');
+  const next = btn.dataset.active !== '1';
+  const { error } = await _supabase.from('social_settings')
+    .update({ is_active: next }).eq('id', true);
+  if (error) { alert('Erreur: ' + error.message); return; }
+  renderSocialActiveButton(next);
+  showToast(next ? 'Publication automatique activée' : 'Publication automatique désactivée', null, null, next ? 'success' : undefined);
+}
+
+async function saveSocialConnection() {
+  const payload = {
+    facebook_page_id: document.getElementById('rs-fb-page-id').value.trim() || null,
+    facebook_page_token: document.getElementById('rs-fb-token').value.trim() || null,
+    instagram_business_id: document.getElementById('rs-ig-id').value.trim() || null,
+    site_url: (document.getElementById('rs-site-url').value.trim() || 'https://little-symphony.com').replace(/\/$/, ''),
+  };
+  const { error } = await _supabase.from('social_settings').update(payload).eq('id', true);
+  if (error) {
+    const statusEl = document.getElementById('rs-connection-status');
+    statusEl.textContent = 'Erreur: ' + error.message;
+    statusEl.style.color = '#C62828';
+    return;
+  }
+  closeSocialConnectionModal();
+  await loadSocialModule();
+  showToast('Informations enregistrées', 'Vos informations ont bien été modifiées', null, 'success');
+}
+
+async function saveSocialSchedule() {
+  const days = Array.from(document.querySelectorAll('.rs-day:checked')).map(c => Number(c.value));
+  const time = document.getElementById('rs-post-time').value || '10:00';
+  if (!days.length) { alert('Sélectionne au moins un jour de publication.'); return; }
+  const { error } = await _supabase.from('social_settings')
+    .update({ post_days: days, post_time: time }).eq('id', true);
+  if (error) {
+    const statusEl = document.getElementById('rs-schedule-status');
+    statusEl.textContent = 'Erreur: ' + error.message;
+    statusEl.style.color = '#C62828';
+    return;
+  }
+  closeSocialScheduleModal();
+  await loadSocialModule();
+  showToast('Informations enregistrées', 'Vos informations ont bien été modifiées', null, 'success');
+}
+
+const SOCIAL_DAY_LABELS = { 1:'Lun', 2:'Mar', 3:'Mer', 4:'Jeu', 5:'Ven', 6:'Sam', 7:'Dim' };
+const SOCIAL_DAY_FULL = { 1:'Lundi', 2:'Mardi', 3:'Mercredi', 4:'Jeudi', 5:'Vendredi', 6:'Samedi', 7:'Dimanche' };
+const SOCIAL_PLATFORM_LABELS = { facebook:'Facebook', instagram:'Instagram', both:'Facebook + Instagram' };
+
+function toggleSocialQueueAccordion() {
+  const collapse = document.getElementById('rs-queue-collapse');
+  const btn = document.getElementById('rs-queue-toggle-btn');
+  const open = collapse.style.display === 'none';
+  collapse.style.display = open ? '' : 'none';
+  btn.classList.toggle('open', open);
+}
+
+async function loadSocialQueue() {
+  const tbody = document.getElementById('rs-queue-body');
+  const countEl = document.getElementById('rs-queue-count');
+  const enabledCategories = SOCIAL_SETTINGS?.enabled_categories || [];
+
+  if (!enabledCategories.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#C62828;padding:2rem">Aucune catégorie sélectionnée — rien à publier (voir "Catégories publiées automatiquement")</td></tr>`;
+    window._socialQueueCache = [];
+    countEl.textContent = '0';
+    return;
+  }
+
+  // Ne montre que les produits appartenant aux catégories cochées
+  // dans "Catégories publiées automatiquement" (même filtre que celui
+  // utilisé par la fonction de publication).
+  const { data, error } = await _supabase
+    .from('social_queue')
+    .select('id, platform, priority, scheduled_for, status, products!inner(name, images, category_id)')
+    .eq('status', 'pending')
+    .in('products.category_id', enabledCategories)
+    .order('priority', { ascending: false })
+    .order('created_at', { ascending: true });
+
+  if (error) { tbody.innerHTML = `<tr><td colspan="5" style="color:#C62828;padding:1.5rem">Erreur: ${error.message}</td></tr>`; countEl.textContent = '0'; return; }
+
+  if (!data || !data.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem">File d'attente vide pour les catégories sélectionnées</td></tr>`;
+    window._socialQueueCache = [];
+    countEl.textContent = '0';
+    return;
+  }
+
+  countEl.textContent = String(data.length);
+  renderSocialQueueRows(data);
+  window._socialQueueCache = data;
+}
+
+function renderSocialQueueRows(data) {
+  const tbody = document.getElementById('rs-queue-body');
+  tbody.innerHTML = data.map((q, i) => `
+    <tr data-id="${q.id}">
+      <td style="display:flex;align-items:center;gap:10px">
+        <img src="${(q.products?.images || [])[0] || ''}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;background:#eee">
+        ${q.products?.name || '(produit supprimé)'}
+      </td>
+      <td>${SOCIAL_PLATFORM_LABELS[q.platform] || q.platform}</td>
+      <td>${i + 1}</td>
+      <td>${q.scheduled_for || 'Dès que possible'}</td>
+      <td style="display:flex;gap:6px;justify-content:flex-end">
+        <button class="icon-btn" title="Aperçu de la publication" onclick="previewSocialPost('${q.id}', this)">
+          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+        <button class="icon-btn" title="Monter" ${i === 0 ? 'disabled' : ''} onclick="moveQueueItem('${q.id}', -1)">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+        </button>
+        <button class="icon-btn" title="Descendre" ${i === data.length - 1 ? 'disabled' : ''} onclick="moveQueueItem('${q.id}', 1)">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+        </button>
+        <button class="icon-btn danger" title="Retirer de la file" onclick="removeFromQueue('${q.id}')">${SVG_TRASH}</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function moveQueueItem(id, direction) {
+  const data = window._socialQueueCache || [];
+  const idx = data.findIndex(q => q.id === id);
+  const swapIdx = idx + direction;
+  if (idx < 0 || swapIdx < 0 || swapIdx >= data.length) return;
+
+  // On réordonne la liste localement, puis on réattribue une priorité
+  // strictement unique et décroissante à TOUTE la liste affichée, dans
+  // ce nouvel ordre. (Un simple échange de deux priorités pouvait
+  // donner un résultat imprévisible quand d'autres produits partageaient
+  // déjà la même priorité de départ — d'où le "ça remonte puis ça
+  // redescend" observé.)
+  const reordered = [...data];
+  [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
+
+  // ── Animation (technique FLIP) : on capture les positions actuelles,
+  // on affiche tout de suite le nouvel ordre, puis on fait glisser
+  // chaque ligne de son ancienne à sa nouvelle position.
+  const tbody = document.getElementById('rs-queue-body');
+  const oldRects = new Map();
+  tbody.querySelectorAll('tr[data-id]').forEach(tr => oldRects.set(tr.dataset.id, tr.getBoundingClientRect()));
+
+  renderSocialQueueRows(reordered);
+  window._socialQueueCache = reordered;
+
+  tbody.querySelectorAll('tr[data-id]').forEach(tr => {
+    const oldRect = oldRects.get(tr.dataset.id);
+    if (!oldRect) return;
+    const newRect = tr.getBoundingClientRect();
+    const delta = oldRect.top - newRect.top;
+    if (!delta) return;
+    tr.style.transition = 'none';
+    tr.style.transform = `translateY(${delta}px)`;
+    if (tr.dataset.id === id) tr.classList.add('rs-row-flash');
+    requestAnimationFrame(() => {
+      tr.style.transition = 'transform 0.28s ease';
+      tr.style.transform = '';
+    });
+    setTimeout(() => tr.classList.remove('rs-row-flash'), 700);
+  });
+
+  const base = reordered.length * 10;
+  const results = await Promise.all(
+    reordered.map((q, i) =>
+      _supabase.from('social_queue').update({ priority: base - i * 10 }).eq('id', q.id)
+    )
+  );
+  if (results.some(r => r.error)) {
+    alert('Erreur lors du réordonnancement.');
+    await loadSocialQueue();
+  }
+}
+
+async function removeFromQueue(id) {
+  if (!confirm('Retirer ce produit de la file de publication ?')) return;
+  const { error } = await _supabase.from('social_queue').update({ status: 'skipped' }).eq('id', id);
+  if (error) { alert('Erreur: ' + error.message); return; }
+  await loadSocialQueue();
+}
+
+async function loadSocialHistory() {
+  const { data, error } = await _supabase
+    .from('social_queue')
+    .select('id, platform, status, posted_at, error_message, fb_post_id, ig_media_id, products(name)')
+    .in('status', ['posted', 'failed'])
+    .order('posted_at', { ascending: false, nullsFirst: false })
+    .limit(20);
+
+  const tbody = document.getElementById('rs-history-body');
+  if (error) { tbody.innerHTML = `<tr><td colspan="5" style="color:#C62828;padding:1.5rem">Erreur: ${error.message}</td></tr>`; return; }
+
+  if (!data || !data.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem">Aucune publication pour l'instant</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(q => `
+    <tr>
+      <td>${q.products?.name || '(produit supprimé)'}</td>
+      <td>${SOCIAL_PLATFORM_LABELS[q.platform] || q.platform}</td>
+      <td><span class="badge ${q.status === 'posted' ? 'badge-delivered' : 'badge-cancelled'}">${q.status === 'posted' ? 'Publié' : 'Échec'}</span></td>
+      <td>${q.posted_at ? new Date(q.posted_at).toLocaleString('fr-FR') : '—'}</td>
+      <td class="col-hide-mobile" style="font-size:12px;color:var(--text-muted)">${q.error_message || (q.fb_post_id || q.ig_media_id ? 'OK' : '—')}</td>
+    </tr>`).join('');
+}
+
+async function previewSocialPost(queueId, btn) {
+  const overlay = document.getElementById('rs-preview-overlay');
+  const content = document.getElementById('rs-preview-content');
+  content.innerHTML = `<div class="rs-preview-loading">Génération de l'aperçu…</div>`;
+  overlay.classList.add('show');
+
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+
+  try {
+    const { data, error } = await _supabase.functions.invoke('social-publish', {
+      body: { action: 'preview', queueId },
+    });
+    if (error) throw error;
+    if (!data?.ok) throw new Error(data?.error || 'Erreur inconnue');
+    renderSocialPreview(data.preview);
+  } catch (e) {
+    content.innerHTML = `<div class="rs-preview-loading" style="color:#C62828">
+      Impossible de générer l'aperçu.<br>${(e.message || e).toString()}
+    </div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+
+function renderSocialPreview(p) {
+  const content = document.getElementById('rs-preview-content');
+  content.innerHTML = `
+    <img class="rs-preview-img" src="${p.imageUrl}" alt="${p.productName}">
+    <div class="rs-preview-body">
+      <div class="rs-preview-platform">${SOCIAL_PLATFORM_LABELS[p.platform] || p.platform}</div>
+      <div class="rs-preview-caption">${escapeHtml(p.caption)}</div>
+    </div>`;
+}
+
+function closeSocialPreview() {
+  document.getElementById('rs-preview-overlay').classList.remove('show');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 // ── INIT ─────────────────────────────────────────────────────────
 (async function initAdmin() {
   const { data: { session } } = await _supabase.auth.getSession();
@@ -2246,11 +2856,12 @@ async function saveNewSub(i) {
 })();
 
 // ── Toast ───────────────────────────────────────────────────────
-function showToast(title, sub, onClick) {
+function showToast(title, sub, onClick, type) {
   const container = document.getElementById('toast-container');
   const t = document.createElement('div');
-  t.className = 'toast';
-  t.innerHTML = `<span class="toast-icon">🛎️</span><div class="toast-body"><div class="toast-title">${title}</div>${sub ? `<div class="toast-sub">${sub}</div>` : ''}</div>`;
+  t.className = 'toast' + (type === 'success' ? ' toast-success' : '');
+  const icon = type === 'success' ? '✅' : '🛎️';
+  t.innerHTML = `<span class="toast-icon">${icon}</span><div class="toast-body"><div class="toast-title">${title}</div>${sub ? `<div class="toast-sub">${sub}</div>` : ''}</div>`;
   if (onClick) t.addEventListener('click', () => { onClick(); t.remove(); });
   container.appendChild(t);
   requestAnimationFrame(() => { requestAnimationFrame(() => t.classList.add('show')); });
