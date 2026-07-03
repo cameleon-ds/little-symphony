@@ -158,6 +158,9 @@ tbody tr:hover{background:var(--primary-xlight)}
 .detail-grid{display:grid;grid-template-columns:1fr 320px;gap:1.5rem;align-items:start}
 @media(max-width:900px){.detail-grid{grid-template-columns:1fr}.detail-col-left{order:2}.detail-col-right{order:1}}
 
+.rs-two-col-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+@media(max-width:900px){.rs-two-col-grid{grid-template-columns:1fr}}
+
 .detail-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1.2rem}
 .detail-card-title{font-size:13px;font-weight:700;color:var(--charcoal);
   margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border)}
@@ -945,7 +948,7 @@ tbody tr:hover{background:var(--primary-xlight)}
         </button>
       </div>
 
-      <div class="detail-grid" style="grid-template-columns:1fr 1fr">
+      <div class="rs-two-col-grid">
 
         <!-- Connexion (résumé) -->
         <div class="detail-card">
