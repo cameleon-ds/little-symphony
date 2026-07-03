@@ -161,6 +161,10 @@ tbody tr:hover{background:var(--primary-xlight)}
 .rs-two-col-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
 @media(max-width:900px){.rs-two-col-grid{grid-template-columns:1fr}}
 
+/* Espacement homogène entre tous les blocs du module Réseaux sociaux */
+.rs-sections{display:flex;flex-direction:column;gap:1.5rem}
+.rs-sections>*{margin:0!important}
+
 .detail-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1.2rem}
 .detail-card-title{font-size:13px;font-weight:700;color:var(--charcoal);
   margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border)}
@@ -948,6 +952,8 @@ tbody tr:hover{background:var(--primary-xlight)}
         </button>
       </div>
 
+      <div class="rs-sections">
+
       <div class="rs-two-col-grid">
 
         <!-- Connexion (résumé) -->
@@ -976,7 +982,7 @@ tbody tr:hover{background:var(--primary-xlight)}
       </div>
 
       <!-- Catégories publiées -->
-      <div class="detail-card" style="margin-top:1.5rem">
+      <div class="detail-card">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
           <div class="detail-card-title" style="margin-bottom:0;padding-bottom:0;border-bottom:none">Catégories publiées automatiquement</div>
           <button class="btn-detail" onclick="openSocialCategoriesModal()">
@@ -988,7 +994,7 @@ tbody tr:hover{background:var(--primary-xlight)}
       </div>
 
       <!-- File d'attente -->
-      <div class="table-wrap" style="margin-top:1.5rem">
+      <div class="table-wrap">
         <div class="table-header" style="cursor:pointer" onclick="toggleSocialQueueAccordion()">
           <div style="display:flex;align-items:center;gap:10px">
             <button class="cat-toggle open" id="rs-queue-toggle-btn" onclick="event.stopPropagation();toggleSocialQueueAccordion()" title="Ouvrir/fermer">
@@ -1009,7 +1015,7 @@ tbody tr:hover{background:var(--primary-xlight)}
       </div>
 
       <!-- Historique -->
-      <div class="table-wrap" style="margin-top:1.5rem">
+      <div class="table-wrap">
         <div class="table-header">
           <span class="table-title">Historique des publications</span>
         </div>
@@ -1019,6 +1025,8 @@ tbody tr:hover{background:var(--primary-xlight)}
           </tr></thead>
           <tbody id="rs-history-body"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem">Chargement…</td></tr></tbody>
         </table>
+      </div>
+
       </div>
     </div>
 
