@@ -1001,7 +1001,7 @@ tbody tr:hover{background:var(--primary-xlight)}
         <div id="rs-queue-collapse">
           <table id="tbl-social-queue">
             <thead><tr>
-              <th>Produit</th><th>Plateforme</th><th>Priorité</th><th>Prévu le</th><th></th>
+              <th>Produit</th><th>Plateforme</th><th class="col-hide-mobile">Priorité</th><th>Prévu le</th><th></th>
             </tr></thead>
             <tbody id="rs-queue-body"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem">Chargement…</td></tr></tbody>
           </table>
@@ -2684,7 +2684,7 @@ function renderSocialQueueRows(data) {
         ${q.products?.name || '(produit supprimé)'}
       </td>
       <td>${SOCIAL_PLATFORM_LABELS[q.platform] || q.platform}</td>
-      <td>${i + 1}</td>
+      <td class="col-hide-mobile">${i + 1}</td>
       <td>${q.scheduled_for || 'Dès que possible'}</td>
       <td style="display:flex;gap:6px;justify-content:flex-end">
         <button class="icon-btn" title="Aperçu de la publication" onclick="previewSocialPost('${q.id}', this)">
