@@ -70,7 +70,19 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(255,255,255,
 .payment-opt{border:2px solid var(--border);border-radius:var(--radius-sm);
   padding:1rem 1.2rem;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px}
 .payment-opt.selected{border-color:var(--primary);background:var(--primary-xlight)}
-.payment-opt input{accent-color:var(--primary)}
+.payment-opt input[type=radio]{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  width:18px;height:18px;border-radius:50%;margin:0;flex-shrink:0;
+  border:1.5px solid var(--border);background:#fff;cursor:pointer;
+  position:relative;transition:all 0.18s;outline:none;
+}
+.payment-opt input[type=radio]:checked{border-color:var(--primary)}
+.payment-opt input[type=radio]:checked::after{
+  content:'';position:absolute;top:50%;left:50%;
+  width:9px;height:9px;border-radius:50%;background:var(--primary);
+  transform:translate(-50%,-50%);
+}
+.payment-opt input[type=radio]:focus-visible{box-shadow:0 0 0 3px var(--primary-light)}
 .payment-info{flex:1}
 .payment-name{font-size:14px;font-weight:600;margin-bottom:2px}
 .payment-detail{font-size:12px;color:var(--text-muted)}
@@ -93,10 +105,27 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(255,255,255,
   border:none;font-size:15px;font-weight:600;box-shadow:0 4px 20px rgba(201,160,154,0.4);
   transition:all 0.25s;margin-top:1rem}
 .btn-confirm:hover{background:var(--primary-dark);transform:translateY(-2px)}
+.btn-confirm:disabled{opacity:0.45;cursor:not-allowed;box-shadow:none}
+.btn-confirm:disabled:hover{background:var(--primary);transform:none}
+.cgv-check-row{margin-top:1.2rem;display:flex;flex-direction:column;gap:8px}
+.cgv-check-label{display:flex;align-items:flex-start;gap:9px;font-size:12.5px;color:var(--text-soft);cursor:pointer;line-height:1.5}
+.cgv-check-label input[type=checkbox]{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  margin-top:2px;width:17px;height:17px;flex-shrink:0;cursor:pointer;
+  border:1.5px solid var(--border);border-radius:4px;background:#fff;
+  position:relative;transition:all 0.18s;
+}
+.cgv-check-label input[type=checkbox]:checked{
+  background:var(--primary);border-color:var(--primary);
+}
+.cgv-check-label input[type=checkbox]:checked::after{
+  content:'';position:absolute;left:5px;top:2px;width:4px;height:8px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);
+}
+.cgv-inline-link{color:var(--primary-dark);text-decoration:underline;font-weight:600}
+.cgv-inline-link:hover{color:var(--primary)}
 .back-link{display:block;text-align:center;font-size:13px;color:var(--text-muted);margin-top:1rem;transition:color 0.2s}
 .back-link:hover{color:var(--charcoal)}
-/* FOOTER */
-.footer-mini{border-top:1px solid var(--border);padding:2rem;text-align:center;font-size:12px;color:var(--text-muted);background:#fff;margin-top:2rem}
 </style>
 </head>
 <body>
@@ -299,19 +328,28 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(255,255,255,
       <div class="sum-row"><span>Sous-total</span><span id="sum-sub">—</span></div>
       <div class="sum-row"><span>Livraison</span><span id="sum-ship">—</span></div>
       <div class="sum-row total"><span>Total</span><span id="sum-total">—</span></div>
-      <button class="btn-confirm" onclick="confirm()">Confirmer la commande →</button>
+
+      <div class="cgv-check-row">
+        <label class="cgv-check-label" for="accept-cgv">
+          <input type="checkbox" id="accept-cgv" onchange="toggleConfirmBtn()">
+          <span>J'ai lu et accepté les <a href="cgv.html" target="_blank" rel="noopener" class="cgv-inline-link">conditions générales de vente</a></span>
+        </label>
+      </div>
+
+      <button class="btn-confirm" id="btn-confirm" onclick="confirm()" disabled>Confirmer la commande →</button>
       <a href="cart.html" class="back-link">← Retour au panier</a>
     </div>
   </div>
 </div>
 
-<div class="footer-mini">© 2025 Little Symphony — Tous droits réservés</div>
+<div id="main-footer"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
 <script src="_shared.js"></script>
 <script>
 document.getElementById('checkout-nav-right').innerHTML = _profileDropdownHTML();
+renderFooter();
 var deliveryMode = 'livraison';
 
 function parsePrice(str){ if (typeof str === 'number') return str; return parseFloat((String(str||'0')).replace(/[^\d,]/g,'').replace(',','.')) || 0; }
@@ -348,9 +386,18 @@ function renderSummary() {
   document.getElementById('sum-total').textContent = fmt(sub + ship);
 }
 
+function toggleConfirmBtn() {
+  const accepted = document.getElementById('accept-cgv').checked;
+  document.getElementById('btn-confirm').disabled = !accepted;
+}
+
 async function confirm() {
   const items = Cart.get();
   if (!items.length) { alert('Votre panier est vide.'); return; }
+  if (!document.getElementById('accept-cgv').checked) {
+    alert('Veuillez lire et accepter les conditions générales de vente avant de confirmer votre commande.');
+    return;
+  }
 
   const sub  = items.reduce((s,i) => s + parsePrice(i.price)*i.qty, 0);
   const ship = deliveryMode === 'retrait' ? 0 : (sub >= 80 ? 0 : 7);

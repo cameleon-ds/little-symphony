@@ -410,21 +410,22 @@ function renderFooter() {
       <div>
         <h4>Infos</h4>
         <ul>
-          <li>À propos</li>
+          <li><a href="apropos.html" style="color:#807870;text-decoration:none">À propos</a></li>
           <li>Blog &amp; conseils</li>
-          <li>Mentions légales</li>
-          <li>CGV</li>
+          <li><a href="mentions-legales.html" style="color:#807870;text-decoration:none">Mentions légales</a></li>
+          <li><a href="cgv.html" style="color:#807870;text-decoration:none">CGV</a></li>
         </ul>
       </div>
     </div>
     <div class="sf-bottom">
       <span>© 2025 Little Symphony — Tous droits réservés</span>
       <div style="display:flex;gap:1.5rem">
-        <a href="#">Politique de confidentialité</a>
-        <a href="#">CGV</a>
+        <a href="mentions-legales.html">Politique de confidentialité</a>
+        <a href="cgv.html">CGV</a>
+        <a href="cgu.html">CGU</a>
         <a href="#" style="display:flex;align-items:center;gap:5px">
           <svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          Toute la Tunisie
+          Région de Grand-Tunis
         </a>
       </div>
     </div>`;

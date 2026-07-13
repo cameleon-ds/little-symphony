@@ -126,6 +126,9 @@ tbody tr:hover{background:var(--primary-xlight)}
 .badge-shipped{background:#EDE7F6;color:#4527A0}
 .badge-delivered{background:#E8F5E9;color:#2E7D32}
 .badge-cancelled{background:#FFEBEE;color:#C62828}
+.badge-fb{background:#E3F2FD;color:#1565C0}
+.badge-ig{background:#FCE4EC;color:#AD1457}
+.badge-wa{background:#E8F5E9;color:#2E7D32}
 
 /* ── BTN DETAIL ── */
 .btn-detail{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);
@@ -409,6 +412,11 @@ tbody tr:hover{background:var(--primary-xlight)}
     <button class="nav-item" onclick="showPanel('reseaux-sociaux', this);closeSidebar();loadSocialModule()">
       <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
       Réseaux sociaux
+    </button>
+
+    <button class="nav-item" onclick="showPanel('messagerie', this);closeSidebar();loadMessagerieModule()">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Messagerie
     </button>
   </nav>
 
@@ -1034,6 +1042,115 @@ tbody tr:hover{background:var(--primary-xlight)}
       </div>
     </div>
 
+    <!-- MESSAGERIE -->
+    <div class="panel" id="panel-messagerie">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div>
+          <h1 class="page-title">Messagerie</h1>
+          <p class="page-sub">Messages reçus depuis Facebook, Instagram et WhatsApp</p>
+        </div>
+        <button type="button" class="btn-detail" onclick="openMessagingSettingsModal()">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Paramètres
+        </button>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header" style="flex-wrap:wrap;gap:10px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="cat-filter active" onclick="filterMessages('', this)">Tout afficher</button>
+            <button class="cat-filter" onclick="filterMessages('facebook', this)">Facebook</button>
+            <button class="cat-filter" onclick="filterMessages('instagram', this)">Instagram</button>
+            <button class="cat-filter" onclick="filterMessages('whatsapp', this)">WhatsApp</button>
+          </div>
+          <input class="table-search" id="messages-search" placeholder="Rechercher…" oninput="renderMessages()">
+          <button class="btn-detail" onclick="loadMessagerieModule()" title="Rafraîchir">
+            <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            Rafraîchir
+          </button>
+        </div>
+        <p style="font-size:11px;color:var(--text-muted);padding:10px 1.5rem 0">
+          Facebook et Instagram sont chargés en direct depuis Meta à chaque rafraîchissement (rien n'est stocké ici).
+          WhatsApp s'affiche uniquement en flux en direct pendant que cette page reste ouverte.
+        </p>
+        <table id="tbl-messages">
+          <thead><tr>
+            <th>Plateforme</th><th>Client</th><th class="col-hide-mobile">Message</th><th>Reçu le</th><th></th>
+          </tr></thead>
+          <tbody id="tbody-messages">
+            <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PARAMÈTRES MESSAGERIE (connexion Facebook / Instagram / WhatsApp) -->
+<div class="rs-preview-overlay" id="msg-settings-overlay" onclick="if(event.target===this)closeMessagingSettingsModal()">
+  <div class="rs-preview-card">
+    <div class="rs-preview-head">
+      <span class="rs-preview-head-title">Connecter mes messageries</span>
+      <button class="rs-preview-close" onclick="closeMessagingSettingsModal()">&times;</button>
+    </div>
+    <div class="rs-preview-body">
+      <p style="font-size:12px;color:var(--text-muted);margin:0 0 14px">
+        Renseigne les identifiants obtenus via Meta for Developers (Facebook Messenger,
+        Instagram) et la plateforme WhatsApp Business (Cloud API) pour recevoir ici les
+        messages de tes clients.
+      </p>
+
+      <div style="font-size:12px;font-weight:700;color:var(--charcoal);margin-bottom:8px">Facebook Messenger</div>
+      <label class="detail-label">ID de la page Facebook</label>
+      <input class="detail-input" id="msg-fb-page-id" placeholder="ex: 123456789012345" style="margin-bottom:12px">
+      <label class="detail-label">Token d'accès Facebook (Page Access Token)</label>
+      <input class="detail-input" id="msg-fb-token" type="password" placeholder="EAAG..." style="margin-bottom:16px">
+
+      <div style="font-size:12px;font-weight:700;color:var(--charcoal);margin-bottom:8px;padding-top:12px;border-top:1px solid var(--border)">Instagram</div>
+      <label class="detail-label">ID du compte Instagram Business</label>
+      <input class="detail-input" id="msg-ig-id" placeholder="ex: 17841400000000000" style="margin-bottom:16px">
+
+      <div style="font-size:12px;font-weight:700;color:var(--charcoal);margin-bottom:8px;padding-top:12px;border-top:1px solid var(--border)">WhatsApp Business</div>
+      <label class="detail-label">ID du numéro WhatsApp (Phone Number ID)</label>
+      <input class="detail-input" id="msg-wa-phone-id" placeholder="ex: 109876543210" style="margin-bottom:12px">
+      <label class="detail-label">Token d'accès WhatsApp</label>
+      <input class="detail-input" id="msg-wa-token" type="password" placeholder="EAAG..." style="margin-bottom:12px">
+
+      <label class="detail-label">Token de vérification du webhook</label>
+      <input class="detail-input" id="msg-wa-verify-token" placeholder="ex: une phrase secrète au choix" style="margin-bottom:8px">
+      <p style="font-size:11px;color:var(--text-muted);margin:0 0 12px">
+        À recopier tel quel dans Meta for Developers (App → WhatsApp → Configuration → Webhook → "Verify token").
+      </p>
+
+      <label class="detail-label">URL du webhook à renseigner chez Meta</label>
+      <input class="detail-input" id="msg-wa-webhook-url" readonly style="margin-bottom:16px;color:var(--text-muted);background:#FAFAFA">
+
+      <div style="font-size:11px;color:var(--text-muted);background:var(--primary-xlight);border-radius:8px;padding:10px 12px;margin-bottom:16px;line-height:1.6">
+        ⚠️ Aucun message ni aucune photo de client n'est jamais enregistré ici : Facebook/Instagram
+        sont consultés en direct chez Meta à chaque ouverture, et WhatsApp n'est affiché qu'en
+        flux en direct pendant que ce panel est ouvert.
+      </div>
+
+      <button class="save-btn" style="width:100%;padding:10px" onclick="saveMessagingSettings()">Enregistrer</button>
+      <div id="msg-settings-status" style="font-size:12px;margin-top:8px;color:var(--text-muted)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- RÉPONDRE À UN MESSAGE -->
+<div class="rs-preview-overlay" id="msg-reply-overlay" onclick="if(event.target===this)closeReplyModal()">
+  <div class="rs-preview-card">
+    <div class="rs-preview-head">
+      <span class="rs-preview-head-title" id="msg-reply-title">Répondre</span>
+      <button class="rs-preview-close" onclick="closeReplyModal()">&times;</button>
+    </div>
+    <div class="rs-preview-body">
+      <label class="detail-label">Message</label>
+      <textarea class="detail-input" id="msg-reply-text" rows="4" style="resize:vertical;margin-bottom:14px"></textarea>
+      <button class="save-btn" style="width:100%;padding:10px" onclick="sendReply()">Envoyer</button>
+      <div id="msg-reply-status" style="font-size:12px;margin-top:8px;color:var(--text-muted)"></div>
+    </div>
   </div>
 </div>
 
@@ -1147,7 +1264,7 @@ const SVG_EDIT  = `<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2
 const SVG_TRASH = `<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`;
 
 // ── NAVIGATION ───────────────────────────────────────────────────
-const titles = { commandes:'Commandes', clients:'Clients', produits:'Produits', categories:'Catégories', 'reseaux-sociaux':'Réseaux sociaux' };
+const titles = { commandes:'Commandes', clients:'Clients', produits:'Produits', categories:'Catégories', 'reseaux-sociaux':'Réseaux sociaux', messagerie:'Messagerie' };
 
 function setBreadcrumb(root, sub) {
   const el = document.getElementById('topbar-title');
@@ -2843,6 +2960,222 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+// ── MESSAGERIE (zéro stockage) ────────────────────────────────────
+// Facebook & Instagram : récupérés EN DIRECT chez Meta à chaque appel
+// (fonction Edge "messaging-conversations"), jamais enregistrés ici.
+// WhatsApp : aucun historique ne peut être redemandé à Meta — les
+// messages arrivent en direct via Supabase Realtime Broadcast tant que
+// ce panel est ouvert, et sont perdus au rafraîchissement (par choix).
+let MESSAGING_SETTINGS = null;
+let currentMessagePlatform = '';
+let fbIgConversations = [];   // rafraîchi à chaque appel, jamais persisté
+let waLiveBuffer = [];        // mémoire uniquement, vidé au refresh
+let waChannel = null;
+let replyContext = null;      // { platform, recipientId }
+
+const MSG_PLATFORM_LABELS = { facebook:'Facebook', instagram:'Instagram', whatsapp:'WhatsApp' };
+const MSG_PLATFORM_BADGE  = { facebook:'badge-fb', instagram:'badge-ig', whatsapp:'badge-wa' };
+
+async function loadMessagerieModule() {
+  await loadMessagingSettings();
+  await loadFbIgConversations();
+  subscribeWhatsappLive();
+  renderMessages();
+}
+
+async function loadMessagingSettings() {
+  const { data, error } = await _supabase
+    .from('messaging_settings').select('*').eq('id', true).single();
+  if (error) { console.error(error); return; }
+  MESSAGING_SETTINGS = data;
+  const url = document.getElementById('msg-wa-webhook-url');
+  if (url) url.value = `${SUPABASE_URL}/functions/v1/whatsapp-webhook`;
+}
+
+async function loadFbIgConversations() {
+  const tbody = document.getElementById('tbody-messages');
+  tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement en direct depuis Meta…</td></tr>`;
+
+  const { data, error } = await _supabase.functions.invoke('messaging-conversations', {
+    body: { action: 'list' },
+  });
+
+  if (error || !data?.ok) {
+    fbIgConversations = [];
+    const msg = data?.error || error?.message || 'Erreur inconnue';
+    tbody.innerHTML = `<tr><td colspan="5" style="color:#C62828;padding:1.5rem">Erreur Facebook/Instagram : ${msg}</td></tr>`;
+    return;
+  }
+
+  fbIgConversations = data.conversations || [];
+  if (data.errors?.length) {
+    console.warn('Messagerie — avertissements:', data.errors);
+  }
+}
+
+// ── WhatsApp : flux en direct (Realtime Broadcast, aucune table) ──
+function subscribeWhatsappLive() {
+  if (waChannel) return; // déjà abonné
+  waChannel = _supabase.channel('messagerie-whatsapp-live');
+  waChannel
+    .on('broadcast', { event: 'new-message' }, ({ payload }) => {
+      waLiveBuffer.unshift(payload);
+      renderMessages();
+      showToast('Nouveau message WhatsApp', payload.senderName || payload.senderId, null);
+    })
+    .subscribe();
+}
+
+// Convertit les deux sources (FB/IG live-fetch + WhatsApp live-buffer)
+// en une seule liste plate, uniquement en mémoire, pour l'affichage.
+function getAllMessagesFlat() {
+  const fromFbIg = fbIgConversations.flatMap(conv =>
+    (conv.messages || []).map(m => ({
+      platform: conv.platform,
+      conversationId: conv.conversationId,
+      senderId: conv.senderId,
+      senderName: conv.senderName,
+      content: m.content,
+      attachmentUrl: m.attachmentUrl,
+      receivedAt: m.createdAt,
+      fromPage: m.fromPage,
+    }))
+  );
+  const fromWa = waLiveBuffer.map(m => ({
+    platform: 'whatsapp',
+    conversationId: m.senderId,
+    senderId: m.senderId,
+    senderName: m.senderName,
+    content: m.content,
+    attachmentUrl: m.mediaProxyUrl,
+    receivedAt: m.receivedAt,
+    fromPage: false,
+  }));
+  return [...fromWa, ...fromFbIg].sort((a, b) =>
+    new Date(b.receivedAt || 0) - new Date(a.receivedAt || 0));
+}
+
+function renderMessages() {
+  const tbody = document.getElementById('tbody-messages');
+  const q = (document.getElementById('messages-search')?.value || '').toLowerCase();
+
+  let rows = getAllMessagesFlat().filter(m => !m.fromPage); // n'affiche que les messages des clients
+  if (currentMessagePlatform) rows = rows.filter(m => m.platform === currentMessagePlatform);
+  if (q) rows = rows.filter(m =>
+    (m.senderName || '').toLowerCase().includes(q) || (m.content || '').toLowerCase().includes(q));
+
+  if (!rows.length) {
+    const platLabel = currentMessagePlatform ? ' pour ' + MSG_PLATFORM_LABELS[currentMessagePlatform] : '';
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">Aucun message${platLabel}.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map((m, i) => `
+    <tr>
+      <td><span class="badge ${MSG_PLATFORM_BADGE[m.platform] || ''}">${MSG_PLATFORM_LABELS[m.platform] || m.platform}</span></td>
+      <td>${escapeHtml(m.senderName || 'Client')}</td>
+      <td class="col-hide-mobile" style="max-width:340px">
+        ${m.attachmentUrl ? `<img src="${m.attachmentUrl}" alt="" style="max-height:40px;border-radius:6px;vertical-align:middle;margin-right:6px">` : ''}
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(m.content || '')}</span>
+      </td>
+      <td class="date-full">${m.receivedAt ? new Date(m.receivedAt).toLocaleString('fr-FR') : '—'}</td>
+      <td><button class="btn-detail" onclick='openReplyModal(${JSON.stringify({ platform: m.platform, recipientId: m.senderId, senderName: m.senderName }).replace(/'/g, "&#39;")})'>Répondre</button></td>
+    </tr>`).join('');
+}
+
+function filterMessages(platform, btn) {
+  currentMessagePlatform = platform;
+  if (btn) {
+    document.querySelectorAll('#panel-messagerie .cat-filter').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  renderMessages();
+}
+
+// ── Répondre à un message (Facebook / Instagram / WhatsApp) ──────
+function openReplyModal(ctx) {
+  replyContext = ctx;
+  document.getElementById('msg-reply-title').textContent =
+    `Répondre à ${ctx.senderName || 'ce client'} (${MSG_PLATFORM_LABELS[ctx.platform] || ctx.platform})`;
+  document.getElementById('msg-reply-text').value = '';
+  document.getElementById('msg-reply-status').textContent = '';
+  document.getElementById('msg-reply-overlay').classList.add('show');
+}
+
+function closeReplyModal() {
+  document.getElementById('msg-reply-overlay').classList.remove('show');
+  replyContext = null;
+}
+
+async function sendReply() {
+  if (!replyContext) return;
+  const message = document.getElementById('msg-reply-text').value.trim();
+  const statusEl = document.getElementById('msg-reply-status');
+  if (!message) { statusEl.textContent = 'Écris un message avant d\'envoyer.'; return; }
+
+  statusEl.textContent = 'Envoi…';
+  statusEl.style.color = 'var(--text-muted)';
+
+  let result;
+  if (replyContext.platform === 'whatsapp') {
+    result = await _supabase.functions.invoke('whatsapp-reply', {
+      body: { to: replyContext.recipientId, message },
+    });
+  } else {
+    result = await _supabase.functions.invoke('messaging-conversations', {
+      body: { action: 'reply', platform: replyContext.platform, recipientId: replyContext.recipientId, message },
+    });
+  }
+
+  const { data, error } = result;
+  if (error || !data?.ok) {
+    statusEl.textContent = 'Erreur: ' + (data?.error || error?.message || 'inconnue');
+    statusEl.style.color = '#C62828';
+    return;
+  }
+
+  showToast('Réponse envoyée', null, null, 'success');
+  closeReplyModal();
+}
+
+function openMessagingSettingsModal() {
+  const d = MESSAGING_SETTINGS || {};
+  document.getElementById('msg-fb-page-id').value = d.facebook_page_id || '';
+  document.getElementById('msg-fb-token').value = d.facebook_page_token || '';
+  document.getElementById('msg-ig-id').value = d.instagram_business_id || '';
+  document.getElementById('msg-wa-phone-id').value = d.whatsapp_phone_number_id || '';
+  document.getElementById('msg-wa-token').value = d.whatsapp_token || '';
+  document.getElementById('msg-wa-verify-token').value = d.whatsapp_webhook_verify_token || '';
+  document.getElementById('msg-wa-webhook-url').value = `${SUPABASE_URL}/functions/v1/whatsapp-webhook`;
+  document.getElementById('msg-settings-status').textContent = '';
+  document.getElementById('msg-settings-overlay').classList.add('show');
+}
+
+function closeMessagingSettingsModal() {
+  document.getElementById('msg-settings-overlay').classList.remove('show');
+}
+
+async function saveMessagingSettings() {
+  const payload = {
+    facebook_page_id: document.getElementById('msg-fb-page-id').value.trim() || null,
+    facebook_page_token: document.getElementById('msg-fb-token').value.trim() || null,
+    instagram_business_id: document.getElementById('msg-ig-id').value.trim() || null,
+    whatsapp_phone_number_id: document.getElementById('msg-wa-phone-id').value.trim() || null,
+    whatsapp_token: document.getElementById('msg-wa-token').value.trim() || null,
+    whatsapp_webhook_verify_token: document.getElementById('msg-wa-verify-token').value.trim() || null,
+  };
+  const { error } = await _supabase.from('messaging_settings').update(payload).eq('id', true);
+  if (error) {
+    const statusEl = document.getElementById('msg-settings-status');
+    statusEl.textContent = 'Erreur: ' + error.message;
+    statusEl.style.color = '#C62828';
+    return;
+  }
+  closeMessagingSettingsModal();
+  await loadMessagingSettings();
+  showToast('Informations enregistrées', 'Vos identifiants de messagerie ont bien été enregistrés', null, 'success');
 }
 
 // ── INIT ─────────────────────────────────────────────────────────

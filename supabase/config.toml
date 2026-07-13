@@ -9,3 +9,13 @@ static_files = [ "./functions/social-publish/logo.png" ]
 # gère elle-même son authentification (voir index.ts), plus besoin de le
 # repréciser à chaque déploiement.
 verify_jwt = false
+
+# Module Messagerie : "whatsapp-webhook" est appelé directement par les
+# serveurs de Meta (vérification GET + réception POST des messages), qui
+# n'envoient aucun jeton Supabase — la vérification JWT automatique doit
+# donc être désactivée. "messaging-conversations" et "whatsapp-reply" sont
+# invoquées depuis le panel admin par un utilisateur connecté : elles
+# gardent la vérification JWT par défaut (en plus de leur propre contrôle
+# du rôle "admin" dans le code).
+[functions.whatsapp-webhook]
+verify_jwt = false
