@@ -1288,6 +1288,10 @@ function closeSidebar() {
 }
 
 function showPanel(name, btn) {
+  const wasMessagerieActive = document.getElementById('panel-messagerie')?.classList.contains('active');
+  if (wasMessagerieActive && name !== 'messagerie' && typeof stopMessagerieLive === 'function') {
+    stopMessagerieLive();
+  }
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
@@ -2963,8 +2967,13 @@ function escapeHtml(str) {
 }
 
 // ── MESSAGERIE (zéro stockage) ────────────────────────────────────
-// Facebook & Instagram : récupérés EN DIRECT chez Meta à chaque appel
-// (fonction Edge "messaging-conversations"), jamais enregistrés ici.
+// Facebook & Instagram : récupérés EN DIRECT chez Meta, en appelant le
+// Graph API depuis le navigateur (le Page Access Token est déjà lisible
+// par un admin via la table "messaging_settings" — RLS le protège des
+// autres rôles). Ça évite de repasser par une fonction Edge Supabase à
+// chaque rafraîchissement automatique, pour ne pas consommer d'invocations
+// (utile sur le plan gratuit). La fonction Edge "messaging-conversations"
+// n'est donc plus utilisée que pour l'action "reply".
 // WhatsApp : aucun historique ne peut être redemandé à Meta — les
 // messages arrivent en direct via Supabase Realtime Broadcast tant que
 // ce panel est ouvert, et sont perdus au rafraîchissement (par choix).
@@ -2974,6 +2983,8 @@ let fbIgConversations = [];   // rafraîchi à chaque appel, jamais persisté
 let waLiveBuffer = [];        // mémoire uniquement, vidé au refresh
 let waChannel = null;
 let replyContext = null;      // { platform, recipientId }
+let messagerieRefreshTimer = null; // auto-refresh FB/IG pendant que le panel est ouvert
+const MESSAGERIE_REFRESH_MS = 20000; // 20s — appel direct à Meta, pas à Supabase
 
 const MSG_PLATFORM_LABELS = { facebook:'Facebook', instagram:'Instagram', whatsapp:'WhatsApp' };
 const MSG_PLATFORM_BADGE  = { facebook:'badge-fb', instagram:'badge-ig', whatsapp:'badge-wa' };
@@ -2983,6 +2994,32 @@ async function loadMessagerieModule() {
   await loadFbIgConversations();
   subscribeWhatsappLive();
   renderMessages();
+  startMessagerieAutoRefresh();
+}
+
+// Démarre le rafraîchissement automatique (direct Meta, zéro fonction Edge).
+// Se relance sans effet si déjà actif — un seul minuteur à la fois.
+function startMessagerieAutoRefresh() {
+  if (messagerieRefreshTimer) return;
+  messagerieRefreshTimer = setInterval(async () => {
+    // silencieux : pas de "Chargement…", pour ne pas faire clignoter la liste
+    await loadFbIgConversations(true);
+    renderMessages();
+  }, MESSAGERIE_REFRESH_MS);
+}
+
+// Coupe tout ce qui tourne en direct dès qu'on quitte le module Messagerie :
+// plus d'appel Meta automatique, plus de flux WhatsApp, rien en mémoire.
+function stopMessagerieLive() {
+  if (messagerieRefreshTimer) {
+    clearInterval(messagerieRefreshTimer);
+    messagerieRefreshTimer = null;
+  }
+  if (waChannel) {
+    _supabase.removeChannel(waChannel);
+    waChannel = null;
+  }
+  waLiveBuffer = [];
 }
 
 async function loadMessagingSettings() {
@@ -2994,24 +3031,72 @@ async function loadMessagingSettings() {
   if (url) url.value = `${SUPABASE_URL}/functions/v1/whatsapp-webhook`;
 }
 
-async function loadFbIgConversations() {
-  const tbody = document.getElementById('tbody-messages');
-  tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement en direct depuis Meta…</td></tr>`;
+// Reproduit côté client la logique de l'ex-fonction Edge : appelle
+// directement graph.facebook.com avec le token déjà en mémoire.
+async function fetchPlatformConversationsClient(metaPlatform, label) {
+  const base = 'https://graph.facebook.com/v20.0';
+  const listUrl = `${base}/${MESSAGING_SETTINGS.facebook_page_id}/conversations` +
+    `?platform=${metaPlatform}&fields=participants,updated_time,messages.limit(20){message,from,created_time,attachments}` +
+    `&access_token=${MESSAGING_SETTINGS.facebook_page_token}`;
 
-  const { data, error } = await _supabase.functions.invoke('messaging-conversations', {
-    body: { action: 'list' },
+  const res = await fetch(listUrl);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message || 'Échec de récupération des conversations');
+
+  const pageId = MESSAGING_SETTINGS.facebook_page_id;
+  return (data.data || []).map(conv => {
+    const participant = (conv.participants?.data || []).find(p => p.id !== pageId);
+    const messages = (conv.messages?.data || []).map(m => ({
+      id: m.id,
+      content: m.message || (m.attachments ? '📎 Pièce jointe' : ''),
+      attachmentUrl: m.attachments?.data?.[0]?.image_data?.url || m.attachments?.data?.[0]?.file_url || null,
+      fromPage: m.from?.id === pageId,
+      createdAt: m.created_time,
+    })).reverse();
+
+    return {
+      platform: label,
+      conversationId: conv.id,
+      senderId: participant?.id || null,
+      senderName: participant?.name || 'Client',
+      updatedAt: conv.updated_time,
+      messages,
+    };
   });
+}
 
-  if (error || !data?.ok) {
-    fbIgConversations = [];
-    const msg = data?.error || error?.message || 'Erreur inconnue';
-    tbody.innerHTML = `<tr><td colspan="5" style="color:#C62828;padding:1.5rem">Erreur Facebook/Instagram : ${msg}</td></tr>`;
-    return;
+async function loadFbIgConversations(silent) {
+  const tbody = document.getElementById('tbody-messages');
+  if (!silent) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement en direct depuis Meta…</td></tr>`;
   }
 
-  fbIgConversations = data.conversations || [];
-  if (data.errors?.length) {
-    console.warn('Messagerie — avertissements:', data.errors);
+  const conversations = [];
+  const errors = [];
+
+  if (MESSAGING_SETTINGS?.facebook_page_id && MESSAGING_SETTINGS?.facebook_page_token) {
+    try {
+      conversations.push(...(await fetchPlatformConversationsClient('messenger', 'facebook')));
+    } catch (e) {
+      errors.push(`Facebook: ${e.message}`);
+    }
+    if (MESSAGING_SETTINGS.instagram_business_id) {
+      try {
+        conversations.push(...(await fetchPlatformConversationsClient('instagram', 'instagram')));
+      } catch (e) {
+        errors.push(`Instagram: ${e.message}`);
+      }
+    }
+  } else {
+    errors.push('Facebook / Instagram non connectés');
+  }
+
+  fbIgConversations = conversations;
+  if (errors.length) {
+    console.warn('Messagerie — avertissements:', errors);
+    if (!silent && !conversations.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="color:#C62828;padding:1.5rem">Erreur Facebook/Instagram : ${escapeHtml(errors.join(' · '))}</td></tr>`;
+    }
   }
 }
 
