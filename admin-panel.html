@@ -3136,43 +3136,57 @@ function subscribeWhatsappLive() {
     .subscribe();
 }
 
-// Convertit les deux sources (FB/IG live-fetch + WhatsApp live-buffer)
-// en une seule liste plate, uniquement en mémoire, pour l'affichage.
-function getAllMessagesFlat() {
-  const fromFbIg = fbIgConversations.flatMap(conv =>
-    (conv.messages || []).map(m => ({
+// Regroupe les deux sources (FB/IG live-fetch + WhatsApp live-buffer) par
+// client : une seule ligne par conversation, avec le dernier message
+// (peu importe qui l'a envoyé) pour trier la liste — comme une boîte de
+// réception classique. Rien n'est jamais persisté, tout reste en mémoire.
+function getConversationRows() {
+  const rows = new Map(); // clé: "plateforme:senderId"
+
+  fbIgConversations.forEach(conv => {
+    const msgs = conv.messages || [];
+    const last = msgs[msgs.length - 1]; // déjà trié du plus ancien au plus récent
+    if (!last) return;
+    rows.set(conv.platform + ':' + conv.senderId, {
       platform: conv.platform,
       conversationId: conv.conversationId,
       senderId: conv.senderId,
       senderName: conv.senderName,
-      content: m.content,
-      attachmentUrl: m.attachmentUrl,
-      receivedAt: m.createdAt,
-      fromPage: m.fromPage,
-    }))
-  );
-  const fromWa = waLiveBuffer.map(m => ({
-    platform: 'whatsapp',
-    conversationId: m.senderId,
-    senderId: m.senderId,
-    senderName: m.senderName,
-    content: m.content,
-    attachmentUrl: m.mediaProxyUrl,
-    receivedAt: m.receivedAt,
-    fromPage: false,
-  }));
-  return [...fromWa, ...fromFbIg].sort((a, b) =>
-    new Date(b.receivedAt || 0) - new Date(a.receivedAt || 0));
+      lastContent: last.content,
+      lastAttachmentUrl: last.attachmentUrl,
+      lastFromPage: last.fromPage,
+      lastAt: last.createdAt,
+    });
+  });
+
+  waLiveBuffer.forEach(m => {
+    const key = 'whatsapp:' + m.senderId;
+    const existing = rows.get(key);
+    if (existing && new Date(existing.lastAt || 0) >= new Date(m.receivedAt || 0)) return;
+    rows.set(key, {
+      platform: 'whatsapp',
+      conversationId: m.senderId,
+      senderId: m.senderId,
+      senderName: m.senderName,
+      lastContent: m.content,
+      lastAttachmentUrl: m.mediaProxyUrl,
+      lastFromPage: false,
+      lastAt: m.receivedAt,
+    });
+  });
+
+  return [...rows.values()].sort((a, b) =>
+    new Date(b.lastAt || 0) - new Date(a.lastAt || 0));
 }
 
 function renderMessages() {
   const tbody = document.getElementById('tbody-messages');
   const q = (document.getElementById('messages-search')?.value || '').toLowerCase();
 
-  let rows = getAllMessagesFlat().filter(m => !m.fromPage); // n'affiche que les messages des clients
-  if (currentMessagePlatform) rows = rows.filter(m => m.platform === currentMessagePlatform);
-  if (q) rows = rows.filter(m =>
-    (m.senderName || '').toLowerCase().includes(q) || (m.content || '').toLowerCase().includes(q));
+  let rows = getConversationRows();
+  if (currentMessagePlatform) rows = rows.filter(r => r.platform === currentMessagePlatform);
+  if (q) rows = rows.filter(r =>
+    (r.senderName || '').toLowerCase().includes(q) || (r.lastContent || '').toLowerCase().includes(q));
 
   if (!rows.length) {
     const platLabel = currentMessagePlatform ? ' pour ' + MSG_PLATFORM_LABELS[currentMessagePlatform] : '';
@@ -3180,18 +3194,18 @@ function renderMessages() {
     return;
   }
 
-  tbody.innerHTML = rows.map((m, i) => `
+  tbody.innerHTML = rows.map(r => `
     <tr>
-      <td><span class="badge ${MSG_PLATFORM_BADGE[m.platform] || ''}">${MSG_PLATFORM_LABELS[m.platform] || m.platform}</span></td>
-      <td>${escapeHtml(m.senderName || 'Client')}</td>
+      <td><span class="badge ${MSG_PLATFORM_BADGE[r.platform] || ''}">${MSG_PLATFORM_LABELS[r.platform] || r.platform}</span></td>
+      <td>${escapeHtml(r.senderName || 'Client')}</td>
       <td class="col-hide-mobile" style="max-width:340px">
-        ${m.attachmentUrl ? `<img src="${m.attachmentUrl}" alt="" style="max-height:40px;border-radius:6px;vertical-align:middle;margin-right:6px">` : ''}
-        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(m.content || '')}</span>
+        ${r.lastAttachmentUrl ? `<img src="${r.lastAttachmentUrl}" alt="" style="max-height:40px;border-radius:6px;vertical-align:middle;margin-right:6px">` : ''}
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;max-width:100%;vertical-align:middle">${r.lastFromPage ? '<strong>Vous : </strong>' : ''}${escapeHtml(r.lastContent || '')}</span>
       </td>
-      <td class="date-full">${m.receivedAt ? new Date(m.receivedAt).toLocaleString('fr-FR') : '—'}</td>
+      <td class="date-full">${r.lastAt ? new Date(r.lastAt).toLocaleString('fr-FR') : '—'}</td>
       <td style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn-detail" onclick='openThreadModal(${JSON.stringify({ platform: m.platform, conversationId: m.conversationId, senderId: m.senderId, senderName: m.senderName }).replace(/'/g, "&#39;")})'>Voir la conversation</button>
-        <button class="btn-detail" onclick='openReplyModal(${JSON.stringify({ platform: m.platform, recipientId: m.senderId, senderName: m.senderName }).replace(/'/g, "&#39;")})'>Répondre</button>
+        <button class="btn-detail" onclick='openThreadModal(${JSON.stringify({ platform: r.platform, conversationId: r.conversationId, senderId: r.senderId, senderName: r.senderName }).replace(/'/g, "&#39;")})'>Voir la conversation</button>
+        <button class="btn-detail" onclick='openReplyModal(${JSON.stringify({ platform: r.platform, recipientId: r.senderId, senderName: r.senderName }).replace(/'/g, "&#39;")})'>Répondre</button>
       </td>
     </tr>`).join('');
 }
