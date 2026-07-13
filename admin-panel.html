@@ -130,6 +130,12 @@ tbody tr:hover{background:var(--primary-xlight)}
 .badge-ig{background:#FCE4EC;color:#AD1457}
 .badge-wa{background:#E8F5E9;color:#2E7D32}
 
+.msg-bubble{max-width:75%;padding:8px 12px;border-radius:14px;font-size:13px;line-height:1.45;word-break:break-word}
+.msg-bubble-client{align-self:flex-start;background:var(--bg-alt,#F3F1EE);color:var(--charcoal)}
+.msg-bubble-page{align-self:flex-end;background:var(--primary);color:#fff}
+.msg-bubble-time{font-size:10px;opacity:.65;margin-top:4px;display:block}
+.msg-bubble img{max-width:100%;border-radius:8px;display:block;margin-bottom:6px}
+
 /* ── BTN DETAIL ── */
 .btn-detail{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);
   background:#fff;font-size:12px;font-weight:500;color:var(--text-soft);
@@ -1150,6 +1156,23 @@ tbody tr:hover{background:var(--primary-xlight)}
       <textarea class="detail-input" id="msg-reply-text" rows="4" style="resize:vertical;margin-bottom:14px"></textarea>
       <button class="save-btn" style="width:100%;padding:10px" onclick="sendReply()">Envoyer</button>
       <div id="msg-reply-status" style="font-size:12px;margin-top:8px;color:var(--text-muted)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORIQUE DE CONVERSATION -->
+<div class="rs-preview-overlay" id="msg-thread-overlay" onclick="if(event.target===this)closeThreadModal()">
+  <div class="rs-preview-card">
+    <div class="rs-preview-head">
+      <span class="rs-preview-head-title" id="msg-thread-title">Conversation</span>
+      <button class="rs-preview-close" onclick="closeThreadModal()">&times;</button>
+    </div>
+    <div class="rs-preview-body">
+      <p style="font-size:11px;color:var(--text-muted);margin:0 0 10px">
+        Historique renvoyé par Meta (jusqu'aux 20 derniers messages échangés) — rien n'est stocké ici.
+      </p>
+      <div id="msg-thread-body" style="display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;padding:4px 4px 14px"></div>
+      <button class="save-btn" style="width:100%;padding:10px" onclick="replyFromThread()">Répondre</button>
     </div>
   </div>
 </div>
@@ -3166,7 +3189,10 @@ function renderMessages() {
         <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(m.content || '')}</span>
       </td>
       <td class="date-full">${m.receivedAt ? new Date(m.receivedAt).toLocaleString('fr-FR') : '—'}</td>
-      <td><button class="btn-detail" onclick='openReplyModal(${JSON.stringify({ platform: m.platform, recipientId: m.senderId, senderName: m.senderName }).replace(/'/g, "&#39;")})'>Répondre</button></td>
+      <td style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-detail" onclick='openThreadModal(${JSON.stringify({ platform: m.platform, conversationId: m.conversationId, senderId: m.senderId, senderName: m.senderName }).replace(/'/g, "&#39;")})'>Voir la conversation</button>
+        <button class="btn-detail" onclick='openReplyModal(${JSON.stringify({ platform: m.platform, recipientId: m.senderId, senderName: m.senderName }).replace(/'/g, "&#39;")})'>Répondre</button>
+      </td>
     </tr>`).join('');
 }
 
@@ -3223,6 +3249,55 @@ async function sendReply() {
 
   showToast('Réponse envoyée', null, null, 'success');
   closeReplyModal();
+}
+
+// ── Voir l'historique complet d'une conversation ─────────────────
+// Utilise les messages déjà récupérés (aucun nouvel appel réseau) :
+// pour FB/IG, ceux renvoyés par Meta (jusqu'à 20) ; pour WhatsApp,
+// uniquement ce qui est arrivé en direct depuis l'ouverture du panel.
+let threadContext = null; // { platform, senderId, senderName }
+
+function openThreadModal(ctx) {
+  threadContext = ctx;
+  document.getElementById('msg-thread-title').textContent =
+    `Conversation avec ${ctx.senderName || 'ce client'} (${MSG_PLATFORM_LABELS[ctx.platform] || ctx.platform})`;
+
+  let thread = [];
+  if (ctx.platform === 'whatsapp') {
+    thread = waLiveBuffer
+      .filter(m => m.senderId === ctx.senderId)
+      .map(m => ({ content: m.content, attachmentUrl: m.mediaProxyUrl, fromPage: false, createdAt: m.receivedAt }))
+      .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+  } else {
+    const conv = fbIgConversations.find(c => c.platform === ctx.platform && c.conversationId === ctx.conversationId);
+    thread = conv ? conv.messages : [];
+  }
+
+  const body = document.getElementById('msg-thread-body');
+  if (!thread.length) {
+    body.innerHTML = `<p style="text-align:center;color:var(--text-muted);font-size:13px;padding:1rem">Aucun historique disponible.</p>`;
+  } else {
+    body.innerHTML = thread.map(m => `
+      <div class="msg-bubble ${m.fromPage ? 'msg-bubble-page' : 'msg-bubble-client'}">
+        ${m.attachmentUrl ? `<img src="${m.attachmentUrl}" alt="">` : ''}
+        ${escapeHtml(m.content || '')}
+        <span class="msg-bubble-time">${m.createdAt ? new Date(m.createdAt).toLocaleString('fr-FR') : ''}</span>
+      </div>`).join('');
+    body.scrollTop = body.scrollHeight;
+  }
+
+  document.getElementById('msg-thread-overlay').classList.add('show');
+}
+
+function closeThreadModal() {
+  document.getElementById('msg-thread-overlay').classList.remove('show');
+  threadContext = null;
+}
+
+function replyFromThread() {
+  if (!threadContext) return;
+  closeThreadModal();
+  openReplyModal({ platform: threadContext.platform, recipientId: threadContext.senderId, senderName: threadContext.senderName });
 }
 
 function openMessagingSettingsModal() {
