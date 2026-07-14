@@ -101,10 +101,22 @@
 
   <!-- PANEL DÉTAIL -->
   <div id="order-detail">
-    <button class="detail-back" onclick="closeDetail()">
-      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-      Retour à mes commandes
-    </button>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.2rem;flex-wrap:wrap">
+      <button class="detail-back" onclick="closeDetail()" style="margin-bottom:0">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Retour à mes commandes
+      </button>
+      <div style="flex:1"></div>
+      <button class="btn-detail" id="btn-invoice-view" onclick="viewClientInvoice()" style="display:none;margin-top:0">
+        <svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Voir la facture
+      </button>
+      <button class="btn-detail" id="btn-invoice-download" onclick="downloadClientInvoice()" style="display:none;margin-top:0">
+        <svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Télécharger
+      </button>
+      <span id="invoice-hint" style="font-size:12px;color:var(--text-muted)">Facture disponible une fois la commande en livraison.</span>
+    </div>
     <div class="detail-title" id="detail-title">—</div>
     <div style="margin-bottom:1.5rem">
       <div class="detail-section">Articles commandés</div>
@@ -157,6 +169,7 @@
 <div id="main-footer"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="supabase-client.js"></script>
 <script src="_shared.js"></script>
 <script>
@@ -173,6 +186,172 @@ function showTab(name, btn) {
 }
 
 let ALL_ORDERS = [];
+let currentDetailOrder = null;
+
+// ── FACTURE (PDF généré côté navigateur, aucun stockage) ─────────
+const COMPANY_INFO = {
+  name: 'LITTLE SYMPHONY',
+  legalForm: 'SARL',
+  address: '3 Rue Durand Angliviel, Tunis Belvédère, El Menzah, 1002 Tunis',
+  taxId: 'MF 1943684S',
+  phone: '+216 20 136 138',
+  email: 'little-symphony.tn@gmail.com',
+};
+
+function fmtDT(n) {
+  return Number(n || 0).toFixed(3).replace('.', ',') + ' DT';
+}
+
+// La facture est disponible dès que la commande passe au statut "En livraison",
+// et le reste une fois "Livrée" (même facture, héritée). Pas avant, jamais si annulée.
+function invoiceAvailableForStatus(status) {
+  return status === 'shipped' || status === 'delivered';
+}
+
+function refreshInvoiceButtons(status) {
+  const show = invoiceAvailableForStatus(status);
+  const btnView = document.getElementById('btn-invoice-view');
+  const btnDl   = document.getElementById('btn-invoice-download');
+  const hint    = document.getElementById('invoice-hint');
+  if (btnView) btnView.style.display = show ? '' : 'none';
+  if (btnDl)   btnDl.style.display   = show ? '' : 'none';
+  if (hint)    hint.style.display    = show ? 'none' : '';
+}
+
+function buildInvoiceDoc(order) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const marginX = 18;
+  let y = 20;
+
+  // ── En-tête société ──
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text(COMPANY_INFO.name, marginX, y);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(90, 90, 90);
+  y += 6;  doc.text(COMPANY_INFO.legalForm, marginX, y);
+  y += 5;  doc.text(COMPANY_INFO.address, marginX, y, { maxWidth: 95 });
+  y += 9;  doc.text(COMPANY_INFO.taxId, marginX, y);
+  y += 5;  doc.text('Tél : ' + COMPANY_INFO.phone, marginX, y);
+  y += 5;  doc.text('Email : ' + COMPANY_INFO.email, marginX, y);
+
+  // ── Titre facture (haut droite) ──
+  doc.setTextColor(20, 20, 20);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.text('FACTURE', pageWidth - marginX, 22, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(90, 90, 90);
+  doc.text('N° ' + order.ref, pageWidth - marginX, 30, { align: 'right' });
+  doc.text('Date : ' + order.dateTime, pageWidth - marginX, 35, { align: 'right' });
+
+  // ── Bloc client ──
+  let yClient = 55;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(20, 20, 20);
+  doc.text('Facturé à', marginX, yClient);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(90, 90, 90);
+  yClient += 6;  doc.text(order.client || '—', marginX, yClient);
+  if (order.phone) { yClient += 5; doc.text(order.phone, marginX, yClient); }
+  if (order.email) { yClient += 5; doc.text(order.email, marginX, yClient); }
+  const addrLine = [order.address_line1, [order.postal_code, order.city].filter(Boolean).join(' ')]
+    .filter(Boolean).join(', ');
+  if (addrLine) { yClient += 5; doc.text(addrLine, marginX, yClient, { maxWidth: 95 }); }
+
+  // ── Tableau des articles ──
+  let yTable = Math.max(yClient + 14, 80);
+  const colName  = marginX;
+  const colQty   = pageWidth - marginX - 62;
+  const colPrice = pageWidth - marginX - 36;
+  const colTotal = pageWidth - marginX;
+
+  doc.setFillColor(245, 241, 238);
+  doc.rect(marginX - 2, yTable - 5.5, pageWidth - 2 * marginX + 4, 8.5, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(20, 20, 20);
+  doc.text('Désignation', colName, yTable);
+  doc.text('Qté', colQty, yTable, { align: 'right' });
+  doc.text('Prix unit.', colPrice, yTable, { align: 'right' });
+  doc.text('Total', colTotal, yTable, { align: 'right' });
+  yTable += 9;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(60, 60, 60);
+  let subtotal = 0;
+  (order.items || []).forEach(item => {
+    const unitPrice = item.unitPriceNum ?? (parseFloat(String(item.price).replace(',', '.').replace(/[^\d.]/g, '')) || 0);
+    const lineTotal = item.lineTotalNum ?? (unitPrice * (item.qty || 1));
+    subtotal += lineTotal;
+    doc.text(String(item.name || ''), colName, yTable, { maxWidth: pageWidth - marginX * 2 - 66 });
+    doc.text(String(item.qty ?? ''), colQty, yTable, { align: 'right' });
+    doc.text(fmtDT(unitPrice), colPrice, yTable, { align: 'right' });
+    doc.text(fmtDT(lineTotal), colTotal, yTable, { align: 'right' });
+    yTable += 7;
+  });
+  if (!order.items || !order.items.length) {
+    doc.text('—', colName, yTable);
+    yTable += 7;
+  }
+
+  doc.setDrawColor(220, 220, 220);
+  doc.line(marginX, yTable, pageWidth - marginX, yTable);
+  yTable += 8;
+
+  // Les prix affichés sur le site sont TTC (TVA tunisienne à 19% déjà
+  // incluse) — on la fait apparaître séparément sur la facture sans
+  // changer le montant réellement payé par le client.
+  const TVA_RATE = 0.19;
+  const totalTTC = order.totalNum ?? subtotal;
+  const totalHT  = totalTTC / (1 + TVA_RATE);
+  const tvaAmount = totalTTC - totalHT;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9.5);
+  doc.text('Sous-total HT', colPrice, yTable, { align: 'right' });
+  doc.text(fmtDT(totalHT), colTotal, yTable, { align: 'right' });
+  yTable += 6;
+  doc.text('TVA (19%)', colPrice, yTable, { align: 'right' });
+  doc.text(fmtDT(tvaAmount), colTotal, yTable, { align: 'right' });
+  yTable += 6;
+  doc.text('Livraison', colPrice, yTable, { align: 'right' });
+  doc.text('—', colTotal, yTable, { align: 'right' });
+  yTable += 9;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(20, 20, 20);
+  doc.text('Total TTC', colPrice, yTable, { align: 'right' });
+  doc.text(fmtDT(totalTTC), colTotal, yTable, { align: 'right' });
+
+  // ── Pied de page ──
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(140, 140, 140);
+  doc.text('Mode de règlement : paiement à la livraison', marginX, 275);
+  doc.text(`${COMPANY_INFO.name} — ${COMPANY_INFO.legalForm} — ${COMPANY_INFO.taxId}`, marginX, 280);
+
+  return doc;
+}
+
+function viewClientInvoice() {
+  if (!currentDetailOrder) return;
+  const doc = buildInvoiceDoc(currentDetailOrder);
+  window.open(doc.output('bloburl'), '_blank');
+}
+
+function downloadClientInvoice() {
+  if (!currentDetailOrder) return;
+  const doc = buildInvoiceDoc(currentDetailOrder);
+  doc.save(`facture-${currentDetailOrder.ref}.pdf`);
+}
+
 const BADGE = s => ({
   'En attente':'badge-pending', 'Confirmée':'badge-confirmed',
   'En livraison':'badge-shipped', 'Livrée':'badge-delivered', 'Annulée':'badge-cancelled'
@@ -199,6 +378,8 @@ function orderCard(o, idx) {
 function showDetail(idx) {
   const o = ALL_ORDERS[idx];
   if (!o) return;
+  currentDetailOrder = o;
+  refreshInvoiceButtons(o.statusRaw);
   document.getElementById('detail-title').textContent  = 'Commande ' + o.id;
   document.getElementById('d-id').textContent          = o.id;
   document.getElementById('d-date').textContent        = o.dateTime || o.date;
@@ -252,21 +433,30 @@ function statusLabel(s) {
 function adaptOrder(o) {
   return {
     id:       'LS-' + o.id.substring(0,8).toUpperCase(),
+    ref:      'LS-' + o.id.substring(0,8).toUpperCase(),
     date:     new Date(o.created_at).toLocaleDateString('fr-FR'),
     dateTime: new Date(o.created_at).toLocaleDateString('fr-FR') + ' à ' + new Date(o.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}),
     delivery: o.address_line1 === 'Retrait boutique' ? 'retrait' : 'livraison',
     address:  o.address_line1 !== 'Retrait boutique' ? (o.address_line1 || '') : '',
+    address_line1: o.address_line1 !== 'Retrait boutique' ? (o.address_line1 || '') : '',
     city:     o.city          || '',
     zip:      o.postal_code   || '',
+    postal_code: o.postal_code || '',
     phone:    o.customer_phone || '',
+    client:   o.customer_name  || '',
+    email:    o.customer_email || '',
     items:    (o.items || o.order_items || []).map(i => ({
       name:  i.product_name,
       img:   (i.products?.images?.[0]) || '',
       qty:   i.quantity,
-      price: Number(i.unit_price).toFixed(3).replace('.', ',') + ' DT'
+      price: Number(i.unit_price).toFixed(3).replace('.', ',') + ' DT',
+      unitPriceNum: Number(i.unit_price),
+      lineTotalNum: Number(i.subtotal ?? (i.unit_price * i.quantity))
     })),
-    status:   statusLabel(o.status),
-    total:    parseFloat(o.total).toFixed(3).replace('.',',') + ' DT'
+    status:    statusLabel(o.status),
+    statusRaw: o.status,
+    total:     parseFloat(o.total).toFixed(3).replace('.',',') + ' DT',
+    totalNum:  Number(o.total)
   };
 }
 
@@ -286,8 +476,8 @@ async function init() {
     if (sbUser) {
       const { data, error } = await _supabase
         .from('orders')
-        .select(`id, status, total, address_line1, city, postal_code, customer_phone, created_at,
-          order_items(product_name, quantity, unit_price, products(images))`)
+        .select(`id, status, total, address_line1, city, postal_code, customer_name, customer_email, customer_phone, created_at,
+          order_items(product_name, quantity, unit_price, subtotal, products(images))`)
         .eq('user_id', sbUser.id)
         .order('created_at', { ascending: false });
 
