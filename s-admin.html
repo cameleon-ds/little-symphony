@@ -48,15 +48,6 @@ input:focus{border-color:var(--primary)}
   box-shadow:0 4px 16px rgba(0,0,0,0.15);margin-top:0.5rem}
 .btn:hover{background:#3A3A3C;transform:translateY(-2px)}
 
-/* Hint credentials */
-.hint{margin-top:1.8rem;padding:1rem 1.2rem;background:var(--primary-xlight);
-  border:1px solid var(--border);border-radius:var(--radius-sm)}
-.hint-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;
-  color:var(--text-muted);margin-bottom:8px}
-.hint-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:4px}
-.hint-row:last-child{margin-bottom:0}
-.hint-label{color:var(--text-muted)}
-.hint-val{font-weight:600;color:var(--charcoal);font-family:monospace;font-size:13px}
 </style>
 </head>
 <body>
@@ -89,19 +80,6 @@ input:focus{border-color:var(--primary)}
     </div>
     <button type="submit" class="btn">Se connecter →</button>
   </form>
-
-  <!-- Credentials hint -->
-  <div class="hint">
-    <div class="hint-title">Identifiants de connexion</div>
-    <div class="hint-row">
-      <span class="hint-label">Utilisateur</span>
-      <span class="hint-val">cissi</span>
-    </div>
-    <div class="hint-row">
-      <span class="hint-label">Mot de passe</span>
-      <span class="hint-val">admincissi</span>
-    </div>
-  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
