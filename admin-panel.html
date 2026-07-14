@@ -1418,7 +1418,7 @@ function renderCommandes() {
           </select>
         </td>
         <td style="white-space:nowrap;text-align:right">
-          ${o.status === 'shipped' ? `
+          ${invoiceAvailableForStatus(o.status) ? `
           <button class="btn-detail" onclick="viewInvoice('${o.id}')" title="Visualiser la facture" style="padding:6px 8px">
             <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
@@ -1570,10 +1570,12 @@ function getOrderForInvoice(id) {
   return COMMANDES.find(c => c.id === id) || null;
 }
 
-// La facture n'existe/n'est proposée que lorsque la commande est au
-// statut "En livraison" — pas avant (en attente/confirmée), pas après.
+// La facture est générée dès que la commande passe au statut "En livraison",
+// et reste disponible une fois la commande "Livrée" (même facture, le statut
+// suivant hérite de la disponibilité). Pas avant (en attente/confirmée),
+// jamais si annulée.
 function invoiceAvailableForStatus(status) {
-  return status === 'shipped';
+  return status === 'shipped' || status === 'delivered';
 }
 
 function refreshInvoiceButtons(status) {
