@@ -1643,7 +1643,7 @@ async function showDetail(id) {
 
   o.items = items;
 
-  const sub = items.reduce((s, i) => s + parseFloat(i.price.replace(',', '.').replace(/[^\d.]/g, '')), 0);
+  const sub = items.reduce((s, i) => s + (i.lineTotalNum || 0), 0);
   document.getElementById('detail-subtotal').textContent = sub.toFixed(3).replace('.', ',') + ' DT';
 
   document.getElementById('detail-items').innerHTML = items.length
