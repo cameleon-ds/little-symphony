@@ -133,7 +133,6 @@
         <div class="detail-section">Informations</div>
         <div class="detail-row"><span>N° commande</span><span id="d-id">—</span></div>
         <div class="detail-row"><span>Date</span><span id="d-date">—</span></div>
-        <div class="detail-row"><span>Statut</span><span id="d-status">—</span></div>
         <div class="detail-row"><span>Mode de réception</span><span id="d-delivery">—</span></div>
       </div>
       <div>
@@ -385,7 +384,6 @@ function showDetail(idx) {
   document.getElementById('detail-title').textContent  = 'Commande ' + o.id;
   document.getElementById('d-id').textContent          = o.id;
   document.getElementById('d-date').textContent        = o.dateTime || o.date;
-  document.getElementById('d-status').innerHTML        = `<span class="order-badge ${BADGE(o.status)}" style="font-size:11px">${o.status}</span>`;
   document.getElementById('detail-status-top').innerHTML = `<span class="order-badge ${BADGE(o.status)}">${o.status}</span>`;
   document.getElementById('d-delivery').textContent    = o.delivery==='retrait'?'Retrait en boutique':'Livraison à domicile';
   document.getElementById('detail-total').textContent  = o.total;
