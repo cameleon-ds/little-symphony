@@ -490,6 +490,11 @@ tbody tr:hover{background:var(--primary-xlight)}
         <div class="table-header">
           <span class="table-title">Toutes les commandes</span>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="date" id="commandes-date-from" onchange="filterCommandes()" title="Du" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--sans);outline:none;color:var(--charcoal);background:#fff;cursor:pointer">
+              <span style="font-size:12px;color:var(--text-muted)">→</span>
+              <input type="date" id="commandes-date-to" onchange="filterCommandes()" title="Au" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--sans);outline:none;color:var(--charcoal);background:#fff;cursor:pointer">
+            </div>
             <select id="commandes-status-filter" onchange="filterCommandes()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--sans);outline:none;color:var(--charcoal);background:#fff;cursor:pointer">
               <option value="">Tous les statuts</option>
               <option value="invoiced">Facturées</option>
@@ -1329,11 +1334,16 @@ function filterTable(tableId, query) {
 function filterCommandes() {
   const q = (document.getElementById('commandes-search').value || '').toLowerCase();
   const status = document.getElementById('commandes-status-filter').value;
+  const dateFrom = document.getElementById('commandes-date-from').value; // yyyy-mm-dd ou ''
+  const dateTo   = document.getElementById('commandes-date-to').value;   // yyyy-mm-dd ou ''
   document.querySelectorAll('#tbl-commandes tbody tr').forEach(tr => {
     const matchText = !q || tr.textContent.toLowerCase().includes(q);
     const matchStatus = !status
       || (status === 'invoiced' ? invoiceAvailableForStatus(tr.dataset.status) : tr.dataset.status === status);
-    tr.style.display = (matchText && matchStatus) ? '' : 'none';
+    const rowDate = tr.dataset.date || '';
+    const matchDateFrom = !dateFrom || (rowDate >= dateFrom);
+    const matchDateTo   = !dateTo   || (rowDate <= dateTo);
+    tr.style.display = (matchText && matchStatus && matchDateFrom && matchDateTo) ? '' : 'none';
   });
 }
 
@@ -1368,6 +1378,7 @@ async function loadCommandes() {
     date: new Date(o.created_at).toLocaleDateString('fr-FR'),
     dateShort: new Date(o.created_at).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit'}),
     dateTime: new Date(o.created_at).toLocaleDateString('fr-FR') + ' à ' + new Date(o.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}),
+    dateISO: (d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'))(new Date(o.created_at)),
     total: Number(o.total).toFixed(3).replace('.', ',') + ' DT',
     totalNum: Number(o.total),
     status: o.status,
@@ -1404,7 +1415,7 @@ function renderStats() {
 function renderCommandes() {
   document.getElementById('tbody-commandes').innerHTML = COMMANDES.length
     ? COMMANDES.map(o => `
-      <tr data-status="${o.status}">
+      <tr data-status="${o.status}" data-date="${o.dateISO}">
         <td style="white-space:nowrap">
           <button class="btn-detail" onclick="showDetail('${o.id}')" style="margin-right:8px;flex-shrink:0"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button><strong>${o.ref}</strong>
         </td>
