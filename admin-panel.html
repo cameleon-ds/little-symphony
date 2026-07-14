@@ -505,6 +505,9 @@ tbody tr:hover{background:var(--primary-xlight)}
               <option value="cancelled">Annulée</option>
             </select>
             <input id="commandes-search" class="table-search" placeholder="Rechercher…" oninput="filterCommandes()" style="width:200px">
+            <button id="btn-invoices-zip" onclick="downloadInvoicesZip()" title="Télécharger le fichier ZIP" style="display:none;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;color:var(--charcoal)">
+              <svg viewBox="0 0 24 24" style="width:16px;height:16px;display:block" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
           </div>
         </div>
         <table id="tbl-commandes">
@@ -1272,6 +1275,7 @@ tbody tr:hover{background:var(--primary-xlight)}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 // Auth guard + init — tout le reste est dans initAdmin()
 let currentAdminUser = null;
@@ -1345,6 +1349,41 @@ function filterCommandes() {
     const matchDateTo   = !dateTo   || (rowDate <= dateTo);
     tr.style.display = (matchText && matchStatus && matchDateFrom && matchDateTo) ? '' : 'none';
   });
+
+  const zipBtn = document.getElementById('btn-invoices-zip');
+  if (zipBtn) zipBtn.style.display = (status === 'invoiced') ? '' : 'none';
+}
+
+// Télécharge un ZIP contenant les factures PDF de toutes les commandes
+// actuellement visibles dans le tableau (respecte les filtres statut/dates/recherche).
+async function downloadInvoicesZip() {
+  const rows = Array.from(document.querySelectorAll('#tbl-commandes tbody tr'))
+    .filter(tr => tr.style.display !== 'none' && invoiceAvailableForStatus(tr.dataset.status));
+
+  const orders = rows.map(tr => getOrderForInvoice(tr.dataset.id)).filter(Boolean);
+  if (!orders.length) { alert('Aucune facture à télécharger pour la sélection actuelle.'); return; }
+
+  const btn = document.getElementById('btn-invoices-zip');
+  if (btn) btn.disabled = true;
+
+  try {
+    const zip = new JSZip();
+    orders.forEach(order => {
+      const doc = buildInvoiceDoc(order);
+      zip.file(`facture-${order.ref}.pdf`, doc.output('blob'));
+    });
+    const content = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `factures-${new Date().toISOString().slice(0, 10)}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 async function logout() {
@@ -1415,7 +1454,7 @@ function renderStats() {
 function renderCommandes() {
   document.getElementById('tbody-commandes').innerHTML = COMMANDES.length
     ? COMMANDES.map(o => `
-      <tr data-status="${o.status}" data-date="${o.dateISO}">
+      <tr data-status="${o.status}" data-date="${o.dateISO}" data-id="${o.id}">
         <td style="white-space:nowrap">
           <button class="btn-detail" onclick="showDetail('${o.id}')" style="margin-right:8px;flex-shrink:0"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button><strong>${o.ref}</strong>
         </td>
