@@ -503,10 +503,10 @@ tbody tr:hover{background:var(--primary-xlight)}
         </div>
         <table id="tbl-commandes">
           <thead><tr>
-            <th>N° commande</th><th>Client</th><th>Date</th><th>Montant</th><th>Statut</th>
+            <th>N° commande</th><th>Client</th><th>Date</th><th>Montant</th><th>Statut</th><th style="text-align:right">Facture</th>
           </tr></thead>
           <tbody id="tbody-commandes">
-            <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement…</td></tr>
+            <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement…</td></tr>
           </tbody>
         </table>
       </div>
@@ -528,6 +528,14 @@ tbody tr:hover{background:var(--primary-xlight)}
           <option value="cancelled">Annulée</option>
         </select>
         <button class="btn-save-status" onclick="saveStatus()" style="margin-top:0;width:auto;padding:9px 20px">Enregistrer le statut</button>
+        <button class="btn-detail" onclick="currentOrder && viewInvoice(currentOrder.id)" style="padding:9px 16px">
+          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Visualiser la facture
+        </button>
+        <button class="btn-detail" onclick="currentOrder && downloadInvoice(currentOrder.id)" style="padding:9px 16px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Télécharger la facture
+        </button>
       </div>
       <div class="detail-grid">
         <div class="detail-col-left">
@@ -1257,6 +1265,7 @@ tbody tr:hover{background:var(--primary-xlight)}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 // Auth guard + init — tout le reste est dans initAdmin()
 let currentAdminUser = null;
@@ -1369,7 +1378,9 @@ async function loadCommandes() {
       product_id: oi.product_id,
       name: oi.product_name,
       qty: oi.quantity,
-      price: Number(oi.unit_price).toFixed(3).replace('.', ',') + ' DT'
+      price: Number(oi.unit_price).toFixed(3).replace('.', ',') + ' DT',
+      unitPriceNum: Number(oi.unit_price),
+      lineTotalNum: Number(oi.subtotal ?? (oi.unit_price * oi.quantity))
     }))
   }));
 
@@ -1405,8 +1416,159 @@ function renderCommandes() {
             ).join('')}
           </select>
         </td>
+        <td style="white-space:nowrap;text-align:right">
+          <button class="btn-detail" onclick="viewInvoice('${o.id}')" title="Visualiser la facture" style="padding:6px 8px">
+            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+          <button class="btn-detail" onclick="downloadInvoice('${o.id}')" title="Télécharger la facture" style="padding:6px 8px;margin-left:4px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+        </td>
       </tr>`).join('')
     : `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">Aucune commande</td></tr>`;
+}
+
+// ── FACTURES (PDF généré côté navigateur, aucun stockage) ─────────
+const COMPANY_INFO = {
+  name: 'LITTLE SYMPHONY',
+  legalForm: 'SARL',
+  address: '3 Rue Durand Angliviel, Tunis Belvédère, El Menzah, 1002 Tunis',
+  taxId: 'MF 1943684S',
+  phone: '+216 20 136 138',
+  email: 'little-symphony.tn@gmail.com',
+};
+
+function fmtDT(n) {
+  return Number(n || 0).toFixed(3).replace('.', ',') + ' DT';
+}
+
+function buildInvoiceDoc(order) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const marginX = 18;
+  let y = 20;
+
+  // ── En-tête société ──
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text(COMPANY_INFO.name, marginX, y);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(90, 90, 90);
+  y += 6;  doc.text(COMPANY_INFO.legalForm, marginX, y);
+  y += 5;  doc.text(COMPANY_INFO.address, marginX, y, { maxWidth: 95 });
+  y += 9;  doc.text(COMPANY_INFO.taxId, marginX, y);
+  y += 5;  doc.text('Tél : ' + COMPANY_INFO.phone, marginX, y);
+  y += 5;  doc.text('Email : ' + COMPANY_INFO.email, marginX, y);
+
+  // ── Titre facture (haut droite) ──
+  doc.setTextColor(20, 20, 20);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.text('FACTURE', pageWidth - marginX, 22, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(90, 90, 90);
+  doc.text('N° ' + order.ref, pageWidth - marginX, 30, { align: 'right' });
+  doc.text('Date : ' + order.dateTime, pageWidth - marginX, 35, { align: 'right' });
+
+  // ── Bloc client ──
+  let yClient = 55;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(20, 20, 20);
+  doc.text('Facturé à', marginX, yClient);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(90, 90, 90);
+  yClient += 6;  doc.text(order.client || '—', marginX, yClient);
+  if (order.phone) { yClient += 5; doc.text(order.phone, marginX, yClient); }
+  if (order.email) { yClient += 5; doc.text(order.email, marginX, yClient); }
+  const addrLine = [order.address_line1, [order.postal_code, order.city].filter(Boolean).join(' ')]
+    .filter(Boolean).join(', ');
+  if (addrLine) { yClient += 5; doc.text(addrLine, marginX, yClient, { maxWidth: 95 }); }
+
+  // ── Tableau des articles ──
+  let yTable = Math.max(yClient + 14, 80);
+  const colName  = marginX;
+  const colQty   = pageWidth - marginX - 62;
+  const colPrice = pageWidth - marginX - 36;
+  const colTotal = pageWidth - marginX;
+
+  doc.setFillColor(245, 241, 238);
+  doc.rect(marginX - 2, yTable - 5.5, pageWidth - 2 * marginX + 4, 8.5, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(20, 20, 20);
+  doc.text('Désignation', colName, yTable);
+  doc.text('Qté', colQty, yTable, { align: 'right' });
+  doc.text('Prix unit.', colPrice, yTable, { align: 'right' });
+  doc.text('Total', colTotal, yTable, { align: 'right' });
+  yTable += 9;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(60, 60, 60);
+  let subtotal = 0;
+  (order.items || []).forEach(item => {
+    const unitPrice = item.unitPriceNum ?? (parseFloat(String(item.price).replace(',', '.').replace(/[^\d.]/g, '')) || 0);
+    const lineTotal = item.lineTotalNum ?? (unitPrice * (item.qty || 1));
+    subtotal += lineTotal;
+    doc.text(String(item.name || ''), colName, yTable, { maxWidth: pageWidth - marginX * 2 - 66 });
+    doc.text(String(item.qty ?? ''), colQty, yTable, { align: 'right' });
+    doc.text(fmtDT(unitPrice), colPrice, yTable, { align: 'right' });
+    doc.text(fmtDT(lineTotal), colTotal, yTable, { align: 'right' });
+    yTable += 7;
+  });
+  if (!order.items || !order.items.length) {
+    doc.text('—', colName, yTable);
+    yTable += 7;
+  }
+
+  doc.setDrawColor(220, 220, 220);
+  doc.line(marginX, yTable, pageWidth - marginX, yTable);
+  yTable += 8;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9.5);
+  doc.text('Sous-total', colPrice, yTable, { align: 'right' });
+  doc.text(fmtDT(subtotal), colTotal, yTable, { align: 'right' });
+  yTable += 6;
+  doc.text('Livraison', colPrice, yTable, { align: 'right' });
+  doc.text('—', colTotal, yTable, { align: 'right' });
+  yTable += 9;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(20, 20, 20);
+  doc.text('Total TTC', colPrice, yTable, { align: 'right' });
+  doc.text(order.total, colTotal, yTable, { align: 'right' });
+
+  // ── Pied de page ──
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(140, 140, 140);
+  doc.text('Mode de règlement : paiement à la livraison', marginX, 275);
+  doc.text(`${COMPANY_INFO.name} — ${COMPANY_INFO.legalForm} — ${COMPANY_INFO.taxId}`, marginX, 280);
+
+  return doc;
+}
+
+function getOrderForInvoice(id) {
+  return COMMANDES.find(c => c.id === id) || null;
+}
+
+function viewInvoice(id) {
+  const order = getOrderForInvoice(id);
+  if (!order) return;
+  const doc = buildInvoiceDoc(order);
+  window.open(doc.output('bloburl'), '_blank');
+}
+
+function downloadInvoice(id) {
+  const order = getOrderForInvoice(id);
+  if (!order) return;
+  const doc = buildInvoiceDoc(order);
+  doc.save(`facture-${order.ref}.pdf`);
 }
 
 async function updateStatus(id, select) {
@@ -1461,7 +1623,7 @@ async function showDetail(id) {
   // Fetch items avec images via FK product_id → products
   const { data: rows, error } = await _supabase
     .from('order_items')
-    .select('product_name, unit_price, quantity, products(images)')
+    .select('product_name, unit_price, quantity, subtotal, products(images)')
     .eq('order_id', o.id);
 
   if (error) {
@@ -1474,6 +1636,8 @@ async function showDetail(id) {
     name:  i.product_name,
     qty:   i.quantity,
     price: Number(i.unit_price).toFixed(3).replace('.', ',') + ' DT',
+    unitPriceNum: Number(i.unit_price),
+    lineTotalNum: Number(i.subtotal ?? (i.unit_price * i.quantity)),
     img:   (i.products?.images?.[0]) || ''
   }));
 
