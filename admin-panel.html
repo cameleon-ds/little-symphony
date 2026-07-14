@@ -520,14 +520,13 @@ tbody tr:hover{background:var(--primary-xlight)}
           Retour
         </button>
         <div style="flex:1"></div>
-        <select class="status-select-inline" id="detail-status-select" onchange="this.className='status-select-inline s-'+this.value" style="padding:9px 14px;font-size:13px;min-width:160px">
+        <select class="status-select-inline" id="detail-status-select" onchange="this.className='status-select-inline s-'+this.value; saveStatus();" style="padding:9px 14px;font-size:13px;min-width:160px">
           <option value="pending">En attente</option>
           <option value="confirmed">Confirmée</option>
           <option value="shipped">En livraison</option>
           <option value="delivered">Livrée</option>
           <option value="cancelled">Annulée</option>
         </select>
-        <button class="btn-save-status" onclick="saveStatus()" style="margin-top:0;width:auto;padding:9px 20px">Enregistrer le statut</button>
         <button class="btn-detail" id="btn-invoice-view" onclick="currentOrder && viewInvoice(currentOrder.id)" style="padding:9px 16px;display:none">
           <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           Visualiser la facture
@@ -1828,18 +1827,26 @@ async function saveAddress() {
 
 async function saveStatus() {
   if (!currentOrder) return;
+  const sel = document.getElementById('detail-status-select');
   const oldStatus = currentOrder.status;
-  const newStatus = document.getElementById('detail-status-select').value;
+  const newStatus = sel.value;
   if (oldStatus === newStatus) return;
 
+  sel.disabled = true;
   const { data: saved, error } = await _supabase.from('orders')
     .update({ status: newStatus })
     .eq('id', currentOrder.id)
     .select('id');
+  sel.disabled = false;
 
-  if (error) { alert('Erreur: ' + error.message); return; }
+  if (error) {
+    alert('Erreur: ' + error.message);
+    sel.value = oldStatus; sel.className = 'status-select-inline s-' + oldStatus;
+    return;
+  }
   if (!saved || saved.length === 0) {
     alert('Mise à jour bloquée — vérifier la politique RLS "Admin gère toutes les commandes" dans Supabase.');
+    sel.value = oldStatus; sel.className = 'status-select-inline s-' + oldStatus;
     return;
   }
 
