@@ -492,6 +492,7 @@ tbody tr:hover{background:var(--primary-xlight)}
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <select id="commandes-status-filter" onchange="filterCommandes()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--sans);outline:none;color:var(--charcoal);background:#fff;cursor:pointer">
               <option value="">Tous les statuts</option>
+              <option value="invoiced">Facturées</option>
               <option value="pending">En attente</option>
               <option value="confirmed">Confirmée</option>
               <option value="shipped">En livraison</option>
@@ -1330,7 +1331,8 @@ function filterCommandes() {
   const status = document.getElementById('commandes-status-filter').value;
   document.querySelectorAll('#tbl-commandes tbody tr').forEach(tr => {
     const matchText = !q || tr.textContent.toLowerCase().includes(q);
-    const matchStatus = !status || tr.dataset.status === status;
+    const matchStatus = !status
+      || (status === 'invoiced' ? invoiceAvailableForStatus(tr.dataset.status) : tr.dataset.status === status);
     tr.style.display = (matchText && matchStatus) ? '' : 'none';
   });
 }
