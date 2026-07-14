@@ -1528,10 +1528,21 @@ function buildInvoiceDoc(order) {
   doc.line(marginX, yTable, pageWidth - marginX, yTable);
   yTable += 8;
 
+  // Les prix affichés sur le site sont TTC (TVA tunisienne à 19% déjà
+  // incluse) — on la fait apparaître séparément sur la facture sans
+  // changer le montant réellement payé par le client.
+  const TVA_RATE = 0.19;
+  const totalTTC = order.totalNum ?? subtotal;
+  const totalHT  = totalTTC / (1 + TVA_RATE);
+  const tvaAmount = totalTTC - totalHT;
+
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
-  doc.text('Sous-total', colPrice, yTable, { align: 'right' });
-  doc.text(fmtDT(subtotal), colTotal, yTable, { align: 'right' });
+  doc.text('Sous-total HT', colPrice, yTable, { align: 'right' });
+  doc.text(fmtDT(totalHT), colTotal, yTable, { align: 'right' });
+  yTable += 6;
+  doc.text('TVA (19%)', colPrice, yTable, { align: 'right' });
+  doc.text(fmtDT(tvaAmount), colTotal, yTable, { align: 'right' });
   yTable += 6;
   doc.text('Livraison', colPrice, yTable, { align: 'right' });
   doc.text('—', colTotal, yTable, { align: 'right' });
@@ -1541,7 +1552,7 @@ function buildInvoiceDoc(order) {
   doc.setFontSize(12);
   doc.setTextColor(20, 20, 20);
   doc.text('Total TTC', colPrice, yTable, { align: 'right' });
-  doc.text(order.total, colTotal, yTable, { align: 'right' });
+  doc.text(fmtDT(totalTTC), colTotal, yTable, { align: 'right' });
 
   // ── Pied de page ──
   doc.setFont('helvetica', 'normal');
