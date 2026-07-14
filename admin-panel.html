@@ -759,9 +759,22 @@ tbody tr:hover{background:var(--primary-xlight)}
 
     <!-- PRODUITS -->
     <div class="panel" id="panel-produits">
-      <div class="page-header">
-        <h1 class="page-title">Produits</h1>
-        <p class="page-sub">Catalogue complet des produits</p>
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div>
+          <h1 class="page-title">Produits</h1>
+          <p class="page-sub">Catalogue complet des produits</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" onclick="downloadProduitsCsvTemplate()" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:#fff;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--sans);color:var(--charcoal)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Télécharger le modèle CSV
+          </button>
+          <button type="button" id="btn-csv-import" onclick="triggerCsvImport()" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:var(--charcoal);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--sans)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Uploader une liste de produits
+          </button>
+          <input type="file" id="csv-import-input" accept=".csv" style="display:none" onchange="handleCsvImport(event)">
+        </div>
       </div>
 
       <!-- Liste produits -->
@@ -2613,6 +2626,212 @@ async function deleteProduit() {
   if (error) { alert('Erreur : ' + error.message); return; }
   closeProduitForm();
   await loadProduits();
+}
+
+// ── IMPORT / EXPORT CSV DES PRODUITS ───────────────────────────────
+function csvEscape(val) {
+  const s = (val === null || val === undefined) ? '' : String(val);
+  if (/[",;\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function buildProduitsCsvTemplate() {
+  const headers = [
+    'categorie', 'sous_categorie', 'nom', 'sous_titre', 'description',
+    'prix', 'prix_barre', 'stock', 'sexe', 'ages', 'images',
+    'actif', 'nouveau', 'promo', 'vedette',
+    'attribut1_titre', 'attribut1_valeur', 'attribut2_titre', 'attribut2_valeur'
+  ];
+  const exCat = CATEGORIES[0]?.nom || 'Vêtements';
+  const exSub = CATEGORIES[0]?.subs?.[0]?.nom || '';
+  const rows = [
+    headers,
+    [exCat, exSub, 'Body manches longues', 'En coton bio', 'Body doux et confortable pour bébé.',
+      '24.900', '29.900', '15', 'mixte', '0-6;6-12',
+      'https://exemple.com/image1.jpg;https://exemple.com/image2.jpg',
+      'oui', 'oui', 'non', 'non', 'Matière', 'Coton bio', 'Entretien', 'Lavage 30°C'],
+    ['', '', 'Exemple à remplacer', '', '', '19.900', '', '10', 'fille', '1-3', '', 'oui', 'non', 'non', 'non', '', '', '', '']
+  ];
+  return rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
+}
+
+function downloadProduitsCsvTemplate() {
+  const csv = '﻿' + buildProduitsCsvTemplate(); // BOM : accents corrects dans Excel
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'modele-produits-little-symphony.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+// Parseur CSV simple (gère les champs entre guillemets contenant virgules/retours à la ligne)
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else { inQuotes = false; }
+      } else {
+        field += c;
+      }
+    } else {
+      if (c === '"') { inQuotes = true; }
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\r') { /* ignoré */ }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else { field += c; }
+    }
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  while (rows.length && rows[rows.length - 1].every(f => f.trim() === '')) rows.pop();
+  return rows;
+}
+
+function triggerCsvImport() {
+  document.getElementById('csv-import-input').click();
+}
+
+function slugifyProductName(name) {
+  return (name || '').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+async function handleCsvImport(event) {
+  const file = event.target.files[0];
+  event.target.value = ''; // permet de réimporter le même fichier ensuite
+  if (!file) return;
+
+  const btn = document.getElementById('btn-csv-import');
+  btn.disabled = true;
+
+  try {
+    const text = await file.text();
+    const allRows = parseCSV(text).filter(r => r.some(c => c.trim() !== ''));
+    if (allRows.length < 2) {
+      alert('Le fichier CSV est vide ou ne contient aucune ligne de produit.');
+      return;
+    }
+
+    const header = allRows[0].map(h => h.trim().toLowerCase());
+    const col = name => header.indexOf(name);
+    const idx = {
+      categorie: col('categorie'), sousCategorie: col('sous_categorie'),
+      nom: col('nom'), sousTitre: col('sous_titre'), description: col('description'),
+      prix: col('prix'), prixBarre: col('prix_barre'), stock: col('stock'),
+      sexe: col('sexe'), ages: col('ages'), images: col('images'),
+      actif: col('actif'), nouveau: col('nouveau'), promo: col('promo'), vedette: col('vedette'),
+      a1t: col('attribut1_titre'), a1v: col('attribut1_valeur'),
+      a2t: col('attribut2_titre'), a2v: col('attribut2_valeur'),
+    };
+
+    if (idx.categorie === -1 || idx.nom === -1 || idx.prix === -1) {
+      alert('Le fichier CSV doit contenir au minimum les colonnes : categorie, nom, prix.\nTéléchargez le modèle CSV pour respecter le bon format.');
+      return;
+    }
+
+    const parseBool = (v, def) => {
+      const s = (v || '').trim().toLowerCase();
+      if (!s) return def;
+      return ['oui', 'yes', 'true', '1', 'vrai'].includes(s);
+    };
+    const validAges = ['0-6', '6-12', '1-3', '3-6', '6-12ans', 'maman'];
+    const existingSlugs = new Set(PRODUITS.map(p => p.slug).filter(Boolean));
+    const errors = [];
+    const payloads = [];
+
+    for (let r = 1; r < allRows.length; r++) {
+      const row = allRows[r];
+      const get = i => (i >= 0 && row[i] !== undefined) ? row[i].trim() : '';
+      const lineNo = r + 1;
+
+      const catName = get(idx.categorie);
+      const subName = get(idx.sousCategorie);
+      const nom = get(idx.nom);
+      const prix = parseFloat(get(idx.prix).replace(',', '.'));
+
+      if (!catName) { errors.push(`Ligne ${lineNo} : catégorie manquante.`); continue; }
+      if (!nom)     { errors.push(`Ligne ${lineNo} : nom du produit manquant.`); continue; }
+      if (isNaN(prix) || prix < 0) { errors.push(`Ligne ${lineNo} : prix invalide ("${get(idx.prix)}").`); continue; }
+
+      const cat = CATEGORIES.find(c => c.nom.trim().toLowerCase() === catName.toLowerCase());
+      if (!cat) { errors.push(`Ligne ${lineNo} : catégorie "${catName}" introuvable (vérifiez l'orthographe exacte, voir le modèle CSV).`); continue; }
+
+      let subId = null;
+      if (subName) {
+        const sub = cat.subs.find(s => s.nom.trim().toLowerCase() === subName.toLowerCase());
+        if (!sub) { errors.push(`Ligne ${lineNo} : sous-catégorie "${subName}" introuvable dans "${cat.nom}".`); continue; }
+        subId = sub.id;
+      }
+
+      const prixBarreRaw = get(idx.prixBarre).replace(',', '.');
+      const prixBarre = prixBarreRaw ? parseFloat(prixBarreRaw) : null;
+      const stockRaw = get(idx.stock);
+      const stock = stockRaw ? parseInt(stockRaw, 10) : 0;
+
+      let sexe = get(idx.sexe).toLowerCase() || 'mixte';
+      if (!['mixte', 'fille', 'garcon'].includes(sexe)) sexe = 'mixte';
+
+      const ages = get(idx.ages).split(';').map(a => a.trim()).filter(a => validAges.includes(a));
+      const images = get(idx.images).split(';').map(u => u.trim()).filter(Boolean);
+
+      const attributes = [];
+      const a1t = get(idx.a1t), a1v = get(idx.a1v), a2t = get(idx.a2t), a2v = get(idx.a2v);
+      if (a1t || a1v) attributes.push({ title: a1t, desc: a1v });
+      if (a2t || a2v) attributes.push({ title: a2t, desc: a2v });
+
+      const baseSlug = slugifyProductName(nom) || ('produit-' + Date.now());
+      let uniqueSlug = baseSlug, n = 2;
+      while (existingSlugs.has(uniqueSlug)) { uniqueSlug = `${baseSlug}-${n++}`; }
+      existingSlugs.add(uniqueSlug);
+
+      payloads.push({
+        name: nom,
+        slug: uniqueSlug,
+        subtitle: get(idx.sousTitre) || null,
+        category_id: cat.id,
+        subcategory_id: subId,
+        price: prix,
+        price_old: (prixBarre !== null && !isNaN(prixBarre)) ? prixBarre : null,
+        stock: isNaN(stock) ? 0 : stock,
+        is_active: parseBool(get(idx.actif), true),
+        is_new: parseBool(get(idx.nouveau), false),
+        is_promo: parseBool(get(idx.promo), false),
+        is_featured: parseBool(get(idx.vedette), false),
+        gender: sexe,
+        age_ranges: ages,
+        images,
+        description: get(idx.description) || null,
+        attributes: attributes.length ? attributes : null
+      });
+    }
+
+    if (!payloads.length) {
+      alert('Aucune ligne valide à importer.' + (errors.length ? '\n\n' + errors.join('\n') : ''));
+      return;
+    }
+
+    const { error } = await _supabase.from('products').insert(payloads);
+    if (error) { alert('Erreur lors de l\'import : ' + error.message); return; }
+
+    await loadProduits();
+
+    let msg = `${payloads.length} produit${payloads.length > 1 ? 's' : ''} importé${payloads.length > 1 ? 's' : ''} avec succès.`;
+    if (errors.length) msg += `\n\n${errors.length} ligne(s) ignorée(s) :\n` + errors.join('\n');
+    alert(msg);
+
+  } catch (e) {
+    alert('Erreur lors de la lecture du fichier : ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ── CATÉGORIES ────────────────────────────────────────────────────
