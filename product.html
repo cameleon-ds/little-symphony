@@ -225,10 +225,21 @@ async function init() {
   const urlSlug = new URLSearchParams(window.location.search).get('slug');
   product = CurrentProduct.get();
 
-  if (urlSlug && (!product || product.slug !== urlSlug)) {
-    const fetched = await loadProductBySlug(urlSlug);
+  // Toujours recharger le produit depuis Supabase (le cache local peut être périmé :
+  // images, prix ou stock modifiés depuis l'admin après la mise en cache).
+  const slug = urlSlug || (product && product.slug);
+  if (slug) {
+    const fetched = await loadProductBySlug(slug);
     if (fetched) {
-      product = fetched;
+      if (product && product.slug === slug) {
+        product = { ...product,
+          name: fetched.name, sub: fetched.sub || product.sub,
+          price: fetched.price, oldPrice: fetched.oldPrice,
+          img: fetched.img, images: fetched.images,
+          stock: fetched.stock, description: fetched.description || product.description };
+      } else {
+        product = fetched;
+      }
       CurrentProduct.set(product);
     }
   }
