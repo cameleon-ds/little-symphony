@@ -75,6 +75,9 @@ img{display:block;max-width:100%}
 .toast{display:flex;align-items:center;gap:10px;background:#1a1a2e;color:#fff;padding:12px 16px;border-radius:12px;font-size:13px;font-family:var(--sans);font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.25);pointer-events:all;cursor:pointer;transform:translateX(120%);opacity:0;transition:transform 0.3s cubic-bezier(.4,0,.2,1),opacity 0.3s ease;min-width:220px}
 .toast.show{transform:translateX(0);opacity:1}
 .toast.toast-success{background:#2E7D32}
+.dirty-dot{display:none;position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:#22C55E;border:2.5px solid #fff;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:dirtyPulse 1.6s infinite}
+#pf-save-btn.is-dirty .dirty-dot{display:block}
+@keyframes dirtyPulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55)}70%{box-shadow:0 0 0 9px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
 .toast-icon{font-size:18px;flex-shrink:0}
 .toast-body{flex:1}
 .toast-title{font-weight:700;font-size:13px}
@@ -868,7 +871,7 @@ tr.row-selected td{background:#FBF6F5}
           </button>
           <h2 id="produit-form-title" class="pf-form-title" style="font-family:var(--serif);font-size:1.3rem;font-weight:700;margin:0;flex:1">Nouveau produit</h2>
           <button onclick="closeProduitForm()" style="padding:8px 18px;background:none;border:1.5px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;font-family:var(--sans);color:var(--text-soft)">Annuler</button>
-          <button onclick="saveProduit()" style="padding:8px 20px;background:var(--charcoal);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)">Enregistrer</button>
+          <button id="pf-save-btn" onclick="saveProduit()" style="position:relative;padding:8px 20px;background:var(--charcoal);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)">Enregistrer<span class="dirty-dot" title="Modifications non enregistrées"></span></button>
         </div>
 
         <div class="pf-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
@@ -2638,6 +2641,7 @@ function onPfCatChange() {
 }
 
 function openProduitForm(id) {
+  _pfReady = false;
   _editingProduitId = id;
   _uploadedFileBlob = null;
 
@@ -2705,15 +2709,40 @@ function openProduitForm(id) {
   document.getElementById('produit-detail').style.display = '';
   const label = id ? (PRODUITS.find(x => x.id === id)?.nom || 'Produit') : 'Nouveau produit';
   setBreadcrumb('Produits', label);
+  setPfDirty(false);
+  setTimeout(() => { _pfReady = true; }, 0);
 }
 
-function closeProduitForm() {
+function closeProduitForm(force) {
+  if (!force && _pfDirty && !confirm('Des modifications ne sont pas enregistrées. Quitter quand même ?')) return;
+  setPfDirty(false);
   document.getElementById('produit-detail').style.display = 'none';
   document.getElementById('produits-list-view').style.display = '';
   _editingProduitId = null;
   _imageSlots = [];
   setBreadcrumb('Produits');
 }
+
+// ── Indicateur "modifications non enregistrées" (pastille verte sur Enregistrer) ──
+let _pfDirty = false, _pfReady = false;
+function setPfDirty(v) {
+  _pfDirty = !!v;
+  document.getElementById('pf-save-btn')?.classList.toggle('is-dirty', _pfDirty);
+}
+function markPfDirty() { if (_pfReady) setPfDirty(true); }
+document.addEventListener('input',  e => { if (e.target.closest && e.target.closest('#produit-detail')) markPfDirty(); });
+document.addEventListener('change', e => { if (e.target.closest && e.target.closest('#produit-detail')) markPfDirty(); });
+window.addEventListener('beforeunload', e => {
+  if (_pfDirty && document.getElementById('produit-detail')?.style.display !== 'none') { e.preventDefault(); e.returnValue = ''; }
+});
+// Actions sans saisie clavier (images, caractéristiques) : marquer aussi comme modifié
+document.addEventListener('DOMContentLoaded', () => {
+  ['addImageSlot','removeImageSlot','moveSlotUp','moveSlotDown','setSlotUrl','setSlotFile',
+   'addAttrSlot','removeAttrSlot','moveAttr'].forEach(n => {
+    const f = window[n];
+    if (typeof f === 'function') window[n] = function (...a) { const r = f.apply(this, a); markPfDirty(); return r; };
+  });
+});
 
 // Caractéristiques : nombre illimité de lignes { title, desc }
 let _attrSlots = [];
@@ -2821,17 +2850,27 @@ async function saveProduit() {
     attributes: attributes.length ? attributes : null
   };
 
-  let error;
+  let error, inserted;
   if (_editingProduitId) {
     ({ error } = await _supabase.from('products').update(payload).eq('id', _editingProduitId));
   } else {
-    ({ error } = await _supabase.from('products').insert(payload));
+    ({ data: inserted, error } = await _supabase.from('products').insert(payload).select('id').single());
   }
 
   if (error) { alert('Erreur : ' + error.message); return; }
 
-  closeProduitForm();
+  // Rester sur la fiche : recharger les données puis rouvrir le même produit à la même position
+  const keepId = _editingProduitId || inserted?.id;
+  const scrollY = window.scrollY;
   await loadProduits();
+  if (keepId) {
+    document.getElementById('produits-list-view').style.display = 'none';
+    openProduitForm(keepId);
+    window.scrollTo(0, scrollY);
+  } else {
+    closeProduitForm(true);
+  }
+  showToast('Les changements ont bien été enregistrés', null, null, 'success');
 }
 
 async function deleteProduit() {
@@ -2840,7 +2879,7 @@ async function deleteProduit() {
   if (!confirm(`Supprimer "${p?.nom}" ? Cette action est irréversible.`)) return;
   const { error } = await _supabase.from('products').delete().eq('id', _editingProduitId);
   if (error) { alert('Erreur : ' + error.message); return; }
-  closeProduitForm();
+  closeProduitForm(true);
   await loadProduits();
 }
 
