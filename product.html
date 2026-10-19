@@ -195,7 +195,7 @@ async function loadProductBySlug(slug) {
   if (error || !p) return null;
 
   return {
-    id: p.id, slug: p.slug,
+    id: p.id, slug: p.slug, category_id: p.category_id,
     name: p.name, sub: p.subtitle || '',
     price: fmtPrice(p.price),
     oldPrice: p.price_old ? fmtPrice(p.price_old) : null,
@@ -238,6 +238,7 @@ async function init() {
           name: fetched.name, sub: fetched.sub || product.sub,
           price: fetched.price, oldPrice: fetched.oldPrice,
           img: fetched.img, images: fetched.images,
+          id: fetched.id, category_id: fetched.category_id,
           stock: fetched.stock, description: fetched.description,
           attributes: fetched.attributes };
       } else {
@@ -330,22 +331,43 @@ async function init() {
   document.getElementById('attrs').innerHTML = attrsData.map(([k,v]) =>
     `<div class="attr"><strong>${k}</strong><span>${v}</span></div>`).join('');
 
-  // Suggestions (siblings from same category stored in product.siblings)
-  const siblings = product.siblings || [];
-  document.getElementById('suggest-grid').innerHTML = siblings.slice(0,4).map(s => `
-    <div class="suggest-card" onclick="openSibling(${JSON.stringify(s).replace(/"/g,'&quot;')})">
-      <img class="suggest-img" src="${s.img}" alt="${s.name}" onerror="this.style.background='var(--primary-xlight)'">
-      <div class="suggest-info">
-        <div class="suggest-name">${s.name}</div>
-        <div class="suggest-price">${s.price}</div>
-      </div>
-    </div>`).join('');
+  // Suggestions « Vous aimerez aussi » : produits de la même catégorie, chargés depuis Supabase
+  renderSuggestions([]);
+  loadSuggestions();
 }
 
-function openSibling(p) {
-  CurrentProduct.set({...p, catName: product.catName, siblings: product.siblings});
-  window.scrollTo(0,0);
-  location.reload();
+function renderSuggestions(list) {
+  const esc = v => String(v || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  document.getElementById('suggest-grid').innerHTML = list.slice(0, 4).map(s => `
+    <a class="suggest-card" href="product.html#${encodeURIComponent(s.slug)}" onclick="openSibling(event, '${esc(s.slug)}')" style="display:block;text-decoration:none;color:inherit">
+      <img class="suggest-img" src="${esc(s.img)}" alt="${esc(s.name)}">
+      <div class="suggest-info">
+        <div class="suggest-name">${esc(s.name)}</div>
+        <div class="suggest-price">${esc(s.price)}</div>
+      </div>
+    </a>`).join('');
+}
+
+async function loadSuggestions() {
+  if (!product || !product.slug) return;
+  let q = _supabase.from('products').select('slug,name,price,images,category_id')
+    .eq('is_active', true).neq('slug', product.slug).limit(24);
+  if (product.category_id) q = q.eq('category_id', product.category_id);
+  const { data } = await q;
+  if (!data) return;
+  // Priorité aux produits avec photo, puis ordre aléatoire
+  const shuffled = data.sort(() => Math.random() - 0.5)
+    .sort((a, b) => ((b.images || []).length > 0) - ((a.images || []).length > 0));
+  renderSuggestions(shuffled.slice(0, 4).map(p => ({
+    slug: p.slug, name: p.name, price: fmtPrice(p.price), img: (p.images || [])[0] || ''
+  })));
+}
+
+function openSibling(e, slug) {
+  if (e) e.preventDefault();
+  if (!slug) return;
+  window.scrollTo(0, 0);
+  location.href = 'product.html#' + encodeURIComponent(slug);   // le changement d'adresse recharge la fiche
 }
 
 function renderStockBadge(stock) {
