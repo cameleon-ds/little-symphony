@@ -1312,7 +1312,7 @@ function openProduct(idx) {
     description: p.description || null,
     attributes:  p.attributes  || null,
   }));
-  window.location.href = 'product.html';
+  window.location.href = 'product.html' + (p.slug ? '#' + encodeURIComponent(p.slug) : '');
 }
 
 function closeProduct() {

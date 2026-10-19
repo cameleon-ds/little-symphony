@@ -222,7 +222,9 @@ function parsePrice(str) {
 }
 
 async function init() {
-  const urlSlug = new URLSearchParams(window.location.search).get('slug');
+  // Lien partageable : product.html#nom-du-produit (ancien format ?slug=… toujours accepté)
+  const urlSlug = decodeURIComponent(location.hash.replace(/^#/, '')) ||
+                  new URLSearchParams(window.location.search).get('slug');
   product = CurrentProduct.get();
 
   // Toujours recharger le produit depuis Supabase (le cache local peut être périmé :
@@ -246,6 +248,11 @@ async function init() {
   }
 
   if (!product) { window.location.href = 'index.html'; return; }
+
+  // Mettre le nom du produit dans l'adresse pour pouvoir la copier / partager (WhatsApp…)
+  if (product.slug && location.hash !== '#' + product.slug) {
+    history.replaceState(null, '', location.pathname + '#' + product.slug);
+  }
 
   // Breadcrumb
   document.title = product.name + ' — Little Symphony';
@@ -391,6 +398,10 @@ function updateCartBadge() {
 
 
 init();
+window.addEventListener('hashchange', () => {
+  const slug = decodeURIComponent(location.hash.replace(/^#/, ''));
+  if (slug && (!product || product.slug !== slug)) location.reload();
+});
 </script>
 </body>
 </html>

@@ -952,7 +952,7 @@ function openProduct(idx, list) {
     attributes:  p.attributes  || null,
     siblings
   });
-  window.location.href = 'product.html';
+  window.location.href = 'product.html' + (p.slug ? '#' + encodeURIComponent(p.slug) : '');
 }
 
 // ── ADD TO CART ────────────────────────────────────────────────────────────────
