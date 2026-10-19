@@ -204,7 +204,7 @@ async function loadProductBySlug(slug) {
     catName: p.categories?.name || '',
     stock: p.stock ?? null,
     description: p.description || null,
-    attributes: null,
+    attributes: p.attributes || null,
     siblings: [],
   };
 }
@@ -236,7 +236,8 @@ async function init() {
           name: fetched.name, sub: fetched.sub || product.sub,
           price: fetched.price, oldPrice: fetched.oldPrice,
           img: fetched.img, images: fetched.images,
-          stock: fetched.stock, description: fetched.description || product.description };
+          stock: fetched.stock, description: fetched.description,
+          attributes: fetched.attributes };
       } else {
         product = fetched;
       }
