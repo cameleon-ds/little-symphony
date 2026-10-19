@@ -872,8 +872,15 @@ tbody tr:hover{background:var(--primary-xlight)}
 
             <!-- Bullet points -->
             <div class="detail-card">
-              <div class="detail-card-title">Caractéristiques (4 max)</div>
+              <div class="detail-card-title">Caractéristiques</div>
               <div id="pf-attrs-list" style="display:flex;flex-direction:column;gap:8px"></div>
+              <button type="button" onclick="addAttrSlot()"
+                style="width:100%;margin-top:10px;padding:10px;border:1.5px dashed var(--border);border-radius:8px;background:none;font-size:13px;color:var(--text-muted);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;justify-content:center;gap:6px"
+                onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary-dark)'"
+                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Ajouter une caractéristique
+              </button>
             </div>
 
           </div>
@@ -2523,32 +2530,56 @@ function closeProduitForm() {
   setBreadcrumb('Produits');
 }
 
+// Caractéristiques : nombre illimité de lignes { title, desc }
+let _attrSlots = [];
+
 function renderAttrSlots(attrs) {
-  // attrs = [{title, desc}, …] max 4
-  const slots = (attrs || []).slice(0, 4);
-  while (slots.length < 4) slots.push({ title: '', desc: '' });
-  document.getElementById('pf-attrs-list').innerHTML = slots.map((a, i) => `
-    <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:8px;align-items:center">
-      <input
-        type="text" maxlength="18" placeholder="Titre (ex: Matière)"
-        class="detail-input" style="font-size:12px"
-        id="attr-title-${i}" value="${(a.title||'').replace(/"/g,'&quot;')}">
-      <input
-        type="text" maxlength="20" placeholder="Valeur (max 20 car.)"
-        class="detail-input" style="font-size:12px"
-        id="attr-desc-${i}" value="${(a.desc||'').replace(/"/g,'&quot;')}">
+  if (attrs !== undefined) {
+    _attrSlots = (attrs || []).map(a => ({ title: a.title || '', desc: a.desc || '' }));
+    if (!_attrSlots.length) _attrSlots.push({ title: '', desc: '' });
+  }
+  const esc = v => (v || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const n = _attrSlots.length;
+  document.getElementById('pf-attrs-list').innerHTML = _attrSlots.map((a, i) => `
+    <div style="display:grid;grid-template-columns:1fr 1.6fr auto;gap:8px;align-items:center">
+      <input type="text" maxlength="40" placeholder="Titre (ex: Matière)"
+        class="detail-input" style="font-size:12px" id="attr-title-${i}"
+        value="${esc(a.title)}" oninput="_attrSlots[${i}].title=this.value">
+      <input type="text" maxlength="120" placeholder="Valeur (ex: Bois massif)"
+        class="detail-input" style="font-size:12px" id="attr-desc-${i}"
+        value="${esc(a.desc)}" oninput="_attrSlots[${i}].desc=this.value">
+      <div style="display:flex;gap:4px">
+        ${i > 0 ? `<button type="button" onclick="moveAttr(${i},-1)" title="Monter" style="width:26px;height:26px;border:1.5px solid var(--border);border-radius:6px;background:none;cursor:pointer;font-size:12px">↑</button>` : '<span style="width:26px"></span>'}
+        ${i < n-1 ? `<button type="button" onclick="moveAttr(${i},1)" title="Descendre" style="width:26px;height:26px;border:1.5px solid var(--border);border-radius:6px;background:none;cursor:pointer;font-size:12px">↓</button>` : '<span style="width:26px"></span>'}
+        <button type="button" onclick="removeAttrSlot(${i})" title="Supprimer" style="width:26px;height:26px;border:1.5px solid #ffcdd2;border-radius:6px;background:none;cursor:pointer;font-size:14px;color:#E53935">×</button>
+      </div>
     </div>
   `).join('');
 }
 
+function addAttrSlot() {
+  _attrSlots.push({ title: '', desc: '' });
+  renderAttrSlots();
+  document.getElementById(`attr-title-${_attrSlots.length - 1}`)?.focus();
+}
+
+function removeAttrSlot(i) {
+  _attrSlots.splice(i, 1);
+  if (!_attrSlots.length) _attrSlots.push({ title: '', desc: '' });
+  renderAttrSlots();
+}
+
+function moveAttr(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= _attrSlots.length) return;
+  [_attrSlots[i], _attrSlots[j]] = [_attrSlots[j], _attrSlots[i]];
+  renderAttrSlots();
+}
+
 function readAttrSlots() {
-  const result = [];
-  for (let i = 0; i < 4; i++) {
-    const title = (document.getElementById(`attr-title-${i}`)?.value || '').trim();
-    const desc  = (document.getElementById(`attr-desc-${i}`)?.value  || '').trim();
-    if (title || desc) result.push({ title, desc });
-  }
-  return result;
+  return _attrSlots
+    .map(a => ({ title: (a.title || '').trim(), desc: (a.desc || '').trim() }))
+    .filter(a => a.title || a.desc);
 }
 
 async function saveProduit() {
