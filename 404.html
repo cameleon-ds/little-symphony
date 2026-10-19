@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Page introuvable — Little Symphony</title>
+<script>
+// Produit tout juste ajouté dont la page n'est pas encore générée : ouvrir la fiche dynamique
+(function () {
+  var m = location.pathname.match(/^(.*\/)produit\/([^\/]+?)(?:\.html)?$/);
+  if (m) location.replace(m[1] + 'product.html#' + m[2]);
+})();
+</script>
+<style>
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#FBF9F9;font-family:Inter,Helvetica,Arial,sans-serif;color:#1C1C1E;text-align:center;padding:2rem}
+h1{font-family:'Playfair Display',Georgia,serif;font-size:2rem;margin:.5rem 0}
+p{color:#A09590}
+a{display:inline-block;margin-top:1rem;padding:12px 26px;background:#1C1C1E;color:#fff;border-radius:40px;text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+<div>
+  <div style="font-size:3rem">🧸</div>
+  <h1>Oups, page introuvable</h1>
+  <p>Cette page n'existe pas ou a été déplacée.</p>
+  <a href="/little-symphony/">Retour à l'accueil</a>
+</div>
+</body>
+</html>

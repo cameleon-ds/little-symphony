@@ -4,18 +4,25 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="logo/favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Little Symphony — Boutique bébé & enfant Tunisie</title>
+<meta name="description" content="Boutique en ligne bébé &amp; enfant en Tunisie : jouets d'éveil, livres, puzzles, loisirs créatifs, instruments de musique, puériculture et articles de fête. Livraison Grand-Tunis.">
+<link rel="canonical" href="https://cameleon-ds.github.io/little-symphony/">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="twitter:title" content="Little Symphony — Jouets, livres &amp; puériculture bébé et enfant en Tunisie">
+<meta name="twitter:description" content="Boutique en ligne bébé &amp; enfant en Tunisie : jouets d'éveil, livres, puzzles, loisirs créatifs, instruments de musique, puériculture et articles de fête. Livraison Grand-Tunis.">
+<meta property="og:site_name" content="Little Symphony">
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Store", "@id": "https://cameleon-ds.github.io/little-symphony/#store", "name": "Little Symphony", "url": "https://cameleon-ds.github.io/little-symphony/", "logo": "https://cameleon-ds.github.io/little-symphony/logo.png", "image": "https://cameleon-ds.github.io/little-symphony/images/og-image.jpg", "description": "Boutique en ligne bébé & enfant en Tunisie : jouets d'éveil, livres, puzzles, loisirs créatifs, instruments de musique, puériculture et articles de fête. Livraison Grand-Tunis.", "email": "little-symphony.tn@gmail.com", "telephone": "+216 20 136 138", "currenciesAccepted": "TND", "areaServed": "Grand Tunis", "address": {"@type": "PostalAddress", "addressLocality": "Tunis", "addressCountry": "TN"}}, {"@type": "WebSite", "@id": "https://cameleon-ds.github.io/little-symphony/#website", "name": "Little Symphony", "url": "https://cameleon-ds.github.io/little-symphony/", "inLanguage": "fr-TN", "publisher": {"@id": "https://cameleon-ds.github.io/little-symphony/#store"}}]}</script>
+<title>Little Symphony — Jouets, livres & puériculture bébé et enfant en Tunisie</title>
 <!-- Open Graph -->
-<meta property="og:title" content="Little Symphony — Boutique bébé & enfant Tunisie">
-<meta property="og:description" content="Découvrez notre sélection de jouets, vêtements et accessoires pour bébés et enfants. Livraison dans la région de Grand-Tunis.">
-<meta property="og:image" content="https://little-symphony.netlify.app/images/og-image.jpg">
+<meta property="og:title" content="Little Symphony — Jouets, livres &amp; puériculture bébé et enfant en Tunisie">
+<meta property="og:description" content="Boutique en ligne bébé &amp; enfant en Tunisie : jouets d'éveil, livres, puzzles, loisirs créatifs, instruments de musique, puériculture et articles de fête. Livraison Grand-Tunis.">
+<meta property="og:image" content="https://cameleon-ds.github.io/little-symphony/images/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:url" content="https://little-symphony.netlify.app">
+<meta property="og:url" content="https://cameleon-ds.github.io/little-symphony/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="fr_TN">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://little-symphony.netlify.app/images/og-image.jpg">
+<meta name="twitter:image" content="https://cameleon-ds.github.io/little-symphony/images/og-image.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="main.css">
 <style>
@@ -1312,7 +1319,7 @@ function openProduct(idx) {
     description: p.description || null,
     attributes:  p.attributes  || null,
   }));
-  window.location.href = 'product.html' + (p.slug ? '#' + encodeURIComponent(p.slug) : '');
+  window.location.href = p.slug ? 'produit/' + encodeURIComponent(p.slug) + '.html' : 'product.html';
 }
 
 function closeProduct() {

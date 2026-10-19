@@ -4,18 +4,24 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="logo/favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Boutique — Little Symphony</title>
+<meta name="description" content="Plus de 200 produits pour bébés et enfants : jouets Dolu et Clementoni, livres Auzou, puzzles, jeux de société, musique, puériculture Reer. Commandez en ligne, livraison Grand-Tunis.">
+<link rel="canonical" href="https://cameleon-ds.github.io/little-symphony/boutique.html">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="twitter:title" content="Boutique bébé &amp; enfant — Jouets, livres, puériculture | Little Symphony">
+<meta name="twitter:description" content="Plus de 200 produits pour bébés et enfants : jouets Dolu et Clementoni, livres Auzou, puzzles, jeux de société, musique, puériculture Reer. Commandez en ligne, livraison Grand-Tunis.">
+<meta property="og:site_name" content="Little Symphony">
+<title>Boutique bébé & enfant — Jouets, livres, puériculture | Little Symphony</title>
 <!-- Open Graph -->
-<meta property="og:title" content="Boutique — Little Symphony">
-<meta property="og:description" content="Découvrez notre sélection de jouets, vêtements et accessoires pour bébés et enfants. Livraison dans la région de Grand-Tunis.">
-<meta property="og:image" content="https://little-symphony.netlify.app/images/og-image.jpg">
+<meta property="og:title" content="Boutique bébé &amp; enfant — Jouets, livres, puériculture | Little Symphony">
+<meta property="og:description" content="Plus de 200 produits pour bébés et enfants : jouets Dolu et Clementoni, livres Auzou, puzzles, jeux de société, musique, puériculture Reer. Commandez en ligne, livraison Grand-Tunis.">
+<meta property="og:image" content="https://cameleon-ds.github.io/little-symphony/images/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:url" content="https://little-symphony.netlify.app/boutique.html">
+<meta property="og:url" content="https://cameleon-ds.github.io/little-symphony/boutique.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="fr_TN">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://little-symphony.netlify.app/images/og-image.jpg">
+<meta name="twitter:image" content="https://cameleon-ds.github.io/little-symphony/images/og-image.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* → base styles in main.css */
@@ -285,12 +291,14 @@ input,select{font-family:var(--sans)}
   .product-grid{grid-template-columns:repeat(2,1fr)}
   .product-grid.view-list{grid-template-columns:1fr}
 }
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
 <link rel="stylesheet" href="main.css">
 </head>
 <body>
 
 <nav id="main-nav"></nav>
+<h1 class="sr-only">Boutique bébé & enfant en ligne en Tunisie : jouets, livres, puériculture</h1>
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
 <!-- Sticky filter bar (mobile/tablet only) -->
@@ -952,7 +960,7 @@ function openProduct(idx, list) {
     attributes:  p.attributes  || null,
     siblings
   });
-  window.location.href = 'product.html' + (p.slug ? '#' + encodeURIComponent(p.slug) : '');
+  window.location.href = p.slug ? 'produit/' + encodeURIComponent(p.slug) + '.html' : 'product.html';
 }
 
 // ── ADD TO CART ────────────────────────────────────────────────────────────────

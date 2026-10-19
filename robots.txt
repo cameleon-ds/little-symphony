@@ -1,0 +1,13 @@
+# Note : robots.txt n est lu par Google qu a la racine d un domaine (actif des que le site aura son propre nom de domaine).
+# En attendant, les pages privees sont protegees par la balise <meta name="robots" content="noindex">.
+User-agent: *
+Allow: /
+Disallow: admin-panel.html
+Disallow: s-admin.html
+Disallow: checkout.html
+Disallow: cart.html
+Disallow: orders.html
+Disallow: profile.html
+Disallow: reset-password.html
+
+Sitemap: https://cameleon-ds.github.iositemap.xml
