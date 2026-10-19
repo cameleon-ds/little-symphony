@@ -188,7 +188,7 @@ button{cursor:pointer;font-family:var(--sans)}
       </div>
       <div>
         <div class="info-label">E-mail</div>
-        <div class="info-value">bonjour@littlesymphony.tn</div>
+        <div class="info-value"><a href="mailto:little.symphony.tn@gmail.com" style="color:inherit">little.symphony.tn@gmail.com</a></div>
         <div class="info-sub">Réponse sous 24 h ouvrées</div>
       </div>
     </div>
@@ -234,27 +234,27 @@ button{cursor:pointer;font-family:var(--sans)}
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Prénom *</label>
-            <input class="form-input" type="text" placeholder="Marie" required>
+            <input class="form-input" type="text" name="first_name" placeholder="Marie" maxlength="100" required>
           </div>
           <div class="form-group">
             <label class="form-label">Nom *</label>
-            <input class="form-input" type="text" placeholder="Dupont" required>
+            <input class="form-input" type="text" name="last_name" placeholder="Dupont" maxlength="100" required>
           </div>
         </div>
 
         <div class="form-group">
           <label class="form-label">E-mail *</label>
-          <input class="form-input" type="email" placeholder="marie@exemple.com" required>
+          <input class="form-input" type="email" name="email" placeholder="marie@exemple.com" maxlength="200" required>
         </div>
 
         <div class="form-group">
           <label class="form-label">Téléphone</label>
-          <input class="form-input" type="tel" placeholder="+216 XX XXX XXX">
+          <input class="form-input" type="tel" name="phone" placeholder="+216 XX XXX XXX" maxlength="40">
         </div>
 
         <div class="form-group">
           <label class="form-label">Sujet *</label>
-          <select class="form-select" required>
+          <select class="form-select" name="subject" required>
             <option value="" disabled selected>Choisir un sujet…</option>
             <option>Question sur un produit</option>
             <option>Suivi de commande</option>
@@ -267,10 +267,14 @@ button{cursor:pointer;font-family:var(--sans)}
 
         <div class="form-group">
           <label class="form-label">Message *</label>
-          <textarea class="form-textarea" placeholder="Décrivez votre demande…" required></textarea>
+          <textarea class="form-textarea" name="message" placeholder="Décrivez votre demande…" maxlength="5000" required></textarea>
+        </div>
+        <div style="position:absolute;left:-9999px" aria-hidden="true">
+          <input type="text" name="_honey" tabindex="-1" autocomplete="off">
         </div>
 
-        <button type="submit" class="submit-btn">Envoyer le message</button>
+        <div id="contact-error" style="display:none;color:#C62828;font-size:13px;margin-bottom:10px"></div>
+        <button type="submit" class="submit-btn" id="contact-submit">Envoyer le message</button>
       </form>
     </div>
 
@@ -295,13 +299,55 @@ button{cursor:pointer;font-family:var(--sans)}
 
 <div id="main-footer"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
 <script src="_shared.js"></script>
 <script>
 renderNav('contact');
 renderFooter();
 
-function submitContact(e) {
+// Destinataires des messages du formulaire de contact
+const CONTACT_TO = 'nizarmadeby.pro@gmail.com';
+const CONTACT_CC = 'little.symphony.tn@gmail.com';
+
+async function submitContact(e) {
   e.preventDefault();
+  const form = e.target;
+  const fd = new FormData(form);
+  if (fd.get('_honey')) return;                       // anti-spam (champ invisible rempli par les robots)
+  const d = Object.fromEntries(['first_name','last_name','email','phone','subject','message'].map(k => [k, (fd.get(k) || '').toString().trim()]));
+  const btn = document.getElementById('contact-submit');
+  const err = document.getElementById('contact-error');
+  err.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Envoi en cours…';
+
+  // 1. Sauvegarde dans Supabase (copie de secours, consultable depuis la base)
+  const saved = _supabase.from('contact_messages').insert({ ...d, phone: d.phone || null })
+    .then(({ error }) => { if (error) console.error('contact_messages:', error); return !error; });
+
+  // 2. Envoi par e-mail aux deux adresses
+  const mailed = fetch('https://formsubmit.co/ajax/' + CONTACT_TO, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({
+      _cc: CONTACT_CC,
+      _subject: `[Little Symphony] ${d.subject} — ${d.first_name} ${d.last_name}`,
+      _replyto: d.email,
+      _template: 'table',
+      _captcha: 'false',
+      'Prénom': d.first_name, 'Nom': d.last_name, 'E-mail': d.email,
+      'Téléphone': d.phone || '—', 'Sujet': d.subject, 'Message': d.message
+    })
+  }).then(r => r.ok).catch(() => false);
+
+  const [okDb, okMail] = await Promise.all([saved, mailed]);
+  btn.disabled = false; btn.textContent = 'Envoyer le message';
+  if (!okDb && !okMail) {
+    err.textContent = "L'envoi a échoué. Vérifiez votre connexion et réessayez, ou écrivez-nous à " + CONTACT_CC + '.';
+    err.style.display = 'block';
+    return;
+  }
+  form.reset();
   document.getElementById('contact-form-inner').style.display = 'none';
   document.getElementById('form-success').style.display = 'block';
 }
