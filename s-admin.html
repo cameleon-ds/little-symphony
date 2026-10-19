@@ -47,6 +47,9 @@ input:focus{border-color:var(--primary)}
   border-radius:40px;font-size:14px;font-weight:600;transition:all 0.25s;
   box-shadow:0 4px 16px rgba(0,0,0,0.15);margin-top:0.5rem}
 .btn:hover{background:#3A3A3C;transform:translateY(-2px)}
+.forgot{display:block;text-align:center;margin-top:1.2rem;font-size:13px;color:var(--primary-dark);background:none;border:none;cursor:pointer;font-family:var(--sans);width:100%}
+.forgot:hover{text-decoration:underline}
+.info-msg{background:#F1F8F1;border:1px solid #C8E6C9;border-radius:8px;padding:10px 14px;font-size:13px;color:#2E7D32;display:none;margin-top:1rem}
 
 </style>
 </head>
@@ -80,6 +83,8 @@ input:focus{border-color:var(--primary)}
     </div>
     <button type="submit" class="btn">Se connecter →</button>
   </form>
+  <button type="button" class="forgot" onclick="forgotPassword()">Mot de passe oublié ?</button>
+  <div class="info-msg" id="info-msg"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -139,6 +144,22 @@ async function doLogin(e) {
   }
 
   window.location.href = 'admin-panel.html';
+}
+
+// Mot de passe oublié : envoie un e-mail de réinitialisation au compte admin
+async function forgotPassword() {
+  const info = document.getElementById('info-msg');
+  const btn = document.querySelector('.forgot');
+  btn.disabled = true; btn.textContent = 'Envoi…';
+  const { error } = await _supabase.auth.resetPasswordForEmail('nizarmadeby.pro@gmail.com', {
+    redirectTo: new URL('reset-password.html', window.location.href).href
+  });
+  btn.disabled = false; btn.textContent = 'Mot de passe oublié ?';
+  info.style.display = 'block';
+  info.style.color = error ? '#C62828' : '#2E7D32';
+  info.textContent = error
+    ? "Envoi impossible pour le moment (" + error.message + "). Réessaie dans une minute."
+    : "Un e-mail de réinitialisation a été envoyé à l'adresse du compte admin. Ouvre le lien qu'il contient pour choisir un nouveau mot de passe.";
 }
 </script>
 </body>
