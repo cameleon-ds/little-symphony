@@ -376,6 +376,15 @@ tbody tr:hover{background:var(--primary-xlight)}
   border:1.5px solid var(--border);box-shadow:none}
 .rs-cta-toggle.inactive:hover{border-color:var(--primary);color:var(--primary-dark);
   transform:none;box-shadow:none}
+.prod-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.prod-stat{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;text-align:left;font-family:var(--sans);transition:border-color .2s,box-shadow .2s,transform .15s;display:flex;align-items:center;gap:12px}
+.prod-stat:hover{border-color:var(--primary);transform:translateY(-1px)}
+.prod-stat.active{border-color:var(--charcoal);box-shadow:0 0 0 2px var(--charcoal) inset}
+.prod-stat .ps-ico{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.prod-stat .ps-ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.prod-stat .ps-num{font-size:22px;font-weight:700;color:var(--charcoal);line-height:1}
+.prod-stat .ps-lbl{font-size:12px;color:var(--text-muted);margin-top:3px}
+.prod-stat.zero{opacity:.55}
 </style>
 </head>
 <body>
@@ -779,6 +788,7 @@ tbody tr:hover{background:var(--primary-xlight)}
 
       <!-- Liste produits -->
       <div id="produits-list-view">
+        <div id="prod-stats" class="prod-stats"></div>
         <div class="table-wrap">
           <div class="table-header">
             <span class="table-title" id="produits-table-title">Tous les produits</span>
@@ -2287,9 +2297,54 @@ function setSubFilter(sub) {
     sub === 'Toutes' ? activeCatFilter : `${activeCatFilter} — ${sub}`;
 }
 
+// ── Cartes de suivi au-dessus de la liste (clic = filtre) ─────
+const LOW_STOCK_MAX = 4;
+const PROD_STATS = [
+  { key: 'nophoto', label: 'Produits sans photo', color: '#6A5ACD', bg: '#F0EEFB',
+    icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/><line x1="3" y1="3" x2="21" y2="21"/>',
+    test: p => p.is_active && !(p.images && p.images.length) },
+  { key: 'low', label: 'Bientôt en rupture', color: '#F57F17', bg: '#FFF6E5',
+    icon: '<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+    test: p => p.is_active && (p.stock ?? 0) > 0 && (p.stock ?? 0) <= LOW_STOCK_MAX },
+  { key: 'out', label: 'En rupture', color: '#C62828', bg: '#FDECEC',
+    icon: '<circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/>',
+    test: p => p.is_active && (p.stock ?? 0) <= 0 },
+  { key: 'nodesc', label: 'Sans description', color: '#00796B', bg: '#E6F4F2',
+    icon: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="11" y2="18"/>',
+    test: p => p.is_active && !(p.description || '').trim() },
+  { key: 'hidden', label: 'Produits masqués', color: '#6B6B6B', bg: '#F1F1F1',
+    icon: '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>',
+    test: p => !p.is_active },
+];
+let activeStatFilter = null;
+
+function renderProdStats() {
+  const el = document.getElementById('prod-stats');
+  if (!el) return;
+  el.innerHTML = PROD_STATS.map(st => {
+    const n = PRODUITS.filter(st.test).length;
+    return `<button type="button" class="prod-stat${activeStatFilter === st.key ? ' active' : ''}${n === 0 ? ' zero' : ''}" onclick="setStatFilter('${st.key}')" title="Filtrer la liste">
+      <span class="ps-ico" style="background:${st.bg};color:${st.color}"><svg viewBox="0 0 24 24">${st.icon}</svg></span>
+      <span><div class="ps-num">${n}</div><div class="ps-lbl">${st.label}</div></span>
+    </button>`;
+  }).join('');
+}
+
+function setStatFilter(key) {
+  activeStatFilter = activeStatFilter === key ? null : key;   // 2e clic = retirer le filtre
+  renderProdStats();
+  renderProduits();
+  const st = PROD_STATS.find(s => s.key === activeStatFilter);
+  document.getElementById('produits-table-title').textContent = st ? st.label
+    : (activeCatFilter === 'Tous' ? 'Tous les produits' : activeCatFilter);
+}
+
 function renderProduits(query) {
-  const q = query || document.getElementById('produits-search')?.value || '';
+  const q = query ?? document.querySelector('#produits-list-view .table-search')?.value ?? '';
+  const stat = PROD_STATS.find(s => s.key === activeStatFilter);
+  renderProdStats();
   const filtered = PRODUITS.filter(p =>
+    (!stat || stat.test(p)) &&
     (activeCatFilter === 'Tous'   || p.cat === activeCatFilter) &&
     (activeSubFilter === 'Toutes' || p.sub === activeSubFilter) &&
     (!q || p.nom.toLowerCase().includes(q.toLowerCase()) || p.cat.toLowerCase().includes(q.toLowerCase()))
