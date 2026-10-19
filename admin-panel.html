@@ -385,6 +385,21 @@ tbody tr:hover{background:var(--primary-xlight)}
 .prod-stat .ps-num{font-size:22px;font-weight:700;color:var(--charcoal);line-height:1}
 .prod-stat .ps-lbl{font-size:12px;color:var(--text-muted);margin-top:3px}
 .prod-stat.zero{opacity:.55}
+.prod-chk{width:16px;height:16px;cursor:pointer;accent-color:var(--charcoal)}
+tr.row-selected td{background:#FBF6F5}
+.bulk-wrap{position:relative}
+.bulk-btn{display:flex;align-items:center;gap:6px;padding:9px 14px;background:#fff;border:1.5px solid var(--charcoal);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--sans);color:var(--charcoal)}
+.bulk-btn:disabled{border-color:var(--border);color:var(--text-muted);cursor:not-allowed}
+.bulk-btn #bulk-count{background:var(--charcoal);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px}
+.bulk-btn #bulk-count:empty{display:none}
+.bulk-menu{display:none;position:absolute;right:0;top:calc(100% + 8px);background:#fff;border:1.5px solid var(--border);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.12);padding:6px;min-width:210px;z-index:50}
+.bulk-menu::before{content:"";position:absolute;top:-7px;right:22px;width:12px;height:12px;background:#fff;border-left:1.5px solid var(--border);border-top:1.5px solid var(--border);transform:rotate(45deg)}
+.bulk-menu.open{display:block}
+.bulk-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:none;background:none;border-radius:8px;font-size:13px;font-family:var(--sans);color:var(--charcoal);cursor:pointer;text-align:left}
+.bulk-menu button:hover{background:var(--primary-xlight)}
+.bulk-menu svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.bulk-menu .bulk-muted{color:var(--text-muted);font-size:12px}
+.bulk-sep{height:1px;background:var(--border);margin:4px 6px}
 </style>
 </head>
 <body>
@@ -799,6 +814,24 @@ tbody tr:hover{background:var(--primary-xlight)}
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Ajouter
                 </button>
+                <div class="bulk-wrap">
+                  <button type="button" id="btn-bulk" class="bulk-btn" onclick="toggleBulkMenu(event)" disabled>
+                    Actions <span id="bulk-count"></span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                  <div id="bulk-menu" class="bulk-menu">
+                    <button type="button" onclick="bulkSetActive(true)">
+                      <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      Afficher sur le site
+                    </button>
+                    <button type="button" onclick="bulkSetActive(false)">
+                      <svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Masquer du site
+                    </button>
+                    <div class="bulk-sep"></div>
+                    <button type="button" onclick="clearProdSelection()" class="bulk-muted">Désélectionner tout</button>
+                  </div>
+                </div>
               </div>
               <div class="produits-row-filters" style="display:flex;gap:8px;align-items:center">
                 <select id="cat-select" onchange="setCatFilter(this.value)" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--sans);outline:none;color:var(--charcoal);background:#fff;cursor:pointer">
@@ -812,10 +845,10 @@ tbody tr:hover{background:var(--primary-xlight)}
           </div>
           <table id="tbl-produits">
             <thead><tr>
-              <th>Nom</th><th class="col-hide-mobile">Catégorie</th><th>Prix</th><th>Stock</th><th>Statut</th><th></th>
+              <th style="width:34px"><input type="checkbox" id="chk-all-prod" class="prod-chk" onclick="toggleAllProd(this.checked)" title="Tout sélectionner (produits affichés)"></th><th>Nom</th><th class="col-hide-mobile">Catégorie</th><th>Prix</th><th>Stock</th><th>Statut</th><th></th>
             </tr></thead>
             <tbody id="tbody-produits">
-              <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement…</td></tr>
+              <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement…</td></tr>
             </tbody>
           </table>
         </div>
@@ -2350,10 +2383,12 @@ function renderProduits(query) {
     (!q || p.nom.toLowerCase().includes(q.toLowerCase()) || p.cat.toLowerCase().includes(q.toLowerCase()))
   );
   filtered.sort((a, b) => (a.stock ?? 0) - (b.stock ?? 0));
+  _lastFilteredProd = filtered;
   const actionStyle = 'font-size:12px;padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;background:none;cursor:pointer;font-family:var(--sans);color:var(--charcoal)';
   document.getElementById('tbody-produits').innerHTML = filtered.length
     ? filtered.map(p => `
-        <tr>
+        <tr class="${_selectedProd.has(p.id) ? 'row-selected' : ''}">
+          <td><input type="checkbox" class="prod-chk" ${_selectedProd.has(p.id) ? 'checked' : ''} onclick="toggleProdSel('${p.id}', this.checked, this)"></td>
           <td>
             ${p.images[0] ? `<img src="${p.images[0]}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;vertical-align:middle;margin-right:8px;border:1px solid var(--border)">` : ''}
             <strong>${p.nom}</strong>
@@ -2364,13 +2399,80 @@ function renderProduits(query) {
             ${(p.stock ?? 0) > 0 && (p.stock ?? 0) <= 4 ? `<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#F57F17;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block;margin:0 auto 2px" title="Stock limité"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` : ''}
             ${p.stock}
           </td>
-          <td><span class="badge ${p.statut==='En stock'?'badge-delivered':'badge-cancelled'}">${p.statut}</span></td>
+          <td><span class="badge ${p.statut==='En stock'?'badge-delivered':'badge-cancelled'}">${p.statut}</span>${p.is_active ? '' : ' <span class="badge" style="background:#F1F1F1;color:#6B6B6B">Masqué</span>'}</td>
           <td><button onclick="openProduitForm('${p.id}')" style="${actionStyle}">Modifier</button></td>
         </tr>`).join('')
-    : `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">Aucun produit</td></tr>`;
+    : `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Aucun produit</td></tr>`;
+  updateBulkUi();
 }
 
 function filterProduits(query) { renderProduits(query); }
+
+// ── Sélection multiple + actions groupées ─────────────────────
+const _selectedProd = new Set();
+let _lastFilteredProd = [];
+
+function updateBulkUi() {
+  const n = _selectedProd.size;
+  const btn = document.getElementById('btn-bulk');
+  if (btn) btn.disabled = n === 0;
+  const c = document.getElementById('bulk-count');
+  if (c) c.textContent = n ? n : '';
+  if (!n) document.getElementById('bulk-menu')?.classList.remove('open');
+  const all = document.getElementById('chk-all-prod');
+  if (all) {
+    const vis = _lastFilteredProd.filter(p => _selectedProd.has(p.id)).length;
+    all.checked = vis > 0 && vis === _lastFilteredProd.length;
+    all.indeterminate = vis > 0 && vis < _lastFilteredProd.length;
+  }
+}
+
+function toggleProdSel(id, checked, el) {
+  checked ? _selectedProd.add(id) : _selectedProd.delete(id);
+  el?.closest('tr')?.classList.toggle('row-selected', checked);
+  updateBulkUi();
+}
+
+// Coche / décoche tous les produits actuellement affichés (après filtres)
+function toggleAllProd(checked) {
+  _lastFilteredProd.forEach(p => checked ? _selectedProd.add(p.id) : _selectedProd.delete(p.id));
+  renderProduits();
+}
+
+function clearProdSelection() {
+  _selectedProd.clear();
+  renderProduits();
+}
+
+function toggleBulkMenu(e) {
+  e.stopPropagation();
+  document.getElementById('bulk-menu').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.bulk-wrap')) document.getElementById('bulk-menu')?.classList.remove('open');
+});
+
+async function bulkSetActive(active) {
+  const ids = [..._selectedProd];
+  if (!ids.length) return;
+  const verb = active ? 'afficher sur le site' : 'masquer du site';
+  if (!confirm(`Voulez-vous ${verb} ${ids.length} produit${ids.length > 1 ? 's' : ''} ?`)) return;
+  document.getElementById('bulk-menu').classList.remove('open');
+  const btn = document.getElementById('btn-bulk');
+  btn.disabled = true; btn.firstChild.textContent = 'Mise à jour… ';
+  let failed = 0;
+  for (let i = 0; i < ids.length; i += 100) {          // par lots pour les grosses sélections
+    const { error } = await _supabase.from('products').update({ is_active: active }).in('id', ids.slice(i, i + 100));
+    if (error) { failed++; console.error('bulkSetActive:', error); }
+  }
+  btn.firstChild.textContent = 'Actions ';
+  if (failed) { alert('Une partie de la mise à jour a échoué. Réessayez.'); }
+  else {
+    PRODUITS.forEach(p => { if (_selectedProd.has(p.id)) p.is_active = active; });
+    _selectedProd.clear();
+  }
+  renderProduits();
+}
 
 // ── FORMULAIRE PRODUIT ────────────────────────────────────────
 let _editingProduitId = null;
