@@ -442,3 +442,32 @@ function showToast(msg) {
     setTimeout(() => t.remove(), 280);
   }, 2500);
 }
+
+
+/* ── Image de remplacement pour les produits sans photo (ou photo cassée) ── */
+const PRODUCT_PLACEHOLDER = 'images/placeholder-produit.svg';
+(function () {
+  const isPh = img => (img.getAttribute('src') || '').indexOf('placeholder-produit') !== -1;
+  const fix = img => {
+    if (!img || img.tagName !== 'IMG' || isPh(img)) return;
+    if (img.closest && img.closest('header, nav, footer, .logo, .logo-wrap')) return;   // jamais le logo
+    img.src = PRODUCT_PLACEHOLDER;
+    img.style.objectFit = 'cover';
+  };
+  // Photo qui ne charge pas (lien mort, site qui bloque…)
+  document.addEventListener('error', e => fix(e.target), true);
+  // Photo absente (src vide)
+  const scan = root => (root.querySelectorAll ? root.querySelectorAll('img') : []).forEach(img => {
+    const src = (img.getAttribute('src') || '').trim();
+    if (!src || src === 'undefined' || src === 'null') fix(img);
+    else if (img.complete && img.naturalWidth === 0) fix(img);
+  });
+  const start = () => {
+    scan(document);
+    new MutationObserver(muts => muts.forEach(m => {
+      if (m.type === 'attributes') { const s = (m.target.getAttribute('src') || '').trim(); if (!s) fix(m.target); }
+      m.addedNodes && m.addedNodes.forEach(n => { if (n.nodeType === 1) { if (n.tagName === 'IMG') scan({ querySelectorAll: () => [n] }); else scan(n); } });
+    })).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
+  };
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', start) : start();
+})();

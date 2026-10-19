@@ -563,7 +563,7 @@ async function loadProducts() {
     price:    parseFloat(p.price),
     oldPrice: p.price_old ? parseFloat(p.price_old) : null,
     badge:    p.is_new ? 'new' : p.is_promo ? 'promo' : null,
-    img:      (p.images && p.images.length > 0) ? p.images[0] : (IMG_BY_SLUG[p.slug] || ''),
+    img:      (p.images && p.images.length > 0) ? p.images[0] : (IMG_BY_SLUG[p.slug] || 'images/placeholder-produit.svg'),
     images:   (p.images && p.images.length > 0) ? p.images : (IMG_BY_SLUG[p.slug] ? [IMG_BY_SLUG[p.slug]] : []),
     age:      p.age_ranges || [],
     gender:   p.gender || 'mixte',
