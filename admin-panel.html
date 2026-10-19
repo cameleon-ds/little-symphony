@@ -75,6 +75,21 @@ img{display:block;max-width:100%}
 .toast{display:flex;align-items:center;gap:10px;background:#1a1a2e;color:#fff;padding:12px 16px;border-radius:12px;font-size:13px;font-family:var(--sans);font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.25);pointer-events:all;cursor:pointer;transform:translateX(120%);opacity:0;transition:transform 0.3s cubic-bezier(.4,0,.2,1),opacity 0.3s ease;min-width:220px}
 .toast.show{transform:translateX(0);opacity:1}
 .toast.toast-success{background:#2E7D32}
+.del-overlay{position:fixed;inset:0;background:rgba(28,28,30,.45);display:flex;align-items:center;justify-content:center;z-index:10000;padding:1rem}
+.del-box{background:#fff;border-radius:16px;max-width:420px;width:100%;padding:1.6rem;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);font-family:var(--sans)}
+.del-box h3{font-family:var(--serif);font-size:1.15rem;margin:.6rem 0 .3rem;color:var(--charcoal)}
+.del-ico{width:52px;height:52px;border-radius:50%;background:#FDECEC;display:flex;align-items:center;justify-content:center;margin:0 auto}
+.del-ico svg{width:24px;height:24px;fill:none;stroke:#C62828;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.del-name{font-weight:700;color:var(--charcoal);margin:0 0 .8rem;font-size:14px}
+.del-warn{font-size:13px;color:var(--text-muted);margin:0 0 .6rem}
+.del-code{font-size:26px;font-weight:700;letter-spacing:.35em;color:#C62828;background:#FDECEC;border-radius:10px;padding:8px 0 8px .35em;margin-bottom:.8rem;user-select:none}
+#del-input{text-align:center;font-size:16px;letter-spacing:.2em}
+.del-err{color:#C62828;font-size:12px;min-height:16px;margin:.5rem 0}
+.del-actions{display:flex;gap:10px;margin-top:.4rem}
+.del-actions button{flex:1;padding:11px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.del-cancel{background:#fff;border:1.5px solid var(--border);color:var(--charcoal)}
+.del-confirm{background:#C62828;border:none;color:#fff}
+.del-confirm:disabled{background:#E8B4B4;cursor:not-allowed}
 .dirty-dot{display:none;position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:#22C55E;border:2.5px solid #fff;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:dirtyPulse 1.6s infinite}
 #pf-save-btn.is-dirty .dirty-dot{display:block}
 @keyframes dirtyPulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55)}70%{box-shadow:0 0 0 9px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
@@ -2873,15 +2888,53 @@ async function saveProduit() {
   showToast('Les changements ont bien été enregistrés', null, null, 'success');
 }
 
-async function deleteProduit() {
+// Suppression d'un produit : popup de confirmation avec code à recopier
+function deleteProduit() {
   if (!_editingProduitId) return;
   const p = PRODUITS.find(x => x.id === _editingProduitId);
-  if (!confirm(`Supprimer "${p?.nom}" ? Cette action est irréversible.`)) return;
-  const { error } = await _supabase.from('products').delete().eq('id', _editingProduitId);
-  if (error) { alert('Erreur : ' + error.message); return; }
-  closeProduitForm(true);
-  await loadProduits();
+  const code = String(Math.floor(1000 + Math.random() * 9000));
+  const esc = v => String(v || '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  document.getElementById('del-modal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'del-modal';
+  m.className = 'del-overlay';
+  m.innerHTML = `
+    <div class="del-box" role="dialog" aria-modal="true">
+      <div class="del-ico"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></div>
+      <h3>Êtes-vous sûr de vouloir supprimer ce produit ?</h3>
+      <p class="del-name">${esc(p?.nom)}</p>
+      <p class="del-warn">Cette action est définitive. Pour confirmer, recopiez le code ci-dessous :</p>
+      <div class="del-code">${code}</div>
+      <input id="del-input" class="detail-input" inputmode="numeric" maxlength="4" placeholder="Code à 4 chiffres" autocomplete="off">
+      <div class="del-err" id="del-err"></div>
+      <div class="del-actions">
+        <button type="button" class="del-cancel" onclick="closeDeleteModal()">Annuler</button>
+        <button type="button" class="del-confirm" id="del-confirm" disabled>Supprimer</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+  const input = m.querySelector('#del-input'), btn = m.querySelector('#del-confirm');
+  input.addEventListener('input', () => { btn.disabled = input.value.trim() !== code; });
+  input.addEventListener('keydown', e => { if (e.key === 'Enter' && !btn.disabled) btn.click(); if (e.key === 'Escape') closeDeleteModal(); });
+  m.addEventListener('click', e => { if (e.target === m) closeDeleteModal(); });
+  btn.addEventListener('click', async () => {
+    btn.disabled = true; btn.textContent = 'Suppression…';
+    const { error } = await _supabase.from('products').delete().eq('id', _editingProduitId);
+    if (error) {
+      btn.textContent = 'Supprimer';
+      document.getElementById('del-err').textContent = error.code === '23503'
+        ? 'Ce produit figure dans des commandes : il ne peut pas être supprimé. Vous pouvez le masquer du site à la place (décochez « Actif »).'
+        : 'Erreur : ' + error.message;
+      return;
+    }
+    closeDeleteModal();
+    closeProduitForm(true);
+    await loadProduits();
+    showToast('Produit supprimé', p?.nom || '', null, 'success');
+  });
+  setTimeout(() => input.focus(), 50);
 }
+function closeDeleteModal() { document.getElementById('del-modal')?.remove(); }
 
 // ── IMPORT / EXPORT CSV DES PRODUITS ───────────────────────────────
 function csvEscape(val) {
