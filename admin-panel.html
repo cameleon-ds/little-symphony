@@ -1396,7 +1396,23 @@ function showPanel(name, btn) {
   document.getElementById('panel-' + name).classList.add('active');
   btn.classList.add('active');
   setBreadcrumb(titles[name]);
+  // Adresse propre à chaque section (#produits, #clients…) : F5 et bouton Retour restent sur la page
+  if (ADMIN_ROUTES.includes(name) && location.hash !== '#' + name) {
+    history.pushState(null, '', '#' + name);
+  }
 }
+
+// ── Routage par URL (#section) ───────────────────────────────────
+const ADMIN_ROUTES = ['commandes', 'clients', 'produits', 'categories', 'reseaux-sociaux', 'messagerie'];
+
+function routeFromHash() {
+  const name = decodeURIComponent(location.hash.replace(/^#\/?/, '').split('/')[0]);
+  if (!ADMIN_ROUTES.includes(name)) return;
+  if (document.getElementById('panel-' + name)?.classList.contains('active')) return;
+  // Même effet qu'un clic dans le menu (y compris le chargement des modules)
+  document.querySelector(`.nav-item[onclick*="showPanel('${name}'"]`)?.click();
+}
+window.addEventListener('popstate', routeFromHash);
 
 function filterTable(tableId, query) {
   const q = query.toLowerCase();
@@ -4021,6 +4037,7 @@ async function saveMessagingSettings() {
   currentAdminUser = session.user;
 
   setBreadcrumb('Commandes');
+  routeFromHash();   // rouvrir la section indiquée dans l'URL (ex. après un rafraîchissement)
 
   // Produits en premier — les compteurs de catégories en dépendent
   await loadProduits();
