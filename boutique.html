@@ -644,6 +644,15 @@ function buildCatList() {
   });
 }
 
+// Après un changement de catégorie : remonter en douceur au début des résultats
+// (uniquement si on avait déjà défilé plus bas) au lieu d'un saut brutal.
+function scrollToResults() {
+  const main = document.querySelector('.main');
+  if (!main) return;
+  const top = main.getBoundingClientRect().top + window.scrollY - 68;
+  if (window.scrollY > top + 5) window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+}
+
 function setCat(i) {
   const prev = activeCat;
   activeCat = (activeCat === i) ? null : i;
@@ -654,18 +663,20 @@ function setCat(i) {
     const prevSub = document.querySelector('.sub-list.open');
     if (prevSub) {
       prevSub.classList.remove('open');
-      setTimeout(() => { buildCatList(); applyFilters(); }, 380);
+      setTimeout(() => { buildCatList(); applyFilters(); scrollToResults(); }, 380);
       return;
     }
   }
   buildCatList();
   applyFilters();
+  scrollToResults();
 }
 
 function setSub(s) {
   activeSub = (activeSub === s || s === 'Tous') ? null : s;
   buildCatList();
   applyFilters();
+  scrollToResults();
 }
 
 function clearSub() {
@@ -679,6 +690,7 @@ function resetCat() {
   activeSub = null;
   buildCatList();
   applyFilters();
+  scrollToResults();
 }
 
 // ── PRICE RANGE ────────────────────────────────────────────────────────────────
