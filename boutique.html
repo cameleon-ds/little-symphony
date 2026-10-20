@@ -575,6 +575,8 @@ async function loadProducts() {
     price:    parseFloat(p.price),
     oldPrice: p.price_old ? parseFloat(p.price_old) : null,
     badge:    p.is_new ? 'new' : p.is_promo ? 'promo' : null,
+    isNew:    !!p.is_new,
+    isPromo:  !!p.is_promo,
     img:      (p.images && p.images.length > 0) ? p.images[0] : (IMG_BY_SLUG[p.slug] || 'images/placeholder-produit.svg'),
     images:   (p.images && p.images.length > 0) ? p.images : (IMG_BY_SLUG[p.slug] ? [IMG_BY_SLUG[p.slug]] : []),
     age:      p.age_ranges || [],
@@ -606,6 +608,7 @@ function setPriceCap() {
 // ── STATE ──────────────────────────────────────────────────────────────────────
 var activeCat = null;
 var activeSub = null;
+var badgeFilter = null;   // 'new' (Nouveautés) ou 'promo' (Promotions) — via boutique.html#nouveautes / #promotions
 var PRICE_CAP = 600;
 var priceMin = 0, priceMax = PRICE_CAP;
 var currentView = 'grid';
@@ -733,9 +736,32 @@ function resetFilter(type) {
   applyFilters();
 }
 
+// Filtre Nouveautés / Promotions
+function clearBadge() {
+  badgeFilter = null;
+  if (/^#(nouveaut|promo|new)/i.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
+  applyFilters();
+}
+
+// Lecture de l'adresse : boutique.html#nouveautes, #promotions ou #<catégorie>
+function applyHashFilter() {
+  const h = decodeURIComponent(location.hash.replace('#', '')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (!h) return false;
+  if (/^(nouveautes?|new|nouveau)$/.test(h)) { badgeFilter = 'new'; activeCat = null; activeSub = null; buildCatList(); return true; }
+  if (/^(promotions?|promos?)$/.test(h))      { badgeFilter = 'promo'; activeCat = null; activeSub = null; buildCatList(); return true; }
+  const ci = CATS_META.findIndex(c => c.key === h || c.name.toLowerCase().includes(h) || c.nameFull.toLowerCase().includes(h));
+  if (ci >= 0) { activeCat = ci; activeSub = null; badgeFilter = null; buildCatList(); return true; }
+  return false;
+}
+window.addEventListener('hashchange', () => {
+  if (!ALL_PRODUCTS.length) return;
+  if (applyHashFilter()) { applyFilters(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+});
+
 function resetAll() {
   activeCat = null;
   activeSub = null;
+  badgeFilter = null;
   resetFilter('age');
   resetFilter('gender');
   resetFilter('price');
@@ -761,6 +787,8 @@ function applyFilters() {
   let filtered = ALL_PRODUCTS.filter(p => {
     if (activeCat !== null && CATS_META[activeCat].key !== p.catKey) return false;
     if (activeSub && activeSub !== 'Tous' && p.subCat !== activeSub) return false;
+    if (badgeFilter === 'new' && !p.isNew) return false;
+    if (badgeFilter === 'promo' && !p.isPromo) return false;
     if (ages.length && !ages.some(a => p.age.includes(a))) return false;
     if (genders.length && !genders.includes(p.gender)) return false;
     if (p.price < priceMin || p.price > priceMax) return false;
@@ -951,6 +979,7 @@ function renderChips(ages, genders) {
   const chips = [];
   if (activeCat !== null) chips.push({label: CATS_META[activeCat].name, action: 'resetCat()'});
   if (activeSub) chips.push({label: activeSub, action: 'clearSub()'});
+  if (badgeFilter) chips.push({label: badgeFilter === 'new' ? 'Nouveautés' : 'Promotions', action: 'clearBadge()'});
   ages.forEach(a => chips.push({label: AGE_LABELS[a], action: `resetOneCheck('${a}')`}));
   genders.forEach(g => chips.push({label: GEN_LABELS[g], action: `resetOneCheck('${g}')`}));
   if (priceMin > 0 || priceMax < PRICE_CAP) chips.push({label: `${priceMin}–${priceMax} DT`, action: "resetFilter('price')"});
@@ -1029,12 +1058,7 @@ function addToCart(e, idx) {
   buildCatList();
 
   // Check if a category was passed via URL hash
-  const hash = window.location.hash.replace('#','');
-  if (hash) {
-    const h = hash.toLowerCase();
-    const ci = CATS_META.findIndex(c => c.key === h || c.name.toLowerCase().includes(h) || c.nameFull.toLowerCase().includes(h));
-    if (ci >= 0) { activeCat = ci; buildCatList(); }
-  }
+  applyHashFilter();
 
   // Render promo banner
   renderPromoBanner();
