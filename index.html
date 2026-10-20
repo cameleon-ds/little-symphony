@@ -1077,9 +1077,14 @@ const CAT_NAME_MAP = {
 
 function showCat(idxOrName, btn) {
   // Resolve string name to index
-  let idx = (typeof idxOrName === 'string')
-    ? (CAT_NAME_MAP[idxOrName.toLowerCase()] ?? 0)
-    : idxOrName;
+  // Les catégories sont réordonnées selon l'admin : on retrouve l'index par clé/nom, pas par position fixe
+  const _norm = t => String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  let idx = idxOrName;
+  if (typeof idxOrName === 'string') {
+    const n = _norm(idxOrName);
+    idx = CATS_META.findIndex(m => _norm(m.key) === n || _norm(m.name) === n || _norm(m.nameFull) === n);
+    if (idx < 0) idx = 0;
+  }
 
   // Activate the right cat-btn
   const catBtns = document.querySelectorAll('.cat-btn');
