@@ -193,6 +193,14 @@ const CE_PAGES = {
 };
 
 /* ── État de l'éditeur ───────────────────────────────────────────────────── */
+// Catégories proposées dans « Le bouton ouvre la catégorie » (chargées depuis Supabase)
+let _ceCats = [];
+async function ceLoadCats() {
+  if (_ceCats.length) return;
+  const { data, error } = await _supabase.from('categories').select('key, name, sort_order').order('sort_order');
+  if (!error && data) _ceCats = data.map(c => ({ key: c.key, nom: c.name }));
+}
+
 const _ce = { page: null, data: null, dirty: false, open: new Set(), mod: new Set() };
 
 function ceGet(path) {
@@ -235,7 +243,10 @@ async function ceOpen(slug, opts = {}) {
   const form = document.getElementById('ce-form');
   form.innerHTML = '<div style="padding:2rem;color:var(--text-muted)">Chargement…</div>';
 
-  const { data, error } = await _supabase.from('site_content').select('data').eq('key', conf.key).maybeSingle();
+  const [{ data, error }] = await Promise.all([
+    _supabase.from('site_content').select('data').eq('key', conf.key).maybeSingle(),
+    ceLoadCats(),
+  ]);
   if (_ce.page !== slug) return;                   // l'utilisateur a changé de page entre-temps
   if (error) { form.innerHTML = `<div style="padding:2rem;color:#C62828">Erreur de chargement : ${lsEsc(error.message)}</div>`; return; }
   _ce.data = (data && data.data) ? data.data : {};
@@ -293,8 +304,8 @@ function ceField(f, path) {
           ${Object.entries(LS_ICONS).map(([k, ic]) => `<option value="${k}"${k === v ? ' selected' : ''}>${lsEsc(ic.label)}</option>`).join('')}
         </select></div></div>`;
     case 'category': {
-      const cats = (typeof CATEGORIES !== 'undefined' && CATEGORIES.length) ? CATEGORIES.map(c => ({ key: c.key, nom: c.nom }))
-        : (typeof CATS_META !== 'undefined' ? CATS_META.map(c => ({ key: c.key, nom: c.name })) : []);
+      const cats = _ceCats.slice();
+      if (v && !cats.some(c => c.key === v)) cats.push({ key: v, nom: v + ' (introuvable)' });   // ne jamais perdre une valeur existante
       return `<div class="ce-field${full}">${lab}<select class="ce-select" ${dp} onchange="ceInput(this)">
         <option value="">— Aucune (utiliser le lien) —</option>
         ${cats.map(c => `<option value="${lsEsc(c.key)}"${c.key === v ? ' selected' : ''}>${lsEsc(c.nom)}</option>`).join('')}
