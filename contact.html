@@ -152,7 +152,7 @@ button{cursor:pointer;font-family:var(--sans)}
 <nav id="main-nav"></nav>
 
 <!-- HERO -->
-<section class="contact-hero">
+<section class="contact-hero" id="ls-ct-hero">
   <span class="eyebrow">Nous contacter</span>
   <h1>Une question ? <em>On est là.</em></h1>
   <p>Notre équipe est disponible pour vous aider à choisir, commander ou simplement discuter de ce qui convient le mieux à votre bébé.</p>
@@ -163,6 +163,7 @@ button{cursor:pointer;font-family:var(--sans)}
 
   <!-- INFO -->
   <div class="contact-info">
+    <div id="ls-ct-cards" style="display:contents">
 
     <div class="info-card">
       <div class="info-icon">
@@ -209,8 +210,9 @@ button{cursor:pointer;font-family:var(--sans)}
       </div>
     </div>
 
+    </div>
     <div class="contact-social">
-      <p>Retrouvez-nous sur les réseaux</p>
+      <p id="ls-ct-social-title">Retrouvez-nous sur les réseaux</p>
       <div class="social-row">
         <button class="social-btn" title="Instagram">
           <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
@@ -232,8 +234,8 @@ button{cursor:pointer;font-family:var(--sans)}
   <!-- FORM -->
   <div class="contact-form-wrap">
     <div id="contact-form-inner">
-      <div class="form-title">Envoyez-nous un message</div>
-      <div class="form-subtitle">Nous vous répondrons dans les plus brefs délais.</div>
+      <div class="form-title" id="ls-ct-form-title">Envoyez-nous un message</div>
+      <div class="form-subtitle" id="ls-ct-form-sub">Nous vous répondrons dans les plus brefs délais.</div>
 
       <form id="contact-form" onsubmit="submitContact(event)">
         <div class="form-row">
@@ -293,7 +295,7 @@ button{cursor:pointer;font-family:var(--sans)}
 </div>
 
 <!-- MAP STRIP -->
-<div class="map-strip">
+<div class="map-strip" id="ls-ct-map">
   <h3>Nous trouver</h3>
   <p>Rue Dr. Mohamed Ben Salah, Menzah 6 — entre Monoprix et Ciné Jamil · <a href="https://www.google.com/maps/search/?api=1&query=36.8465407,10.1670608" target="_blank" rel="noopener" style="color:var(--primary-dark);font-weight:600">Itinéraire</a></p>
   <iframe class="map-embed" src="https://maps.google.com/maps?q=36.8465407,10.1670608&z=17&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Little Symphony sur Google Maps" allowfullscreen></iframe>
@@ -304,7 +306,10 @@ button{cursor:pointer;font-family:var(--sans)}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
 <script src="_shared.js"></script>
+<script src="site-content.js"></script>
 <script>
+// Contenu éditable depuis l\'admin (Contenu → Contact)
+loadSiteContent(\'contact\', lsApplyContact);
 renderNav('contact');
 renderFooter();
 

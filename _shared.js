@@ -368,67 +368,92 @@ function _snBurgerToggle() {
 
 
 // ── RENDER FOOTER ─────────────────────────────────────────────────────────────
+// ── CONTENU ÉDITABLE (table Supabase site_content) ──────────────────────────
+// Lecture directe via l'API REST (fonctionne aussi sur les pages sans supabase-js).
+// Le dernier contenu reçu est gardé en cache local pour un affichage immédiat.
+const LS_SB_URL = 'https://uyyillkilzsywcrrfbov.supabase.co';
+const LS_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5eWlsbGtpbHpzeXdjcnJmYm92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MzU1NTUsImV4cCI6MjA5ODMxMTU1NX0.7hnsFSZQBoDardOPa6fO7TsGoov1p6DLN0i_Uqgy5Ls';
+const _lsContentLast = {};
+function loadSiteContent(key, apply) {
+  const ck = 'ls_content_' + key;
+  let cached = null;
+  try { cached = localStorage.getItem(ck); } catch (e) {}
+  if (cached) { try { _lsContentLast[key] = cached; apply(JSON.parse(cached)); } catch (e) { console.warn('contenu ' + key, e); } }
+  fetch(LS_SB_URL + '/rest/v1/site_content?select=data&key=eq.' + encodeURIComponent(key), {
+    headers: { apikey: LS_SB_KEY, Authorization: 'Bearer ' + LS_SB_KEY }
+  }).then(r => r.ok ? r.json() : null).then(rows => {
+    if (!rows || !rows[0] || !rows[0].data) return;
+    const str = JSON.stringify(rows[0].data);
+    try { localStorage.setItem(ck, str); } catch (e) {}
+    if (_lsContentLast[key] === str) return;          // rien n'a changé : pas de nouveau rendu
+    _lsContentLast[key] = str;
+    try { apply(rows[0].data); } catch (e) { console.warn('contenu ' + key, e); }
+  }).catch(() => {});
+}
+
+// Contenu par défaut du footer (identique au site d'origine) — remplacé par celui de l'admin
+const FOOTER_DEFAULT = {
+  brand_text: 'La boutique de référence pour les familles tunisiennes qui misent sur la qualité, la douceur et le style.',
+  socials: { instagram: '', facebook: '', tiktok: '' },
+  columns: [
+    { title: 'Boutique', links: [{ label: 'Nouveautés', url: '' }, { label: 'Meilleures ventes', url: '' }, { label: 'Promotions', url: '' }, { label: 'Coffrets cadeaux', url: '' }] },
+    { title: 'Service',  links: [{ label: 'Mes commandes', url: '#commandes' }, { label: 'Retours', url: '' }, { label: 'Contactez-nous', url: '' }, { label: 'FAQ', url: '' }] },
+    { title: 'Infos',    links: [{ label: 'À propos', url: 'apropos.html' }, { label: 'Blog & conseils', url: '' }, { label: 'Mentions légales', url: 'mentions-legales.html' }, { label: 'CGV', url: 'cgv.html' }] },
+  ],
+  copyright: '© 2025 Little Symphony — Tous droits réservés',
+  region: 'Région de Grand-Tunis',
+};
+let _footerData = null, _footerLoading = false;
+
 function renderFooter() {
   const el = document.getElementById('main-footer');
   if (!el) return;
+  const f = Object.assign({}, FOOTER_DEFAULT, _footerData || {});
+  const esc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const soc = f.socials || {};
+  const socBtn = (k, title, svg) => `
+          <button class="sf-soc-btn" title="${title}"${soc[k] ? ` onclick="window.open('${esc(soc[k]).replace(/'/g, '%27')}','_blank','noopener')"` : ''}>
+            ${svg}
+          </button>`;
+  const link = l => {
+    let url = l.url || '';
+    if (url === '#commandes') url = Auth.isLoggedIn() ? 'orders.html' : 'login.html';
+    return url ? `<a href="${esc(url)}" style="color:#807870;text-decoration:none">${esc(l.label)}</a>` : esc(l.label);
+  };
 
   el.innerHTML = `
     <div class="sf-inner">
       <div class="sf-brand">
         <div class="sf-logo"><img src="logo/logo-white.png" alt="Little Symphony"></div>
-        <p>La boutique de référence pour les familles tunisiennes qui misent sur la qualité, la douceur et le style.</p>
-        <div class="sf-social">
-          <button class="sf-soc-btn" title="Instagram">
-            <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
-          </button>
-          <button class="sf-soc-btn" title="Facebook">
-            <svg viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
-          </button>
-          <button class="sf-soc-btn" title="TikTok">
-            <svg viewBox="0 0 24 24"><path d="M9 12a4 4 0 104 4V4a5 5 0 005 5"/></svg>
-          </button>
+        <p>${esc(f.brand_text)}</p>
+        <div class="sf-social">${socBtn('instagram', 'Instagram', '<svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>')}${socBtn('facebook', 'Facebook', '<svg viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>')}${socBtn('tiktok', 'TikTok', '<svg viewBox="0 0 24 24"><path d="M9 12a4 4 0 104 4V4a5 5 0 005 5"/></svg>')}
         </div>
       </div>
-      <div>
-        <h4>Boutique</h4>
+      ${(f.columns || []).map(c => `<div>
+        <h4>${esc(c.title)}</h4>
         <ul>
-          <li>Nouveautés</li>
-          <li>Meilleures ventes</li>
-          <li>Promotions</li>
-          <li>Coffrets cadeaux</li>
+          ${(c.links || []).map(l => `<li>${link(l)}</li>`).join('\n          ')}
         </ul>
-      </div>
-      <div>
-        <h4>Service</h4>
-        <ul>
-          <li><a href="${Auth.isLoggedIn()?'orders.html':'login.html'}" style="color:#807870;text-decoration:none">Mes commandes</a></li>
-          <li>Retours</li>
-          <li>Contactez-nous</li>
-          <li>FAQ</li>
-        </ul>
-      </div>
-      <div>
-        <h4>Infos</h4>
-        <ul>
-          <li><a href="apropos.html" style="color:#807870;text-decoration:none">À propos</a></li>
-          <li>Blog &amp; conseils</li>
-          <li><a href="mentions-legales.html" style="color:#807870;text-decoration:none">Mentions légales</a></li>
-          <li><a href="cgv.html" style="color:#807870;text-decoration:none">CGV</a></li>
-        </ul>
-      </div>
+      </div>`).join('\n      ')}
     </div>
     <div class="sf-bottom">
-      <span>© 2025 Little Symphony — Tous droits réservés</span>
+      <span>${esc(f.copyright)}</span>
       <div style="display:flex;gap:1.5rem">
         <a href="mentions-legales.html">Politique de confidentialité</a>
         <a href="cgv.html">CGV</a>
         <a href="cgu.html">CGU</a>
         <a href="#" style="display:flex;align-items:center;gap:5px">
           <svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          Région de Grand-Tunis
+          ${esc(f.region)}
         </a>
       </div>
     </div>`;
+
+  // Charger (une seule fois) le contenu du footer défini dans l'admin, puis ré-afficher
+  if (!_footerLoading) {
+    _footerLoading = true;
+    loadSiteContent('footer', d => { _footerData = d; renderFooter(); });
+  }
 }
 
 // ── TOAST GLOBAL ─────────────────────────────────────────────────────────────

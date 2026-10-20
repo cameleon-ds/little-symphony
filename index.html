@@ -457,7 +457,7 @@ nav.scrolled{box-shadow:var(--shadow-sm)}
 }
 .promo-banner::before{
   content:'';position:absolute;inset:0;
-  background-image:url('https://images.pexels.com/photos/7282619/pexels-photo-7282619.jpeg?auto=compress&cs=tinysrgb&w=1200&fit=crop');
+  background-image:var(--promo-bg, url('https://images.pexels.com/photos/7282619/pexels-photo-7282619.jpeg?auto=compress&cs=tinysrgb&w=1200&fit=crop'));
   background-size:cover;background-position:center;
   opacity:0.25;
 }
@@ -804,16 +804,16 @@ footer ul li:hover{color:#fff}
 </div>
 
 <!-- ATELIERS ENFANTS -->
-<div class="ateliers-outer">
+<div class="ateliers-outer" id="ls-ateliers">
 <section class="ateliers-section">
   <div class="ateliers-head">
     <div class="ateliers-head-left">
-      <span class="section-eyebrow">Agenda & Activités</span>
-      <h2>Ateliers enfants</h2>
+      <span class="section-eyebrow" id="ls-ateliers-eyebrow">Agenda & Activités</span>
+      <h2 id="ls-ateliers-title">Ateliers enfants</h2>
     </div>
   </div>
 
-  <div class="ateliers-grid">
+  <div class="ateliers-grid" id="ls-ateliers-grid">
 
     <!-- Atelier 1 -->
     <div class="atelier-card">
@@ -901,7 +901,7 @@ footer ul li:hover{color:#fff}
 </div>
 
 <!-- PROMO BANNER -->
-<div class="promo-banner">
+<div class="promo-banner" id="ls-promo">
   <div class="promo-inner">
     <div class="promo-tag">✦ Exclusivité Little Symphony</div>
     <h2>La boîte Little Symphony</h2>
@@ -959,7 +959,7 @@ footer ul li:hover{color:#fff}
 
 <!-- TRUST BAR -->
 <div class="trust">
-  <div class="trust-inner">
+  <div class="trust-inner" id="ls-trust">
     <div class="trust-item">
       <div class="trust-icon"><svg><use href="#icon-truck"/></svg></div>
       <div class="trust-text"><strong>Livraison offerte</strong><span>dès 80 DT d'achat</span></div>
@@ -1378,10 +1378,10 @@ function addToCart() {
 <script>
 (function(){
   const track = document.getElementById('sliderTrack');
-  const dots = document.querySelectorAll('#sliderDots .dot');
+  let dots = document.querySelectorAll('#sliderDots .dot');
   const progress = document.getElementById('sliderProgress');
   let current = 0;
-  const total = 6;
+  let total = track.querySelectorAll('.slide').length || 1;
   let timer;
 
   function goTo(n){
@@ -1401,6 +1401,16 @@ function addToCart() {
   }
 
   window.sliderMove = function(dir){ goTo(current + dir); };
+  // Recalcule les slides et les points après un changement de contenu (admin → Contenu → Accueil)
+  window.sliderRebuild = function(){
+    total = track.querySelectorAll('.slide').length || 1;
+    document.getElementById('sliderDots').innerHTML = Array.from({length: total}, (_, i) =>
+      `<button class="dot${i === 0 ? ' active' : ''}" onclick="sliderGo(${i})"></button>`).join('');
+    dots = document.querySelectorAll('#sliderDots .dot');
+    current = 0;
+    track.style.transform = 'translateX(0%)';
+    resetTimer();
+  };
   window.sliderGo   = function(n)  { goTo(n); };
 
   function resetTimer(){
@@ -1427,7 +1437,10 @@ function addToCart() {
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
 <script src="_shared.js"></script>
+<script src="site-content.js"></script>
 <script>
+// Contenu éditable depuis l'admin (Contenu → Accueil)
+loadSiteContent('home', lsApplyHome);
 // Dynamic nav + footer
 renderNav('home');
 renderFooter();

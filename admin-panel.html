@@ -470,6 +470,20 @@ tr.row-selected td{background:#FBF6F5}
       Catégories
     </button>
 
+    <div class="nav-group" id="nav-group-contenu">
+      <button class="nav-item" id="nav-contenu" onclick="ceToggleGroup()">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+        Contenu
+        <svg class="nav-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <div class="nav-subs">
+        <button class="nav-sub" data-page="accueil" onclick="ceOpen('accueil');closeSidebar()">Accueil</button>
+        <button class="nav-sub" data-page="apropos" onclick="ceOpen('apropos');closeSidebar()">À propos</button>
+        <button class="nav-sub" data-page="contact" onclick="ceOpen('contact');closeSidebar()">Contact</button>
+        <button class="nav-sub" data-page="footer" onclick="ceOpen('footer');closeSidebar()">Footer</button>
+      </div>
+    </div>
+
     <button class="nav-item" onclick="showPanel('reseaux-sociaux', this);closeSidebar();loadSocialModule()">
       <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
       Réseaux sociaux
@@ -1068,6 +1082,21 @@ tr.row-selected td{background:#FBF6F5}
       </div>
     </div>
 
+    <!-- CONTENU DES PAGES -->
+    <div class="panel" id="panel-contenu">
+      <div class="ce-top">
+        <div>
+          <h1 class="page-title" id="ce-title">Contenu</h1>
+          <p class="page-sub">Modifiez les textes et les images de la page. Les produits se gèrent dans l'onglet Produits.</p>
+        </div>
+        <div class="ce-actions">
+          <a class="ce-btn" id="ce-view" href="index.html" target="_blank">Voir la page ↗</a>
+          <button class="ce-btn dark" id="ce-save-btn" onclick="ceSave()">Enregistrer<span class="dirty-dot" title="Modifications non enregistrées"></span></button>
+        </div>
+      </div>
+      <div id="ce-form"></div>
+    </div>
+
     <!-- RÉSEAUX SOCIAUX -->
     <div class="panel" id="panel-reseaux-sociaux">
       <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
@@ -1369,6 +1398,8 @@ tr.row-selected td{background:#FBF6F5}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script src="supabase-client.js"></script>
+<script src="site-content.js"></script>
+<script src="admin-content.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
@@ -1388,7 +1419,7 @@ const SVG_EDIT  = `<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2
 const SVG_TRASH = `<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`;
 
 // ── NAVIGATION ───────────────────────────────────────────────────
-const titles = { commandes:'Commandes', clients:'Clients', produits:'Produits', categories:'Catégories', 'reseaux-sociaux':'Réseaux sociaux', messagerie:'Messagerie' };
+const titles = { commandes:'Commandes', clients:'Clients', produits:'Produits', categories:'Catégories', contenu:'Contenu', 'reseaux-sociaux':'Réseaux sociaux', messagerie:'Messagerie' };
 
 function setBreadcrumb(root, sub) {
   const el = document.getElementById('topbar-title');
@@ -1420,19 +1451,26 @@ function showPanel(name, btn) {
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
   btn.classList.add('active');
+  if (name !== 'contenu') {
+    document.getElementById('nav-group-contenu')?.classList.remove('open');
+    document.querySelectorAll('.nav-sub').forEach(b => b.classList.remove('active'));
+  }
   setBreadcrumb(titles[name]);
   // Adresse propre à chaque section (#produits, #clients…) : F5 et bouton Retour restent sur la page
-  if (ADMIN_ROUTES.includes(name) && location.hash !== '#' + name) {
+  if (ADMIN_ROUTES.includes(name) && name !== 'contenu' && location.hash !== '#' + name) {
     history.pushState(null, '', '#' + name);
   }
 }
 
 // ── Routage par URL (#section) ───────────────────────────────────
-const ADMIN_ROUTES = ['commandes', 'clients', 'produits', 'categories', 'reseaux-sociaux', 'messagerie'];
+const ADMIN_ROUTES = ['commandes', 'clients', 'produits', 'categories', 'contenu', 'reseaux-sociaux', 'messagerie'];
 
 function routeFromHash() {
-  const name = decodeURIComponent(location.hash.replace(/^#\/?/, '').split('/')[0]);
+  const parts = decodeURIComponent(location.hash.replace(/^#\/?/, '')).split('/');
+  const name = parts[0];
   if (!ADMIN_ROUTES.includes(name)) return;
+  // Contenu : #contenu/accueil, #contenu/apropos, #contenu/contact, #contenu/footer
+  if (name === 'contenu') { if (typeof ceOpen === 'function' && (_ce.page !== (parts[1] || 'accueil') || !document.getElementById('panel-contenu').classList.contains('active'))) ceOpen(parts[1] || 'accueil', { fromHash: true }); return; }
   if (document.getElementById('panel-' + name)?.classList.contains('active')) return;
   // Même effet qu'un clic dans le menu (y compris le chargement des modules)
   document.querySelector(`.nav-item[onclick*="showPanel('${name}'"]`)?.click();

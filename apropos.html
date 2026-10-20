@@ -324,7 +324,7 @@ button{cursor:pointer;font-family:var(--sans)}
 <section class="ap-hero">
   <div class="ap-hero-bg"></div>
   <div class="ap-hero-overlay"></div>
-  <div class="ap-hero-content">
+  <div class="ap-hero-content" id="ls-ap-hero">
     <span class="ap-hero-eyebrow" style="margin-bottom:0.4rem">À propos de nous</span>
     <h1>Un espace pensé avec <em style="font-style:italic;color:var(--primary)">amour</em>, pour chaque étape de votre enfant.</h1>
   </div>
@@ -332,7 +332,7 @@ button{cursor:pointer;font-family:var(--sans)}
 
 <!-- ── MANIFESTO ── -->
 <div class="ap-section">
-  <div class="manifesto-wrap">
+  <div class="manifesto-wrap" id="ls-ap-manifesto">
     <div>
       <p class="manifesto-quote">« Chaque enfant mérite un monde <em>doux, stimulant</em> et riche en couleurs. »</p>
     </div>
@@ -346,7 +346,7 @@ button{cursor:pointer;font-family:var(--sans)}
 </div>
 
 <!-- ── PHOTOS INTÉRIEUR ── -->
-<div class="ap-section" style="padding-top:0">
+<div class="ap-section" style="padding-top:0" id="ls-ap-photos">
   <span class="ap-eyebrow">La boutique</span>
   <h2 class="ap-h2">Un intérieur pensé pour <em style="font-style:italic">explorer</em></h2>
   <p class="ap-lead" style="margin-bottom:2rem">Chaque coin de la boutique a été aménagé pour inviter à la découverte — des espaces doux et lumineux où parents et enfants se sentent chez eux.</p>
@@ -379,7 +379,7 @@ button{cursor:pointer;font-family:var(--sans)}
 
 <!-- ── ZONES PAR ÂGE ── -->
 <div class="zones-bg">
-  <div class="zones-inner">
+  <div class="zones-inner" id="ls-ap-zones">
     <span class="ap-eyebrow">Espaces par âge</span>
     <h2 class="ap-h2">Organisée pour chaque <em style="font-style:italic">moment</em></h2>
     <p class="ap-lead">La boutique est découpée en zones dédiées selon l'âge de votre enfant, pour que chaque visite soit intuitive, joyeuse et parfaitement adaptée.</p>
@@ -429,7 +429,7 @@ button{cursor:pointer;font-family:var(--sans)}
 </div>
 
 <!-- ── CATÉGORIES ── -->
-<div class="cats-section">
+<div class="cats-section" id="ls-ap-cats">
   <span class="ap-eyebrow">Notre sélection</span>
   <h2 class="ap-h2">Tout ce dont votre enfant a besoin, <em style="font-style:italic">en un seul endroit</em></h2>
   <p class="ap-lead" style="margin-bottom:2.5rem">Onze univers soigneusement pensés, chacun avec sa propre identité et ses produits sélectionnés à la main.</p>
@@ -506,7 +506,7 @@ button{cursor:pointer;font-family:var(--sans)}
 
 <!-- ── COIN MUSICAL & ATELIERS ── -->
 <div style="padding:0 2rem 5rem;max-width:1100px;margin:0 auto">
-  <div class="music-wrap">
+  <div class="music-wrap" id="ls-ap-music">
     <div class="music-img">
       <img src="https://images.pexels.com/photos/1246437/pexels-photo-1246437.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Coin musical Little Symphony" loading="lazy">
       <div class="music-img-overlay"></div>
@@ -565,7 +565,7 @@ button{cursor:pointer;font-family:var(--sans)}
 
 <!-- ── ENGAGEMENTS ── -->
 <div class="values-bg">
-  <div class="values-inner">
+  <div class="values-inner" id="ls-ap-values">
     <div style="text-align:center;margin-bottom:0.5rem">
       <span class="ap-eyebrow">Nos engagements</span>
     </div>
@@ -620,7 +620,7 @@ button{cursor:pointer;font-family:var(--sans)}
 </div>
 
 <!-- ── CTA BANNER ── -->
-<div class="cta-banner">
+<div class="cta-banner" id="ls-ap-cta">
   <h2>Venez nous rendre visite</h2>
   <p>La boutique vous attend avec ses équipes passionnées, ses ateliers et ses centaines de produits soigneusement sélectionnés.</p>
   <div class="cta-btns">
@@ -632,6 +632,7 @@ button{cursor:pointer;font-family:var(--sans)}
 <div id="main-footer"></div>
 
 <script src="_shared.js"></script>
+<script src="site-content.js"></script>
 <script>
 renderNav('apropos');
 renderFooter();
@@ -647,12 +648,19 @@ const observer = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.1 });
 
-document.querySelectorAll('.zone-card, .value-card, .cat-pill, .atelier-item').forEach(el => {
-  el.style.opacity = '0';
-  el.style.transform = 'translateY(20px)';
-  el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-  observer.observe(el);
-});
+function initReveal() {
+  document.querySelectorAll('.zone-card, .value-card, .cat-pill, .atelier-item').forEach(el => {
+    if (el.dataset.reveal) return;
+    el.dataset.reveal = '1';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    observer.observe(el);
+  });
+}
+// Contenu éditable depuis l'admin (Contenu → À propos)
+loadSiteContent('about', d => { lsApplyAbout(d); initReveal(); });
+initReveal();
 </script>
 </body>
 </html>
