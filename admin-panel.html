@@ -409,6 +409,11 @@ tbody tr:hover{background:var(--primary-xlight)}
 .prod-thumb-empty{display:flex;align-items:center;justify-content:center;background:#EFEDEC;border-color:#E2DFDD}
 .prod-thumb-empty svg{width:18px;height:18px;fill:none;stroke:#B5B0AD;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .prod-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;white-space:normal;word-break:break-word}
+.drag-handle{cursor:grab;color:#C4BCB8;width:28px;padding-left:6px!important;padding-right:0!important}
+.drag-handle svg{width:16px;height:16px;fill:currentColor;display:block}
+.drag-handle:hover{color:var(--charcoal)}
+.drag-ghost td{background:#F5EDED!important;opacity:.6}
+.drag-chosen{box-shadow:0 6px 18px rgba(0,0,0,.12)}
 .prod-chk{width:16px;height:16px;cursor:pointer;accent-color:var(--charcoal)}
 tr.row-selected td{background:#FBF6F5}
 .bulk-wrap{position:relative}
@@ -869,10 +874,10 @@ tr.row-selected td{background:#FBF6F5}
           </div>
           <table id="tbl-produits">
             <thead><tr>
-              <th style="width:34px"><input type="checkbox" id="chk-all-prod" class="prod-chk" onclick="toggleAllProd(this.checked)" title="Tout sélectionner (produits affichés)"></th><th>Nom</th><th class="col-hide-mobile">Catégorie</th><th>Prix</th><th>Stock</th><th>Statut</th><th></th>
+              <th style="width:28px" title="Glisser pour réordonner"></th><th style="width:34px"><input type="checkbox" id="chk-all-prod" class="prod-chk" onclick="toggleAllProd(this.checked)" title="Tout sélectionner (produits affichés)"></th><th>Nom</th><th class="col-hide-mobile">Catégorie</th><th>Prix</th><th>Stock</th><th>Statut</th><th></th>
             </tr></thead>
             <tbody id="tbody-produits">
-              <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement…</td></tr>
+              <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement…</td></tr>
             </tbody>
           </table>
         </div>
@@ -1362,6 +1367,7 @@ tr.row-selected td{background:#FBF6F5}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script src="supabase-client.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -2298,7 +2304,7 @@ async function loadProduits() {
   const { data, error } = await _supabase
     .from('products_full')
     .select('*')
-    .order('category_name').order('name');
+    .order('sort_order').order('name');
 
   if (error) { console.error('loadProduits:', error); return; }
 
@@ -2326,6 +2332,7 @@ async function loadProduits() {
     age_ranges:     p.age_ranges || [],
     description:    p.description || '',
     attributes:     p.attributes  || [],
+    sort_order:     p.sort_order ?? 0,
   }));
 
   const cats = [...new Set(PRODUITS.map(p => p.cat))].filter(Boolean);
@@ -2422,12 +2429,13 @@ function renderProduits(query) {
     (activeSubFilter === 'Toutes' || p.sub === activeSubFilter) &&
     (!q || p.nom.toLowerCase().includes(q.toLowerCase()) || p.cat.toLowerCase().includes(q.toLowerCase()))
   );
-  filtered.sort((a, b) => (a.stock ?? 0) - (b.stock ?? 0));
+  filtered.sort((a, b) => (a.sort_order - b.sort_order) || a.nom.localeCompare(b.nom));
   _lastFilteredProd = filtered;
   const actionStyle = 'font-size:12px;padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;background:none;cursor:pointer;font-family:var(--sans);color:var(--charcoal)';
   document.getElementById('tbody-produits').innerHTML = filtered.length
     ? filtered.map(p => `
-        <tr class="${_selectedProd.has(p.id) ? 'row-selected' : ''}">
+        <tr class="${_selectedProd.has(p.id) ? 'row-selected' : ''}" data-id="${p.id}">
+          <td class="drag-handle" title="Glisser pour changer l'ordre"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></td>
           <td><input type="checkbox" class="prod-chk" ${_selectedProd.has(p.id) ? 'checked' : ''} onclick="toggleProdSel('${p.id}', this.checked, this)"></td>
           <td>
             <div class="prod-cell">
@@ -2446,8 +2454,38 @@ function renderProduits(query) {
           <td><span class="badge ${p.statut==='En stock'?'badge-delivered':'badge-cancelled'}">${p.statut}</span>${p.is_active ? '' : ' <span class="badge" style="background:#F1F1F1;color:#6B6B6B">Masqué</span>'}</td>
           <td><button onclick="openProduitForm('${p.id}')" style="${actionStyle}">Modifier</button></td>
         </tr>`).join('')
-    : `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Aucun produit</td></tr>`;
+    : `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted)">Aucun produit</td></tr>`;
   updateBulkUi();
+  initProdSortable();
+}
+
+// ── Glisser-déposer pour l'ordre d'affichage (même ordre que dans la boutique) ──
+let _prodSortable = null;
+function initProdSortable() {
+  const tbody = document.getElementById('tbody-produits');
+  if (!tbody || typeof Sortable === 'undefined') return;
+  if (_prodSortable) _prodSortable.destroy();
+  _prodSortable = Sortable.create(tbody, {
+    handle: '.drag-handle', animation: 160, ghostClass: 'drag-ghost', chosenClass: 'drag-chosen',
+    onEnd: saveProdOrder
+  });
+}
+
+async function saveProdOrder(evt) {
+  if (evt.oldIndex === evt.newIndex) return;
+  const ids = [...document.querySelectorAll('#tbody-produits tr[data-id]')].map(tr => tr.dataset.id);
+  const rows = ids.map(id => PRODUITS.find(p => p.id === id)).filter(Boolean);
+  // On redistribue les positions déjà occupées par ces produits : l'ordre des autres (filtrés) ne bouge pas
+  const slots = rows.map(p => p.sort_order).sort((a, b) => a - b);
+  if (new Set(slots).size !== slots.length) slots.forEach((_, i) => slots[i] = (slots[0] || 0) + i * 10);
+  const changed = [];
+  rows.forEach((p, i) => { if (p.sort_order !== slots[i]) { p.sort_order = slots[i]; changed.push(p); } });
+  if (!changed.length) return;
+  const results = await Promise.all(changed.map(p =>
+    _supabase.from('products').update({ sort_order: p.sort_order }).eq('id', p.id)));
+  const err = results.find(r => r.error);
+  if (err) { alert('Erreur : ' + err.error.message); await loadProduits(); return; }
+  showToast("Ordre d'affichage enregistré", null, null, 'success');
 }
 
 function filterProduits(query) { renderProduits(query); }

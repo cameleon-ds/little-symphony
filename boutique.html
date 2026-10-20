@@ -557,6 +557,7 @@ async function loadProducts() {
     .from('products_full')
     .select('*')
     .eq('is_active', true)
+    .order('sort_order')
     .order('name');
 
   if (error) { console.error('Supabase:', error.message); return; }
