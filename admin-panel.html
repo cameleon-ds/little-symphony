@@ -2812,6 +2812,27 @@ function readAttrSlots() {
     .filter(a => a.title || a.desc);
 }
 
+// Compression des photos avant upload : max 1200 px, format WebP (~100 Ko au lieu de 3-5 Mo)
+async function compressImage(file, maxSize = 1200, quality = 0.82) {
+  if (!file || !/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type)) return file;   // SVG, GIF… envoyés tels quels
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, maxSize / Math.max(bmp.width, bmp.height));
+    const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);      // fond blanc pour les PNG transparents
+    ctx.drawImage(bmp, 0, 0, w, h);
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/webp', quality));
+    if (!blob || blob.size >= file.size) return file;      // garder l'original s'il est déjà plus léger
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' });
+  } catch (e) {
+    console.warn('compressImage: envoi de l\'original', e);
+    return file;
+  }
+}
+
 async function saveProduit() {
   const name     = document.getElementById('pf-name').value.trim();
   const slug     = document.getElementById('pf-slug').value.trim();
@@ -2840,10 +2861,11 @@ async function saveProduit() {
   for (let i = 0; i < _imageSlots.length; i++) {
     const slot = _imageSlots[i];
     if (slot.file) {
-      const ext  = slot.file.name.split('.').pop();
-      const path = `products/${slug || Date.now()}-${i}.${ext}`;
+      const upFile = await compressImage(slot.file);       // photo allégée avant l'envoi
+      const ext  = upFile.type === 'image/webp' ? 'webp' : slot.file.name.split('.').pop();
+      const path = `products/${slug || Date.now()}-${i}-${Date.now()}.${ext}`;
       const { error: upErr } = await _supabase.storage
-        .from('products').upload(path, slot.file, { upsert: true });
+        .from('products').upload(path, upFile, { upsert: true, contentType: upFile.type, cacheControl: '31536000' });
       if (upErr) { alert(`Erreur upload image ${i+1} : ${upErr.message}`); return; }
       const { data: pubData } = _supabase.storage.from('products').getPublicUrl(path);
       resolvedImages.push(pubData.publicUrl);
