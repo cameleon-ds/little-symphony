@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SITE = 'https://cameleon-ds.github.io/little-symphony/';
+const SITE = 'https://little-symphony.com/';
 const OUT  = path.join(ROOT, 'produit');
 
 const client = fs.readFileSync(path.join(ROOT, 'supabase-client.js'), 'utf8');
