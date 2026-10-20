@@ -330,3 +330,54 @@ function lsApplyContact(d) {
 `;
   }
 }
+
+/* ═══════════════════ MENTIONS LÉGALES & CGV ═══════════════════
+   Format du texte d'une section (admin) :
+   - paragraphes séparés par une ligne vide
+   - une ligne commençant par « - » = élément de liste
+   - [texte](lien) = lien · [texte] = champ à compléter (surligné) · **texte** = gras */
+function lsLegalInline(s) {
+  return lsEsc(s)
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" style="color:var(--primary-dark);text-decoration:underline">$1</a>')
+    .replace(/\[([^\]]+)\]/g, '<span class="ml-placeholder">[$1]</span>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+}
+function lsLegalBody(text) {
+  const out = [];
+  String(text || '').split(/\n\s*\n/).forEach(block => {
+    let para = [], list = [];
+    const flushP = () => { if (para.length) { out.push(`<p>${para.map(lsLegalInline).join('<br>')}</p>`); para = []; } };
+    const flushL = () => { if (list.length) { out.push(`<ul>\n      ${list.map(l => `<li>${lsLegalInline(l)}</li>`).join('\n      ')}\n    </ul>`); list = []; } };
+    block.split('\n').map(l => l.trim()).filter(Boolean).forEach(l => {
+      if (/^[-•]\s+/.test(l)) { flushP(); list.push(l.replace(/^[-•]\s+/, '')); }
+      else { flushL(); para.push(l); }
+    });
+    flushP(); flushL();
+  });
+  return out.join('\n    ');
+}
+function lsApplyLegal(d) {
+  if (!d) return;
+  const $ = id => document.getElementById(id);
+  if (d.hero && $('ls-lg-hero')) {
+    $('ls-lg-hero').innerHTML = `
+  <span class="eyebrow">${lsEsc(d.hero.eyebrow)}</span>
+  <h1>${lsEsc(d.hero.title)}</h1>
+  <p>${lsLegalInline(d.hero.text)}</p>
+`;
+  }
+  if ($('ls-lg-body')) {
+    $('ls-lg-body').innerHTML = `
+${d.note_text ? `  <div class="ml-note">
+    <strong>${lsEsc(d.note_title)}</strong> ${lsLegalInline(d.note_text)}
+  </div>
+` : ''}
+${(d.sections || []).map(s => `  <div class="ml-section">
+    <h2>${lsEsc(s.title)}</h2>
+    ${lsLegalBody(s.body)}
+  </div>`).join('\n\n')}
+
+${d.updated ? `  <p class="ml-updated">${lsEsc(d.updated)}</p>` : ''}
+`;
+  }
+}
