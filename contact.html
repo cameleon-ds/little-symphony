@@ -305,11 +305,28 @@ button{cursor:pointer;font-family:var(--sans)}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="_shared.js?v=3"></script>
+<script src="_shared.js?v=4"></script>
 <script src="site-content.js?v=3"></script>
 <script>
 // Contenu éditable depuis l'admin (Contenu → Contact)
 if (typeof lsApplyContact === 'function') loadSiteContent('contact', lsApplyContact);
+// Boutons réseaux sociaux : mêmes liens que le footer (Contenu → Footer), WhatsApp = 1er numéro de téléphone
+function linkSocialBtn(title, url) {
+  const b = document.querySelector('.social-btn[title="' + title + '"]');
+  if (!b) return;
+  if (url) { b.onclick = () => window.open(url, '_blank', 'noopener'); b.style.cursor = 'pointer'; }
+  else { b.onclick = null; }
+}
+if (typeof loadSiteContent === 'function') {
+  loadSiteContent('footer', f => {
+    const s = (f && f.socials) || {};
+    linkSocialBtn('Instagram', s.instagram); linkSocialBtn('Facebook', s.facebook); linkSocialBtn('TikTok', s.tiktok);
+  });
+  loadSiteContent('contact', c => {
+    const n = ((c && c.phones) || []).map(p => p && p.number).filter(Boolean)[0];
+    linkSocialBtn('WhatsApp', n ? 'https://wa.me/' + String(n).replace(/\D/g, '') : '');
+  });
+}
 renderNav('contact');
 renderFooter();
 

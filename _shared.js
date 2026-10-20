@@ -373,20 +373,20 @@ function _snBurgerToggle() {
 // Le dernier contenu reçu est gardé en cache local pour un affichage immédiat.
 const LS_SB_URL = 'https://uyyillkilzsywcrrfbov.supabase.co';
 const LS_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5eWlsbGtpbHpzeXdjcnJmYm92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MzU1NTUsImV4cCI6MjA5ODMxMTU1NX0.7hnsFSZQBoDardOPa6fO7TsGoov1p6DLN0i_Uqgy5Ls';
-const _lsContentLast = {};
 function loadSiteContent(key, apply) {
   const ck = 'ls_content_' + key;
   let cached = null;
   try { cached = localStorage.getItem(ck); } catch (e) {}
-  if (cached) { try { _lsContentLast[key] = cached; apply(JSON.parse(cached)); } catch (e) { console.warn('contenu ' + key, e); } }
+  let last = null;                                   // dernier contenu affiché pour CET appel
+  if (cached) { try { last = cached; apply(JSON.parse(cached)); } catch (e) { console.warn('contenu ' + key, e); } }
   fetch(LS_SB_URL + '/rest/v1/site_content?select=data&key=eq.' + encodeURIComponent(key), {
     headers: { apikey: LS_SB_KEY, Authorization: 'Bearer ' + LS_SB_KEY }
   }).then(r => r.ok ? r.json() : null).then(rows => {
     if (!rows || !rows[0] || !rows[0].data) return;
     const str = JSON.stringify(rows[0].data);
     try { localStorage.setItem(ck, str); } catch (e) {}
-    if (_lsContentLast[key] === str) return;          // rien n'a changé : pas de nouveau rendu
-    _lsContentLast[key] = str;
+    if (last === str) return;                         // rien n'a changé : pas de nouveau rendu
+    last = str;
     try { apply(rows[0].data); } catch (e) { console.warn('contenu ' + key, e); }
   }).catch(() => {});
 }
