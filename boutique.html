@@ -587,12 +587,27 @@ async function loadProducts() {
     description: p.description || null,
     attributes:  p.attributes  || null,
   }));
+  setPriceCap();
+}
+
+// Plafond du filtre prix = prix le plus élevé du catalogue (arrondi à 50 DT)
+function setPriceCap() {
+  const maxP = Math.max(0, ...ALL_PRODUCTS.map(p => p.price || 0));
+  PRICE_CAP = Math.max(50, Math.ceil(maxP / 50) * 50);
+  priceMin = 0; priceMax = PRICE_CAP;
+  ['range-min','range-max','price-min-input','price-max-input'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.max = PRICE_CAP;
+  });
+  const rMax = document.getElementById('range-max'); if (rMax) rMax.value = PRICE_CAP;
+  const iMax = document.getElementById('price-max-input'); if (iMax) iMax.value = PRICE_CAP;
+  const lMax = document.getElementById('price-max-label'); if (lMax) lMax.textContent = PRICE_CAP + ' DT';
 }
 
 // ── STATE ──────────────────────────────────────────────────────────────────────
 var activeCat = null;
 var activeSub = null;
-var priceMin = 0, priceMax = 600;
+var PRICE_CAP = 600;
+var priceMin = 0, priceMax = PRICE_CAP;
 var currentView = 'grid';
 
 function getActiveAges()   { return [...document.querySelectorAll('.check-list input[value="0-6"],[value="6-12"],[value="1-3"],[value="3-6"],[value="6-12ans"],[value="maman"]')].filter(x=>x.checked).map(x=>x.value); }
@@ -676,7 +691,7 @@ function updateRange() {
   document.getElementById('price-max-label').textContent = max + ' DT';
   document.getElementById('price-min-input').value = min;
   document.getElementById('price-max-input').value = max;
-  const pct1 = min/600*100, pct2 = max/600*100;
+  const pct1 = min/PRICE_CAP*100, pct2 = max/PRICE_CAP*100;
   document.getElementById('price-fill').style.left = pct1+'%';
   document.getElementById('price-fill').style.width = (pct2-pct1)+'%';
   applyFilters();
@@ -684,7 +699,7 @@ function updateRange() {
 
 function syncFromInput(side) {
   const minI = parseInt(document.getElementById('price-min-input').value)||0;
-  const maxI = parseInt(document.getElementById('price-max-input').value)||600;
+  const maxI = parseInt(document.getElementById('price-max-input').value)||PRICE_CAP;
   document.getElementById('range-min').value = Math.min(minI, maxI);
   document.getElementById('range-max').value = Math.max(minI, maxI);
   updateRange();
@@ -698,9 +713,9 @@ function resetFilter(type) {
     document.querySelectorAll('.check-list input[value="garcon"],[value="fille"],[value="mixte"]').forEach(x => x.checked = false);
   }
   if (type === 'price') {
-    priceMin = 0; priceMax = 600;
+    priceMin = 0; priceMax = PRICE_CAP;
     document.getElementById('range-min').value = 0;
-    document.getElementById('range-max').value = 600;
+    document.getElementById('range-max').value = PRICE_CAP;
     updateRange(); return;
   }
   applyFilters();
@@ -920,7 +935,7 @@ function renderChips(ages, genders) {
   if (activeSub) chips.push({label: activeSub, action: 'clearSub()'});
   ages.forEach(a => chips.push({label: AGE_LABELS[a], action: `resetOneCheck('${a}')`}));
   genders.forEach(g => chips.push({label: GEN_LABELS[g], action: `resetOneCheck('${g}')`}));
-  if (priceMin > 0 || priceMax < 600) chips.push({label: `${priceMin}–${priceMax} DT`, action: "resetFilter('price')"});
+  if (priceMin > 0 || priceMax < PRICE_CAP) chips.push({label: `${priceMin}–${priceMax} DT`, action: "resetFilter('price')"});
   document.getElementById('active-filters').innerHTML = chips.map(c => `
     <button class="filter-chip" onclick="${c.action}">
       ${c.label}
