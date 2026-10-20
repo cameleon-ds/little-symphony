@@ -2333,9 +2333,13 @@ async function loadProduits() {
     description:    p.description || '',
     attributes:     p.attributes  || [],
     sort_order:     p.sort_order ?? 0,
+    cat_order:      p.category_sort_order ?? 999,
   }));
 
-  const cats = [...new Set(PRODUITS.map(p => p.cat))].filter(Boolean);
+  // Catégories dans l'ordre défini dans « Catégories » (même ordre que sur le site)
+  const catOrder = {};
+  PRODUITS.forEach(p => { if (p.cat) catOrder[p.cat] = Math.min(catOrder[p.cat] ?? 999, p.cat_order); });
+  const cats = Object.keys(catOrder).sort((a, b) => (catOrder[a] - catOrder[b]) || a.localeCompare(b));
   const catSelect = document.getElementById('cat-select');
   catSelect.innerHTML = '<option value="Tous">Toutes les catégories</option>';
   cats.forEach(c => {
@@ -2356,6 +2360,8 @@ function setCatFilter(cat) {
     subSelect.style.display = 'none';
   } else {
     const subs = [...new Set(PRODUITS.filter(p => p.cat === cat).map(p => p.sub))].filter(Boolean);
+    const subRef = (CATEGORIES.find(c => c.nom === cat)?.subs || []).map(x => x.nom);
+    subs.sort((a, b) => ((subRef.indexOf(a) + 1 || 999) - (subRef.indexOf(b) + 1 || 999)) || a.localeCompare(b));
     subSelect.innerHTML = '<option value="Toutes">Toutes les sous-catégories</option>';
     subs.forEach(s => {
       const opt = document.createElement('option');
