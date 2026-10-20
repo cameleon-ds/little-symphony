@@ -132,6 +132,7 @@ button{cursor:pointer;font-family:var(--sans)}
   display:flex;align-items:center;justify-content:center;gap:12px;
   border:1px solid var(--border);color:var(--text-muted);font-size:14px;font-weight:500;
 }
+.map-embed{display:block;width:100%;max-width:900px;height:340px;margin:0 auto;border:1px solid var(--border);border-radius:var(--radius)}
 .map-placeholder svg{width:24px;height:24px;stroke:var(--text-muted);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
 /* ── RESPONSIVE ── */
@@ -169,8 +170,8 @@ button{cursor:pointer;font-family:var(--sans)}
       </div>
       <div>
         <div class="info-label">Adresse</div>
-        <div class="info-value">Avenue Habib Bourguiba, Tunis</div>
-        <div class="info-sub">Tunisie — 1000</div>
+        <div class="info-value">Tunis, Tunisie</div>
+        <div class="info-sub"><a href="https://www.google.com/maps/search/?api=1&query=36.8465407,10.1670608" target="_blank" rel="noopener" style="color:var(--primary-dark);font-weight:600">Voir sur Google Maps →</a></div>
       </div>
     </div>
 
@@ -180,7 +181,7 @@ button{cursor:pointer;font-family:var(--sans)}
       </div>
       <div>
         <div class="info-label">Téléphone</div>
-        <div class="info-value">+216 70 000 000</div>
+        <div class="info-value"><a href="tel:+21620136138" style="color:inherit">+216 20 136 138</a><br><a href="tel:+21624527666" style="color:inherit">+216 24 527 666</a></div>
         <div class="info-sub">Lun – Sam, 9h – 18h</div>
       </div>
     </div>
@@ -293,11 +294,8 @@ button{cursor:pointer;font-family:var(--sans)}
 <!-- MAP STRIP -->
 <div class="map-strip">
   <h3>Nous trouver</h3>
-  <p>Avenue Habib Bourguiba, Tunis — Tunisie</p>
-  <div class="map-placeholder">
-    <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-    Carte interactive à intégrer
-  </div>
+  <p>Little Symphony, Tunis — <a href="https://www.google.com/maps/search/?api=1&query=36.8465407,10.1670608" target="_blank" rel="noopener" style="color:var(--primary-dark);font-weight:600">Itinéraire</a></p>
+  <iframe class="map-embed" src="https://maps.google.com/maps?q=36.8465407,10.1670608&z=17&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Little Symphony sur Google Maps" allowfullscreen></iframe>
 </div>
 
 <div id="main-footer"></div>
