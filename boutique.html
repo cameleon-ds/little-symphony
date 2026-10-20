@@ -760,6 +760,12 @@ function applyFilters() {
   if (sort === 'price-desc') filtered.sort((a,b) => b.price - a.price);
   if (sort === 'new')        filtered = filtered.filter(p => p.badge === 'new').concat(filtered.filter(p => p.badge !== 'new'));
   if (sort === 'promo')      filtered = filtered.filter(p => p.badge === 'promo').concat(filtered.filter(p => p.badge !== 'promo'));
+  // Par défaut (toutes catégories) : d'abord 2 produits de chaque catégorie, dans l'ordre des catégories
+  if (sort === 'default' && activeCat === null) {
+    const head = [];
+    CATS_META.forEach(c => { head.push(...filtered.filter(p => p.catKey === c.key).slice(0, 2)); });
+    filtered = head.concat(filtered.filter(p => !head.includes(p)));
+  }
 
   // Update cat color CSS variable for add buttons
   const catColor = activeCat !== null ? CATS_META[activeCat].color : 'var(--primary)';
