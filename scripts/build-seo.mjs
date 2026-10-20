@@ -15,7 +15,7 @@ const SB_KEY = client.match(/eyJ[A-Za-z0-9._-]+/)[0];
 const esc  = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const fmt  = n => Number(n).toFixed(3).replace('.', ',') + ' DT';
 const clip = (s, n) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length <= n ? s : s.slice(0, n - 1).replace(/\s+\S*$/, '') + '…'; };
-const abs  = u => !u ? SITE + 'images/og-image.jpg' : /^https?:/.test(u) ? u : SITE + u.replace(/^\//, '');
+const abs  = u => !u ? SITE + 'images/og-image.jpg?v=2' : /^https?:/.test(u) ? u : SITE + u.replace(/^\//, '');
 
 async function sb(q) {
   const r = await fetch(`${SB_URL}/rest/v1/${q}`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } });
@@ -86,6 +86,8 @@ for (const p of products) {
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:url" content="${url}">
 <meta property="og:image" content="${esc(img)}">
+<meta property="og:image:secure_url" content="${esc(img)}">
+<meta property="og:image:alt" content="${esc(p.name)}">
 <meta property="product:price:amount" content="${Number(p.price).toFixed(3)}">
 <meta property="product:price:currency" content="TND">
 <meta name="twitter:card" content="summary_large_image">
