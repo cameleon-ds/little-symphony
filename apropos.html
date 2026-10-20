@@ -631,8 +631,8 @@ button{cursor:pointer;font-family:var(--sans)}
 
 <div id="main-footer"></div>
 
-<script src="_shared.js"></script>
-<script src="site-content.js"></script>
+<script src="_shared.js?v=3"></script>
+<script src="site-content.js?v=3"></script>
 <script>
 renderNav('apropos');
 renderFooter();
@@ -659,7 +659,7 @@ function initReveal() {
   });
 }
 // Contenu éditable depuis l'admin (Contenu → À propos)
-loadSiteContent('about', d => { lsApplyAbout(d); initReveal(); });
+if (typeof lsApplyAbout === 'function' && typeof loadSiteContent === 'function') loadSiteContent('about', d => { lsApplyAbout(d); initReveal(); });
 initReveal();
 </script>
 </body>

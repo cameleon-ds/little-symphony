@@ -4,6 +4,16 @@
    Le HTML statique des pages reste en place comme version de secours : si la base
    ne répond pas, la page s'affiche exactement comme avant. */
 
+/* Chargeur de secours (si une ancienne version de _shared.js est encore en cache) */
+if (typeof window.loadSiteContent !== 'function') {
+  window.loadSiteContent = function (key, apply) {
+    const url = 'https://uyyillkilzsywcrrfbov.supabase.co', k = (typeof SUPABASE_KEY !== 'undefined') ? SUPABASE_KEY : null;
+    if (!k) return;
+    fetch(url + '/rest/v1/site_content?select=data&key=eq.' + encodeURIComponent(key), { headers: { apikey: k, Authorization: 'Bearer ' + k } })
+      .then(r => r.ok ? r.json() : null).then(rows => { if (rows && rows[0] && rows[0].data) apply(rows[0].data); }).catch(() => {});
+  };
+}
+
 /* Bibliothèque d'icônes (tracés SVG 24×24) utilisée par le site et l'admin */
 const LS_ICONS = {
   star:     { label: 'Étoile',            svg: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>' },

@@ -1199,7 +1199,7 @@ function addToCartQuick(idx) {
 // Hero BG with Ken Burns
 window.addEventListener('load', () => {
   const bg = document.getElementById('hero-bg');
-  setTimeout(() => bg.classList.add('loaded'), 100);
+  if (bg) setTimeout(() => bg.classList.add('loaded'), 100);
 });
 
 // Nav scroll effect
@@ -1436,11 +1436,11 @@ function addToCart() {
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="_shared.js"></script>
-<script src="site-content.js"></script>
+<script src="_shared.js?v=3"></script>
+<script src="site-content.js?v=3"></script>
 <script>
 // Contenu éditable depuis l'admin (Contenu → Accueil)
-loadSiteContent('home', lsApplyHome);
+if (typeof lsApplyHome === 'function') loadSiteContent('home', lsApplyHome);
 // Dynamic nav + footer
 renderNav('home');
 renderFooter();
