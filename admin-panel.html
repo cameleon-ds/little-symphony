@@ -93,6 +93,10 @@ img{display:block;max-width:100%}
 .del-confirm:disabled{background:#E8B4B4;cursor:not-allowed}
 .dirty-dot{display:none;position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:#22C55E;border:2.5px solid #fff;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:dirtyPulse 1.6s infinite}
 #pf-save-btn.is-dirty .dirty-dot{display:block}
+/* Champ modifié et pas encore enregistré : contour vert (fiche produit) */
+#produit-detail input.is-modified:not([type=checkbox]):not([type=radio]):not([type=file]),
+#produit-detail textarea.is-modified,#produit-detail select.is-modified{border-color:#22C55E!important;box-shadow:0 0 0 3px rgba(34,197,94,.15)!important}
+#produit-detail input[type=checkbox].is-modified,#produit-detail input[type=radio].is-modified{outline:2px solid #22C55E;outline-offset:2px}
 @keyframes dirtyPulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55)}70%{box-shadow:0 0 0 9px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
 .toast-icon{font-size:18px;flex-shrink:0}
 .toast-body{flex:1}
@@ -1399,7 +1403,7 @@ tr.row-selected td{background:#FBF6F5}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script src="supabase-client.js"></script>
 <script src="site-content.js?v=3"></script>
-<script src="admin-content.js?v=3"></script>
+<script src="admin-content.js?v=4"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
@@ -2826,10 +2830,13 @@ let _pfDirty = false, _pfReady = false;
 function setPfDirty(v) {
   _pfDirty = !!v;
   document.getElementById('pf-save-btn')?.classList.toggle('is-dirty', _pfDirty);
+  if (!_pfDirty) document.querySelectorAll('#produit-detail .is-modified').forEach(el => el.classList.remove('is-modified'));
 }
 function markPfDirty() { if (_pfReady) setPfDirty(true); }
-document.addEventListener('input',  e => { if (e.target.closest && e.target.closest('#produit-detail')) markPfDirty(); });
-document.addEventListener('change', e => { if (e.target.closest && e.target.closest('#produit-detail')) markPfDirty(); });
+// Contour vert sur chaque champ modifié, retiré à l'enregistrement
+function markPfField(el) { if (_pfReady && el && el.matches && el.matches('input, textarea, select')) el.classList.add('is-modified'); }
+document.addEventListener('input',  e => { if (e.target.closest && e.target.closest('#produit-detail')) { markPfField(e.target); markPfDirty(); } });
+document.addEventListener('change', e => { if (e.target.closest && e.target.closest('#produit-detail')) { markPfField(e.target); markPfDirty(); } });
 window.addEventListener('beforeunload', e => {
   if (_pfDirty && document.getElementById('produit-detail')?.style.display !== 'none') { e.preventDefault(); e.returnValue = ''; }
 });

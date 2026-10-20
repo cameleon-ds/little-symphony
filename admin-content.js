@@ -57,6 +57,10 @@
 .ce-item .ce-body{padding:.4rem 1rem 1rem}
 .ce-add{align-self:flex-start;padding:8px 14px;border-radius:8px;border:1.5px dashed var(--primary);background:#fff;color:var(--primary-dark);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)}
 .ce-add:hover{background:var(--primary-xlight)}
+/* Champ modifié et pas encore enregistré : contour vert */
+.ce-input[data-mod],.ce-textarea[data-mod],.ce-select[data-mod]{border-color:#22C55E!important;box-shadow:0 0 0 3px rgba(34,197,94,.15)}
+.ce-check input[data-mod]{outline:2px solid #22C55E;outline-offset:2px}
+.ce-item[data-mod]{border-color:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,.12)}
 .ce-sub-title{grid-column:1/-1;font-size:13px;font-weight:600;color:var(--charcoal);margin-top:6px;padding-top:12px;border-top:1px dashed var(--border)}
 @media(max-width:768px){.ce-body{grid-template-columns:1fr}.ce-img-prev{width:90px;height:64px}}
 `;
@@ -189,7 +193,7 @@ const CE_PAGES = {
 };
 
 /* ── État de l'éditeur ───────────────────────────────────────────────────── */
-const _ce = { page: null, data: null, dirty: false, open: new Set() };
+const _ce = { page: null, data: null, dirty: false, open: new Set(), mod: new Set() };
 
 function ceGet(path) {
   return path.split('.').filter(Boolean).reduce((o, k) => (o == null ? undefined : o[k]), _ce.data);
@@ -225,7 +229,7 @@ async function ceOpen(slug, opts = {}) {
   if (!opts.fromHash && location.hash !== '#contenu/' + slug) history.pushState(null, '', '#contenu/' + slug);
   else if (location.hash === '#contenu') history.replaceState(null, '', '#contenu/' + slug);
 
-  _ce.page = slug; _ce.open = new Set(); ceSetDirty(false);
+  _ce.page = slug; _ce.open = new Set(); _ce.mod = new Set(); ceSetDirty(false);
   document.getElementById('ce-title').textContent = 'Contenu — ' + conf.label;
   document.getElementById('ce-view').href = conf.url;
   const form = document.getElementById('ce-form');
@@ -273,7 +277,7 @@ function ceField(f, path) {
   const full = f.full ? ' full' : '';
   const help = f.help ? `<div class="ce-help">${lsEsc(f.help)}</div>` : '';
   const lab = `<label class="ce-label">${lsEsc(f.label)}</label>`;
-  const dp = `data-p="${lsEsc(path)}"`;
+  const dp = `data-p="${lsEsc(path)}"${_ce.mod.has(path) ? ' data-mod="1"' : ''}`;
   switch (f.type) {
     case 'text':
       return `<div class="ce-field${full}">${lab}<input class="ce-input" ${dp} value="${lsEsc(v)}" placeholder="${lsEsc(f.placeholder || '')}" oninput="ceInput(this)">${help}</div>`;
@@ -317,7 +321,7 @@ function ceFieldList(f, path) {
     const ip = ceJoin(path, i);
     const okey = 'it:' + ip;
     const t = (f.titleKey && it && it[f.titleKey]) ? String(it[f.titleKey]).replace(/\*/g, '') : (f.item + ' ' + (i + 1));
-    return `<details class="ce-item" data-open-key="${lsEsc(okey)}"${_ce.open.has(okey) ? ' open' : ''} ontoggle="ceRemember(this)">
+    return `<details class="ce-item" data-open-key="${lsEsc(okey)}"${_ce.open.has(okey) ? ' open' : ''}${_ce.mod.has(okey) ? ' data-mod="1"' : ''} ontoggle="ceRemember(this)">
       <summary><span class="ce-item-num">${i + 1}</span><span class="ce-item-title">${lsEsc(t)}</span>
         <span class="ce-item-btns" onclick="event.preventDefault();event.stopPropagation()">
           <button type="button" class="ce-ibtn" title="Monter" ${i === 0 ? 'disabled' : ''} onclick="ceMove('${path}',${i},-1)">↑</button>
@@ -341,7 +345,22 @@ function ceArticle(item) {
 function ceInput(el) {
   const val = el.type === 'checkbox' ? el.checked : el.value;
   ceSetPath(el.dataset.p, val);
+  _ce.mod.add(el.dataset.p);
+  el.setAttribute('data-mod', '1');
   ceSetDirty(true);
+}
+// Après un déplacement / une suppression dans une liste, recaler les repères « modifié »
+function ceRemapMod(path, mapIdx) {
+  const pre = path + '.';
+  _ce.mod = new Set([..._ce.mod].map(k => {
+    const it = k.startsWith('it:'), p = it ? k.slice(3) : k;
+    if (!p.startsWith(pre)) return k;
+    const rest = p.slice(pre.length).split('.');
+    const n = mapIdx(+rest[0]);
+    if (n == null) return null;
+    rest[0] = String(n);
+    return (it ? 'it:' : '') + pre + rest.join('.');
+  }).filter(Boolean));
 }
 function ceAdd(path) {
   const arr = Array.isArray(ceGet(path)) ? ceGet(path) : [];
@@ -349,6 +368,7 @@ function ceAdd(path) {
   arr.push(fresh);
   ceSetPath(path, arr);
   _ce.open.add('it:' + ceJoin(path, arr.length - 1));
+  _ce.mod.add('it:' + ceJoin(path, arr.length - 1));
   ceSetDirty(true);
   ceRender();
 }
@@ -360,6 +380,7 @@ function ceDel(path, i) {
   if (!confirm(`Supprimer « ${String(name).replace(/\*/g, '')} » ?`)) return;
   arr.splice(i, 1);
   _ce.open = new Set([..._ce.open].filter(k => !k.startsWith('it:' + path + '.')));
+  ceRemapMod(path, n => n === i ? null : (n > i ? n - 1 : n));
   ceSetDirty(true);
   ceRender();
 }
@@ -369,6 +390,8 @@ function ceMove(path, i, dir) {
   if (!Array.isArray(arr) || j < 0 || j >= arr.length) return;
   [arr[i], arr[j]] = [arr[j], arr[i]];
   _ce.open = new Set([..._ce.open].filter(k => !k.startsWith('it:' + path + '.')));
+  ceRemapMod(path, n => n === i ? j : (n === j ? i : n));
+  _ce.mod.add('it:' + ceJoin(path, i)); _ce.mod.add('it:' + ceJoin(path, j));
   ceSetDirty(true);
   ceRender();
 }
@@ -409,5 +432,7 @@ async function ceSave() {
   btn.disabled = false;
   if (error) { alert('Erreur lors de l’enregistrement : ' + error.message); return; }
   ceSetDirty(false);
+  _ce.mod = new Set();
+  document.querySelectorAll('#ce-form [data-mod]').forEach(el => el.removeAttribute('data-mod'));
   showToast('Les changements ont bien été enregistrés', `Page ${conf.label} mise à jour sur le site`, null, 'success');
 }
