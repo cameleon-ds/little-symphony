@@ -368,10 +368,6 @@ function lsApplyLegal(d) {
   }
   if ($('ls-lg-body')) {
     $('ls-lg-body').innerHTML = `
-${d.note_text ? `  <div class="ml-note">
-    <strong>${lsEsc(d.note_title)}</strong> ${lsLegalInline(d.note_text)}
-  </div>
-` : ''}
 ${(d.sections || []).map(s => `  <div class="ml-section">
     <h2>${lsEsc(s.title)}</h2>
     ${lsLegalBody(s.body)}

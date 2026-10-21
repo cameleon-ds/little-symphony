@@ -193,10 +193,6 @@ const CE_PAGES = {
 
   mentions: { key: 'mentions', label: 'Mentions légales', url: 'mentions-legales.html', sections: [
     CEF.group('hero', 'En-tête', [CEF.text('eyebrow', 'Sur-titre'), CEF.text('title', 'Titre'), CEF.area('text', 'Introduction', { rows: 3 })]),
-    { k: '', label: 'Encadré d\u2019information', type: 'root', fields: [
-      CEF.text('note_title', 'Titre en gras', { placeholder: 'À compléter :' }),
-      CEF.area('note_text', 'Texte de l\u2019encadré', { rows: 3, help: 'Laisser vide pour masquer l\u2019encadré' }),
-    ]},
     CEF.list('sections', 'Articles', 'Article', [
       CEF.text('title', 'Titre de l\u2019article', { full: true }),
       CEF.area('body', 'Texte', { rows: 9, help: 'Ligne vide = nouveau paragraphe · ligne commençant par « - » = liste à puces · [texte](lien) = lien · [texte] = champ à compléter surligné · **texte** = gras' }),
@@ -206,10 +202,6 @@ const CE_PAGES = {
 
   cgv: { key: 'cgv', label: 'CGV', url: 'cgv.html', sections: [
     CEF.group('hero', 'En-tête', [CEF.text('eyebrow', 'Sur-titre'), CEF.text('title', 'Titre'), CEF.area('text', 'Introduction', { rows: 3 })]),
-    { k: '', label: 'Encadré d\u2019information', type: 'root', fields: [
-      CEF.text('note_title', 'Titre en gras', { placeholder: 'À compléter :' }),
-      CEF.area('note_text', 'Texte de l\u2019encadré', { rows: 3, help: 'Laisser vide pour masquer l\u2019encadré' }),
-    ]},
     CEF.list('sections', 'Articles', 'Article', [
       CEF.text('title', 'Titre de l\u2019article', { full: true }),
       CEF.area('body', 'Texte', { rows: 9, help: 'Ligne vide = nouveau paragraphe · ligne commençant par « - » = liste à puces · [texte](lien) = lien · [texte] = champ à compléter surligné · **texte** = gras' }),
