@@ -383,6 +383,12 @@ tbody tr:hover{background:var(--primary-xlight)}
 .rs-preview-platform{font-size:11px;font-weight:600;color:var(--primary-dark);
   text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
 .rs-preview-caption{font-size:13px;color:var(--charcoal);white-space:pre-wrap;line-height:1.5}
+.rs-img-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 18px;border-bottom:1px solid var(--border);background:#FCFAF9}
+.rs-img-tools .btn-detail{cursor:pointer}
+.rs-img-note{font-size:12px;color:var(--text-muted)}
+.rs-img-save{padding:7px 16px;border-radius:20px;border:none;background:var(--charcoal);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.rs-img-save:disabled{opacity:.6;cursor:wait}
+.rs-img-link{border:none;background:none;color:var(--primary-dark);font-size:12px;text-decoration:underline;cursor:pointer;font-family:var(--sans);padding:0}
 .rs-preview-loading{padding:3rem 1rem;text-align:center;color:var(--text-muted);font-size:13px}
 
 /* ── Animation réordonnancement file d'attente ── */
@@ -3896,14 +3902,17 @@ async function loadSocialHistory() {
     </tr>`).join('');
 }
 
+let _rsPreviewQueueId = null, _rsPreviewData = null, _rsNewImageFile = null;
+
 async function previewSocialPost(queueId, btn) {
+  _rsPreviewQueueId = queueId; _rsNewImageFile = null;
   const overlay = document.getElementById('rs-preview-overlay');
   const content = document.getElementById('rs-preview-content');
   content.innerHTML = `<div class="rs-preview-loading">Génération de l'aperçu…</div>`;
   overlay.classList.add('show');
 
-  const originalHtml = btn.innerHTML;
-  btn.disabled = true;
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) btn.disabled = true;
 
   try {
     const { data, error } = await _supabase.functions.invoke('social-publish', {
@@ -3917,19 +3926,86 @@ async function previewSocialPost(queueId, btn) {
       Impossible de générer l'aperçu.<br>${(e.message || e).toString()}
     </div>`;
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = originalHtml;
+    if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
   }
 }
 
 function renderSocialPreview(p) {
+  _rsPreviewData = p;
   const content = document.getElementById('rs-preview-content');
   content.innerHTML = `
-    <img class="rs-preview-img" src="${p.imageUrl}" alt="${p.productName}">
+    <img class="rs-preview-img" id="rs-preview-img" src="${p.imageUrl}" alt="${p.productName}">
+    <div class="rs-img-tools" id="rs-img-tools">
+      <label class="btn-detail">📷 Modifier l'image<input type="file" accept="image/*" style="display:none" onchange="rsPickImage(this)"></label>
+      ${p.customImage ? `<span class="rs-img-note">Image personnalisée pour cette publication ·</span>
+        <button class="rs-img-link" onclick="rsResetImage()">revenir à la photo principale</button>` : ''}
+    </div>
     <div class="rs-preview-body">
       <div class="rs-preview-platform">${SOCIAL_PLATFORM_LABELS[p.platform] || p.platform}</div>
       <div class="rs-preview-caption">${escapeHtml(p.caption)}</div>
     </div>`;
+}
+
+// ── Image personnalisée pour une publication ─────────────────────
+// L'image choisie est ajoutée à la galerie du produit (image supplémentaire)
+// et utilisée uniquement pour cette publication (social_queue.source_image).
+function rsPickImage(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  _rsNewImageFile = file;
+  document.getElementById('rs-preview-img').src = URL.createObjectURL(file);
+  document.getElementById('rs-img-tools').innerHTML = `
+    <span class="rs-img-note">Nouvelle image sélectionnée (le texte sera ajouté à l'enregistrement)</span>
+    <button class="rs-img-save" id="rs-img-save" onclick="rsSaveImage()">Enregistrer</button>
+    <button class="rs-img-link" onclick="previewSocialPost(_rsPreviewQueueId)">Annuler</button>`;
+}
+
+// Convertit la photo en JPEG (format accepté par le générateur de visuels), max 1600 px
+async function rsToJpeg(file, maxSize = 1600) {
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, maxSize / Math.max(bmp.width, bmp.height));
+  const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); ctx.drawImage(bmp, 0, 0, w, h);
+  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.88));
+  return new File([blob], 'social.jpg', { type: 'image/jpeg' });
+}
+
+async function rsSaveImage() {
+  if (!_rsNewImageFile || !_rsPreviewQueueId) return;
+  const btn = document.getElementById('rs-img-save');
+  btn.disabled = true; btn.textContent = 'Enregistrement…';
+  try {
+    const { data: q, error: qErr } = await _supabase.from('social_queue').select('product_id').eq('id', _rsPreviewQueueId).single();
+    if (qErr) throw qErr;
+    const { data: prod, error: pErr } = await _supabase.from('products').select('id, slug, images').eq('id', q.product_id).single();
+    if (pErr) throw pErr;
+    const file = await rsToJpeg(_rsNewImageFile);
+    const path = `products/${prod.slug || prod.id}-social-${Date.now()}.jpg`;
+    const { error: upErr } = await _supabase.storage.from('products').upload(path, file, { contentType: 'image/jpeg', cacheControl: '31536000' });
+    if (upErr) throw upErr;
+    const url = _supabase.storage.from('products').getPublicUrl(path).data.publicUrl;
+    // 1) image supplémentaire dans la galerie du produit
+    const { error: gErr } = await _supabase.from('products').update({ images: [...(prod.images || []), url] }).eq('id', prod.id);
+    if (gErr) throw gErr;
+    // 2) image utilisée pour cette publication
+    const { error: sErr } = await _supabase.from('social_queue').update({ source_image: url }).eq('id', _rsPreviewQueueId);
+    if (sErr) throw sErr;
+    _rsNewImageFile = null;
+    showToast('Image enregistrée', 'Ajoutée à la galerie du produit et utilisée pour cette publication', null, 'success');
+    if (typeof loadProduits === 'function') loadProduits();
+    previewSocialPost(_rsPreviewQueueId);
+  } catch (e) {
+    alert("Erreur lors de l'enregistrement de l'image : " + (e.message || e));
+    btn.disabled = false; btn.textContent = 'Enregistrer';
+  }
+}
+
+async function rsResetImage() {
+  if (!_rsPreviewQueueId) return;
+  const { error } = await _supabase.from('social_queue').update({ source_image: null }).eq('id', _rsPreviewQueueId);
+  if (error) { alert('Erreur : ' + error.message); return; }
+  previewSocialPost(_rsPreviewQueueId);
 }
 
 function closeSocialPreview() {
