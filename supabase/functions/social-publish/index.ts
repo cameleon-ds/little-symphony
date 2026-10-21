@@ -25,7 +25,7 @@ import { Image } from "jsr:@matmen/imagescript";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-const GRAPH_VERSION = "v19.0";
+const GRAPH_VERSION = "v25.0";
 
 // Polices utilisées pour le texte incrusté (Inter pour le texte courant,
 // Playwrite US Modern — police manuscrite "enfantine" — à l'essai pour le
@@ -36,6 +36,7 @@ const FONT_TITLE_URL =
   "https://raw.githubusercontent.com/google/fonts/main/ofl/playwriteusmodern/PlaywriteUSModern%5Bwght%5D.ttf";
 
 const BRAND_PRIMARY = 0xc9a09aff; // --primary du site
+const BRAND_BROWN = 0x4a2e2cff;   // marron foncé — titre du produit (lisible sur photo à fond blanc)
 
 const AGE_LABELS: Record<string, string> = {
   "0-6": "0-6 mois",
@@ -341,7 +342,8 @@ function buildCaption(product: any, siteUrl: string): string {
   // (Facebook transforme automatiquement les URLs du texte en lien ;
   // Instagram, lui, n'hyperlie jamais le texte d'une publication —
   // c'est une limitation de la plateforme, pas de notre code).
-  const productLink = `${siteUrl}/product.html?slug=${product.slug}`;
+  // Page produit statique (meilleur aperçu du lien sur Facebook) — redirige vers la fiche si elle n'existe pas encore
+  const productLink = `${siteUrl}/produit/${product.slug}.html`;
 
   const lines = [
     `✨ ${product.name}`,
@@ -364,6 +366,19 @@ function truncate(text: string, max: number): string {
 }
 
 // deno-lint-ignore no-explicit-any
+// Coupe un titre trop long en deux lignes aussi équilibrées que possible (coupure entre deux mots)
+function splitTitle(name: string): string[] {
+  const words = name.trim().split(/\s+/);
+  if (name.length <= 18 || words.length < 2) return [name];
+  let best = [name], bestScore = Infinity;
+  for (let i = 1; i < words.length; i++) {
+    const a = words.slice(0, i).join(" "), b = words.slice(i).join(" ");
+    const score = Math.max(a.length, b.length);
+    if (score < bestScore) { bestScore = score; best = [a, b]; }
+  }
+  return best;
+}
+
 async function composeImage(product: any, style: any, siteUrl: string): Promise<Uint8Array> {
   const SIZE = 1080; // format carré, compatible FB + IG
 
@@ -384,12 +399,24 @@ async function composeImage(product: any, style: any, siteUrl: string): Promise<
   const canvas = new Image(SIZE, SIZE);
   canvas.composite(photo, 0, 0);
 
+  // Luminosité de la photo ramenée à 90 % (voile noir à 10 %) : un fond blanc
+  // devient légèrement grisé, ce qui rend les textes incrustés plus lisibles.
+  const dim = new Image(SIZE, SIZE);
+  dim.fill(0x0000001a);
+  canvas.composite(dim, 0, 0);
+
   // 2. Logo (celui du header du site, format rectangulaire) en haut à
   // gauche, sur une pastille blanche arrondie pour rester lisible quelle
   // que soit la couleur de la photo produit. Le fichier logo.png est
   // bundlé avec la fonction (voir supabase/config.toml).
   if (style?.show_logo !== false) {
-    const logoBytes = await Deno.readFile("./logo.png");
+    // Logo du site : fichier embarqué si présent, sinon celui publié sur le site
+    let logoBytes: Uint8Array;
+    try {
+      logoBytes = await Deno.readFile("./logo.png");
+    } catch (_) {
+      logoBytes = new Uint8Array(await (await fetch(`${siteUrl.replace(/\/$/, "")}/logo/logo.png`)).arrayBuffer());
+    }
     const rawLogo = await Image.decode(logoBytes);
     const targetLogoWidth = 340;
     const targetLogoHeight = Math.round(rawLogo.height * (targetLogoWidth / rawLogo.width));
@@ -426,18 +453,19 @@ async function composeImage(product: any, style: any, siteUrl: string): Promise<
   const fontBytes = new Uint8Array(await (await fetch(FONT_BOLD_URL)).arrayBuffer());
   const titleFontBytes = new Uint8Array(await (await fetch(FONT_TITLE_URL)).arrayBuffer());
 
-  let cursorY = SIZE - bandHeight + 24;
+  // Tous les éléments texte sont préparés d'abord, pour calculer la hauteur
+  // totale et placer le bloc de façon à ne jamais chevaucher l'adresse du site
+  // (utile quand le titre passe sur deux lignes).
+  const blocks: { img: Image; x: number; gap: number; bold?: boolean; bubble?: Image; padX?: number; padY?: number }[] = [];
 
   if (style?.show_title !== false) {
-    // Titre en Playwrite US Modern (police manuscrite, à l'essai).
-    // Le fichier chargé n'a pas de variante grasse dédiée : on simule le
-    // gras en superposant le texte avec de légers décalages d'1px — si
-    // ça alourdit trop le tracé manuscrit, dis-le moi pour le retirer.
-    const title = Image.renderText(titleFontBytes, 68, product.name, 0xffffffff, SIZE - 80);
-    [[0, 0], [1, 0], [0, 1], [1, 1]].forEach(([dx, dy]) =>
-      canvas.composite(title, 40 + dx, cursorY + dy)
-    );
-    cursorY += title.height + 18;
+    // Titre en marron, plus gras, coupé sur deux lignes équilibrées dès qu'il
+    // est un peu long (ex. « Mes comptines de / la ferme (sonore) »).
+    const lines = splitTitle(product.name || "");
+    lines.forEach((line, i) => {
+      const t = Image.renderText(titleFontBytes, 68, line, BRAND_BROWN, SIZE - 80);
+      blocks.push({ img: t, x: 40, gap: i === lines.length - 1 ? 18 : 4, bold: true });
+    });
   }
 
   if (style?.show_price !== false) {
@@ -450,30 +478,39 @@ async function composeImage(product: any, style: any, siteUrl: string): Promise<
     const bubble = new Image(priceTextImg.width + padX * 2, priceTextImg.height + padY * 2);
     bubble.fill(0xffffffff);
     bubble.roundCorners(Math.round(bubble.height / 2));
-    canvas.composite(bubble, 40, cursorY);
-    canvas.composite(priceTextImg, 40 + padX, cursorY + padY);
-    cursorY += bubble.height + 14;
+    blocks.push({ img: priceTextImg, x: 40, gap: 14, bubble, padX, padY });
   }
 
   if (style?.show_age_range !== false && product.age_ranges?.length) {
     const ages = product.age_ranges.map((a: string) => AGE_LABELS[a] || a).join(" · ");
     const ageImg = Image.renderText(fontBytes, 30, ages, 0xffffffff, SIZE - 80);
-    canvas.composite(ageImg, 40, cursorY);
-    cursorY += ageImg.height + 18;
+    blocks.push({ img: ageImg, x: 40, gap: 18 });
   }
 
-  // 5. Site web — toujours collé tout en bas de l'image (position fixe,
-  // indépendante du titre/prix/âge au-dessus). Note : une image publiée
-  // sur Facebook/Instagram ne peut pas contenir de zone cliquable
-  // (limitation des deux plateformes) ; le vrai lien cliquable, lui, est
-  // dans le texte de la publication (voir buildCaption ci-dessous), qui
-  // s'affiche sous la photo.
+  // 5. Site web — toujours collé tout en bas de l'image. Note : une image
+  // publiée sur Facebook/Instagram ne peut pas contenir de zone cliquable ;
+  // le vrai lien cliquable est dans le texte de la publication (buildCaption).
+  let siteImg: Image | null = null;
   if (style?.show_website !== false) {
     const site = siteUrl.replace(/^https?:\/\//, "");
-    const siteImg = Image.renderText(fontBytes, 30, site, 0xffffffff, SIZE - 80);
-    const siteY = SIZE - 40 - siteImg.height;
-    canvas.composite(siteImg, 40, siteY);
+    siteImg = Image.renderText(fontBytes, 30, site, 0xffffffff, SIZE - 80);
   }
+  const bottomLimit = siteImg ? SIZE - 40 - siteImg.height - 16 : SIZE - 40;
+  const blockHeight = blocks.reduce((h, b) => h + (b.bubble ? b.bubble.height : b.img.height) + b.gap, 0);
+  let cursorY = Math.min(SIZE - bandHeight + 24, bottomLimit - blockHeight);
+
+  for (const b of blocks) {
+    if (b.bubble) {
+      canvas.composite(b.bubble, b.x, cursorY);
+      canvas.composite(b.img, b.x + (b.padX || 0), cursorY + (b.padY || 0));
+      cursorY += b.bubble.height + b.gap;
+    } else {
+      if (b.bold) { for (let dx = 0; dx <= 2; dx++) for (let dy = 0; dy <= 2; dy++) canvas.composite(b.img, b.x + dx, cursorY + dy); }
+      else canvas.composite(b.img, b.x, cursorY);
+      cursorY += b.img.height + b.gap;
+    }
+  }
+  if (siteImg) canvas.composite(siteImg, 40, SIZE - 40 - siteImg.height);
 
   return await canvas.encodeJPEG(90);
 }
