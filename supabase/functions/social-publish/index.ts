@@ -499,7 +499,7 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
   if (style?.show_logo !== false) {
     const logoBytes = new Uint8Array(await (await fetch(`${siteUrl.replace(/\/$/, "")}/logo/logo-white.png`)).arrayBuffer());
     const rawLogo = await Image.decode(logoBytes);
-    const targetLogoWidth = 340;
+    const targetLogoWidth = 420; // largeur du logo (px, sur 1080)
     const targetLogoHeight = Math.round(rawLogo.height * (targetLogoWidth / rawLogo.width));
     const logo = rawLogo.resize(targetLogoWidth, targetLogoHeight);
 
