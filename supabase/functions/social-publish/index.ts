@@ -20,7 +20,7 @@
 // les autres imports npm de ce fichier.
 import "node:fs";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Image } from "jsr:@matmen/imagescript";
+import { Image } from "jsr:@matmen/imagescript@3.3.0"; // version figée : renderText est asynchrone (await obligatoire)
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -462,10 +462,10 @@ async function composeImage(product: any, style: any, siteUrl: string): Promise<
     // Titre en marron, plus gras, coupé sur deux lignes équilibrées dès qu'il
     // est un peu long (ex. « Mes comptines de / la ferme (sonore) »).
     const lines = splitTitle(product.name || "");
-    lines.forEach((line, i) => {
-      const t = Image.renderText(titleFontBytes, 68, line, BRAND_BROWN, SIZE - 80);
+    for (let i = 0; i < lines.length; i++) {
+      const t = await Image.renderText(titleFontBytes, 68, lines[i], BRAND_BROWN);
       blocks.push({ img: t, x: 40, gap: i === lines.length - 1 ? 18 : 4, bold: true });
-    });
+    }
   }
 
   if (style?.show_price !== false) {
@@ -473,7 +473,7 @@ async function composeImage(product: any, style: any, siteUrl: string): Promise<
       ? `${product.price} DT (au lieu de ${product.price_old} DT)`
       : `${product.price} DT`;
     // Prix affiché dans une bulle blanche, texte couleur primaire.
-    const priceTextImg = Image.renderText(fontBytes, 38, priceText, BRAND_PRIMARY, SIZE - 120);
+    const priceTextImg = await Image.renderText(fontBytes, 38, priceText, BRAND_PRIMARY);
     const padX = 22, padY = 12;
     const bubble = new Image(priceTextImg.width + padX * 2, priceTextImg.height + padY * 2);
     bubble.fill(0xffffffff);
@@ -483,7 +483,7 @@ async function composeImage(product: any, style: any, siteUrl: string): Promise<
 
   if (style?.show_age_range !== false && product.age_ranges?.length) {
     const ages = product.age_ranges.map((a: string) => AGE_LABELS[a] || a).join(" · ");
-    const ageImg = Image.renderText(fontBytes, 30, ages, 0xffffffff, SIZE - 80);
+    const ageImg = await Image.renderText(fontBytes, 30, ages, 0xffffffff);
     blocks.push({ img: ageImg, x: 40, gap: 18 });
   }
 
@@ -493,7 +493,7 @@ async function composeImage(product: any, style: any, siteUrl: string): Promise<
   let siteImg: Image | null = null;
   if (style?.show_website !== false) {
     const site = siteUrl.replace(/^https?:\/\//, "");
-    siteImg = Image.renderText(fontBytes, 30, site, 0xffffffff, SIZE - 80);
+    siteImg = await Image.renderText(fontBytes, 30, site, 0xffffffff);
   }
   const bottomLimit = siteImg ? SIZE - 40 - siteImg.height - 16 : SIZE - 40;
   const blockHeight = blocks.reduce((h, b) => h + (b.bubble ? b.bubble.height : b.img.height) + b.gap, 0);
