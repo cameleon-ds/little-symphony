@@ -37,7 +37,7 @@ const FONT_TITLE_URL =
 
 const BRAND_PRIMARY = 0xc9a09aff; // --primary du site
 const TITLE_COLOR = 0xffffffff;  // titre du produit en blanc…
-const TITLE_SHADOW = 0x00000010; // …avec une ombre noire douce (superposée plusieurs fois) pour rester lisible
+const TITLE_SHADOW = 0x5a321e06; // …avec une ombre marron floue (superposée de nombreuses fois) pour rester lisible
 
 const AGE_LABELS: Record<string, string> = {
   "0-6": "0-6 mois",
@@ -486,7 +486,7 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
       cursorY += b.bubble.height + b.gap;
     } else {
       // Ombre douce : texte noir très transparent superposé avec des décalages (plus foncé au centre)
-      if (b.shadow) { for (let dx = -1; dx <= 7; dx++) for (let dy = 1; dy <= 9; dy++) canvas.composite(b.shadow, b.x + dx, cursorY + dy); }
+      if (b.shadow) { for (let dx = -11; dx <= 11; dx++) for (let dy = -11; dy <= 11; dy++) { if (dx * dx + dy * dy > 121) continue; canvas.composite(b.shadow, b.x + 4 + dx, cursorY + 6 + dy); } }
       if (b.bold) { for (let dx = 0; dx <= 2; dx++) for (let dy = 0; dy <= 2; dy++) canvas.composite(b.img, b.x + dx, cursorY + dy); }
       else canvas.composite(b.img, b.x, cursorY);
       cursorY += b.img.height + b.gap;
