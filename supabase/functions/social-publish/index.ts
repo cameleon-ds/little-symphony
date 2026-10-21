@@ -36,7 +36,8 @@ const FONT_TITLE_URL =
   "https://raw.githubusercontent.com/google/fonts/main/ofl/playwriteusmodern/PlaywriteUSModern%5Bwght%5D.ttf";
 
 const BRAND_PRIMARY = 0xc9a09aff; // --primary du site
-const BRAND_BROWN = 0x4a2e2cff;   // marron foncé — titre du produit (lisible sur photo à fond blanc)
+const TITLE_COLOR = 0xffffffff;  // titre du produit en blanc…
+const TITLE_SHADOW = 0x00000010; // …avec une ombre noire douce (superposée plusieurs fois) pour rester lisible
 
 const AGE_LABELS: Record<string, string> = {
   "0-6": "0-6 mois",
@@ -459,15 +460,16 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
   // Tous les éléments texte sont préparés d'abord, pour calculer la hauteur
   // totale et placer le bloc de façon à ne jamais chevaucher l'adresse du site
   // (utile quand le titre passe sur deux lignes).
-  const blocks: { img: Image; x: number; gap: number; bold?: boolean; bubble?: Image; padX?: number; padY?: number }[] = [];
+  const blocks: { img: Image; x: number; gap: number; bold?: boolean; bubble?: Image; padX?: number; padY?: number; shadow?: Image }[] = [];
 
   if (style?.show_title !== false) {
-    // Titre en marron, plus gras, coupé sur deux lignes équilibrées dès qu'il
-    // est un peu long (ex. « Mes comptines de / la ferme (sonore) »).
+    // Titre blanc avec ombre noire, plus gras, coupé sur deux lignes équilibrées
+    // dès qu'il est un peu long (ex. « Mes comptines de / la ferme (sonore) »).
     const lines = splitTitle(product.name || "");
     for (let i = 0; i < lines.length; i++) {
-      const t = await Image.renderText(titleFontBytes, 68, lines[i], BRAND_BROWN);
-      blocks.push({ img: t, x: 40, gap: i === lines.length - 1 ? 18 : 4, bold: true });
+      const t = await Image.renderText(titleFontBytes, 68, lines[i], TITLE_COLOR);
+      const sh = await Image.renderText(titleFontBytes, 68, lines[i], TITLE_SHADOW);
+      blocks.push({ img: t, shadow: sh, x: 40, gap: i === lines.length - 1 ? 18 : 4, bold: true });
     }
   }
 
@@ -508,6 +510,8 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
       canvas.composite(b.img, b.x + (b.padX || 0), cursorY + (b.padY || 0));
       cursorY += b.bubble.height + b.gap;
     } else {
+      // Ombre douce : texte noir très transparent superposé avec des décalages (plus foncé au centre)
+      if (b.shadow) { for (let dx = -1; dx <= 7; dx++) for (let dy = 1; dy <= 9; dy++) canvas.composite(b.shadow, b.x + dx, cursorY + dy); }
       if (b.bold) { for (let dx = 0; dx <= 2; dx++) for (let dy = 0; dy <= 2; dy++) canvas.composite(b.img, b.x + dx, cursorY + dy); }
       else canvas.composite(b.img, b.x, cursorY);
       cursorY += b.img.height + b.gap;
