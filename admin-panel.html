@@ -1359,7 +1359,9 @@ tr.row-selected td{background:#FBF6F5}
       <input class="detail-input" id="rs-fb-page-id" placeholder="ex: 123456789012345" style="margin-bottom:12px">
 
       <label class="detail-label">Token d'accès Facebook (longue durée)</label>
-      <input class="detail-input" id="rs-fb-token" type="password" placeholder="EAAG..." style="margin-bottom:12px">
+      <input class="detail-input" id="rs-fb-token" type="password" placeholder="EAAG..." style="margin-bottom:8px">
+      <button type="button" class="btn-detail" id="rs-verify-btn" onclick="verifySocialToken()" style="margin-bottom:6px">Vérifier le token et remplir automatiquement</button>
+      <div id="rs-verify-result" style="font-size:12px;line-height:1.5;margin-bottom:14px;color:var(--text-muted)"></div>
 
       <label class="detail-label">ID du compte Instagram Business</label>
       <input class="detail-input" id="rs-ig-id" placeholder="ex: 17841400000000000" style="margin-bottom:16px">
@@ -3530,6 +3532,7 @@ function openSocialConnectionModal() {
   document.getElementById('rs-ig-id').value = d.instagram_business_id || '';
   document.getElementById('rs-site-url').value = d.site_url || 'https://little-symphony.com';
   document.getElementById('rs-connection-status').textContent = '';
+  document.getElementById('rs-verify-result').innerHTML = '';
   document.getElementById('rs-connection-overlay').classList.add('show');
 }
 
@@ -3631,6 +3634,69 @@ async function handleSocialActiveToggle() {
   if (error) { alert('Erreur: ' + error.message); return; }
   renderSocialActiveButton(next);
   showToast(next ? 'Publication automatique activée' : 'Publication automatique désactivée', null, null, next ? 'success' : undefined);
+}
+
+// Vérifie le token auprès de Meta : trouve la page Facebook, le compte Instagram lié,
+// et remplace un token « utilisateur » par le token de la page (qui n'expire pas s'il vient d'un token longue durée)
+async function verifySocialToken() {
+  const tokenEl = document.getElementById('rs-fb-token');
+  const out = document.getElementById('rs-verify-result');
+  const btn = document.getElementById('rs-verify-btn');
+  const token = tokenEl.value.trim();
+  const G = 'https://graph.facebook.com/v25.0/';
+  const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const ok = t => `<div style="color:#2E7D32">✓ ${t}</div>`, ko = t => `<div style="color:#C62828">✗ ${t}</div>`;
+  if (!token) { out.innerHTML = ko('Colle d\'abord le token.'); return; }
+  btn.disabled = true; out.innerHTML = 'Vérification auprès de Meta…';
+  const get = async (path) => { const r = await fetch(G + path + (path.includes('?') ? '&' : '?') + 'access_token=' + encodeURIComponent(token)); return r.json(); };
+  try {
+    const lines = [];
+    let page = null, pageToken = token;
+    // Un token de PAGE accepte le champ instagram_business_account sur /me ; un token UTILISATEUR le refuse
+    const asPage = await get('me?fields=id,name,instagram_business_account{id,username}');
+    if (!asPage.error) {
+      page = asPage;
+      lines.push(ok('Token de page reconnu'));
+    } else {
+      const me = await get('me?fields=id,name');
+      if (me.error) throw new Error(me.error.message);
+      const acc = await get('me/accounts?fields=id,name,access_token,instagram_business_account{id,username}&limit=100');
+      if (acc.error) throw new Error(acc.error.message);
+      const pages = acc.data || [];
+      if (!pages.length) throw new Error("ce token n'a accès à aucune page Facebook (permission pages_show_list manquante ?)");
+      page = pages.find(p => /little\s*symphony/i.test(p.name)) || pages[0];
+      pageToken = page.access_token || token;
+      lines.push(ok(`Token utilisateur reconnu (${esc(me.name)}) → token de la page récupéré automatiquement`));
+    }
+    document.getElementById('rs-fb-page-id').value = page.id;
+    tokenEl.value = pageToken;
+    lines.push(ok(`Page Facebook : <strong>${esc(page.name)}</strong> (ID ${esc(page.id)})`));
+    const ig = page.instagram_business_account;
+    if (ig && ig.id) {
+      document.getElementById('rs-ig-id').value = ig.id;
+      lines.push(ok(`Instagram lié : <strong>@${esc(ig.username || '')}</strong> (ID ${esc(ig.id)})`));
+    } else {
+      lines.push(ko("Aucun compte Instagram professionnel n'est lié à cette page (ou permission instagram_basic manquante)."));
+    }
+    // Durée de validité (si Meta l'indique)
+    try {
+      const dbg = await get('debug_token?input_token=' + encodeURIComponent(pageToken));
+      const d = dbg.data;
+      if (d) {
+        lines.push(d.expires_at === 0 ? ok('Ce token n\'expire pas') : `<div>⚠️ Ce token expire le ${new Date(d.expires_at * 1000).toLocaleDateString('fr-FR')} — utilise un token longue durée</div>`);
+        const need = ['pages_manage_posts', 'pages_read_engagement', 'instagram_basic', 'instagram_content_publish'];
+        const miss = need.filter(sc => !(d.scopes || []).includes(sc));
+        if (miss.length) lines.push(ko('Permissions manquantes : ' + miss.join(', ')));
+        else lines.push(ok('Toutes les permissions de publication sont présentes'));
+      }
+    } catch (e) {}
+    lines.push('<div style="margin-top:4px">Clique sur <strong>Enregistrer</strong> pour valider.</div>');
+    out.innerHTML = lines.join('');
+  } catch (e) {
+    out.innerHTML = ko('Token refusé par Meta : ' + esc(e.message));
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function saveSocialConnection() {
