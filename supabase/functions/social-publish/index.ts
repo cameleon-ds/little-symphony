@@ -494,28 +494,23 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
   }
   if (siteImg) canvas.composite(siteImg, 40, SIZE - 40 - siteImg.height);
 
-  // 6. Logo du site en bas à droite, sur une pastille blanche arrondie, dessiné
-  // en dernier pour passer au-dessus du cercle décoratif.
+  // 6. Logo blanc du site en haut à gauche, sans pastille, avec une ombre noire
+  // douce pour rester visible sur les photos claires. Dessiné en dernier.
   if (style?.show_logo !== false) {
-    // Logo du site : fichier embarqué si présent, sinon celui publié sur le site
-    let logoBytes: Uint8Array;
-    try {
-      logoBytes = await Deno.readFile("./logo.png");
-    } catch (_) {
-      logoBytes = new Uint8Array(await (await fetch(`${siteUrl.replace(/\/$/, "")}/logo/logo.png`)).arrayBuffer());
-    }
+    const logoBytes = new Uint8Array(await (await fetch(`${siteUrl.replace(/\/$/, "")}/logo/logo-white.png`)).arrayBuffer());
     const rawLogo = await Image.decode(logoBytes);
     const targetLogoWidth = 340;
     const targetLogoHeight = Math.round(rawLogo.height * (targetLogoWidth / rawLogo.width));
     const logo = rawLogo.resize(targetLogoWidth, targetLogoHeight);
 
-    const pad = 18;
-    const backing = new Image(logo.width + pad * 2, logo.height + pad * 2);
-    backing.fill(0xffffffee);
-    backing.roundCorners(16);
-    const lx = SIZE - backing.width - 24, ly = SIZE - backing.height - 24;
-    canvas.composite(backing, lx, ly);
-    canvas.composite(logo, lx + pad, ly + pad);
+    // Ombre : copie du logo en noir très transparent, superposée avec de petits décalages
+    const shadow = logo.clone();
+    const px = shadow.bitmap;
+    for (let i = 0; i < px.length; i += 4) { px[i] = 0; px[i + 1] = 0; px[i + 2] = 0; px[i + 3] = Math.round(px[i + 3] * 0.07); }
+    shadow.bitmap = px;
+    const lx = 36, ly = 32;
+    for (let dx = -1; dx <= 5; dx++) for (let dy = 1; dy <= 7; dy++) canvas.composite(shadow, lx + dx, ly + dy);
+    canvas.composite(logo, lx, ly);
   }
 
   return await canvas.encodeJPEG(90);
