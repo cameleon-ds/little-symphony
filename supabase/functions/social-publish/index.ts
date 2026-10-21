@@ -409,31 +409,6 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
   dim.fill(0x0000001a);
   canvas.composite(dim, 0, 0);
 
-  // 2. Logo (celui du header du site, format rectangulaire) en haut à
-  // gauche, sur une pastille blanche arrondie pour rester lisible quelle
-  // que soit la couleur de la photo produit. Le fichier logo.png est
-  // bundlé avec la fonction (voir supabase/config.toml).
-  if (style?.show_logo !== false) {
-    // Logo du site : fichier embarqué si présent, sinon celui publié sur le site
-    let logoBytes: Uint8Array;
-    try {
-      logoBytes = await Deno.readFile("./logo.png");
-    } catch (_) {
-      logoBytes = new Uint8Array(await (await fetch(`${siteUrl.replace(/\/$/, "")}/logo/logo.png`)).arrayBuffer());
-    }
-    const rawLogo = await Image.decode(logoBytes);
-    const targetLogoWidth = 340;
-    const targetLogoHeight = Math.round(rawLogo.height * (targetLogoWidth / rawLogo.width));
-    const logo = rawLogo.resize(targetLogoWidth, targetLogoHeight);
-
-    const pad = 18;
-    const backing = new Image(logo.width + pad * 2, logo.height + pad * 2);
-    backing.fill(0xffffffee);
-    backing.roundCorners(16);
-    canvas.composite(backing, 24, 24);
-    canvas.composite(logo, 24 + pad, 24 + pad);
-  }
-
   // 3. Grand cercle décoratif (à la place du bandeau rectangulaire) —
   // couleur primaire foncée, plus transparente, et plus bas dans l'image
   // (dôme moins haut). Centré sur le bord bas de l'image, aligné à
@@ -518,6 +493,30 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
     }
   }
   if (siteImg) canvas.composite(siteImg, 40, SIZE - 40 - siteImg.height);
+
+  // 6. Logo du site en bas à droite, sur une pastille blanche arrondie, dessiné
+  // en dernier pour passer au-dessus du cercle décoratif.
+  if (style?.show_logo !== false) {
+    // Logo du site : fichier embarqué si présent, sinon celui publié sur le site
+    let logoBytes: Uint8Array;
+    try {
+      logoBytes = await Deno.readFile("./logo.png");
+    } catch (_) {
+      logoBytes = new Uint8Array(await (await fetch(`${siteUrl.replace(/\/$/, "")}/logo/logo.png`)).arrayBuffer());
+    }
+    const rawLogo = await Image.decode(logoBytes);
+    const targetLogoWidth = 340;
+    const targetLogoHeight = Math.round(rawLogo.height * (targetLogoWidth / rawLogo.width));
+    const logo = rawLogo.resize(targetLogoWidth, targetLogoHeight);
+
+    const pad = 18;
+    const backing = new Image(logo.width + pad * 2, logo.height + pad * 2);
+    backing.fill(0xffffffee);
+    backing.roundCorners(16);
+    const lx = SIZE - backing.width - 24, ly = SIZE - backing.height - 24;
+    canvas.composite(backing, lx, ly);
+    canvas.composite(logo, lx + pad, ly + pad);
+  }
 
   return await canvas.encodeJPEG(90);
 }
