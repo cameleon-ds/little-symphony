@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
 
     // ── 5. Générer l'image avec le texte incrusté ───────────
     const siteUrl = (settings.site_url || "https://little-symphony.com").replace(/\/$/, "");
-    const composedBytes = await composeImage(product, settings.template_style, siteUrl);
+    const composedBytes = await composeImage(product, settings.template_style, siteUrl, queueItem.source_image);
 
     const fileName = `${product.slug}-${Date.now()}.jpg`;
     const { error: uploadErr } = await supabase.storage
@@ -278,7 +278,7 @@ async function handlePreview(
 
   const { data: queueItem, error: queueErr } = await supabase
     .from("social_queue")
-    .select("id, platform, products(*)")
+    .select("id, platform, source_image, products(*)")
     .eq("id", queueId)
     .single();
 
@@ -291,7 +291,7 @@ async function handlePreview(
     return json({ ok: false, error: "Ce produit n'a pas d'image" });
   }
 
-  const composedBytes = await composeImage(product, settings?.template_style, siteUrl);
+  const composedBytes = await composeImage(product, settings?.template_style, siteUrl, queueItem.source_image);
 
   // Fichier "preview-<id>" réutilisé/écrasé à chaque aperçu : ne pollue pas le bucket.
   const fileName = `preview-${queueItem.id}.jpg`;
@@ -313,6 +313,8 @@ async function handlePreview(
       caption: buildCaption(product, siteUrl),
       platform: queueItem.platform,
       productName: product.name,
+      productId: product.id,
+      customImage: !!queueItem.source_image,
     },
   });
 }
@@ -379,11 +381,12 @@ function splitTitle(name: string): string[] {
   return best;
 }
 
-async function composeImage(product: any, style: any, siteUrl: string): Promise<Uint8Array> {
+async function composeImage(product: any, style: any, siteUrl: string, sourceImage?: string | null): Promise<Uint8Array> {
   const SIZE = 1080; // format carré, compatible FB + IG
 
-  // 1. Photo produit
-  const photoRes = await fetch(product.images[0]);
+  // 1. Photo produit — image choisie spécialement pour cette publication (admin → Aperçu → Modifier l'image),
+  // sinon la photo principale du produit
+  const photoRes = await fetch(sourceImage || product.images[0]);
   const photoBuf = new Uint8Array(await photoRes.arrayBuffer());
   let photo = await Image.decode(photoBuf);
 
