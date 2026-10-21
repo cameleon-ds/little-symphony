@@ -494,8 +494,8 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
   }
   if (siteImg) canvas.composite(siteImg, 40, SIZE - 40 - siteImg.height);
 
-  // 6. Logo blanc du site en haut à gauche, sans pastille, avec une ombre noire
-  // douce pour rester visible sur les photos claires. Dessiné en dernier.
+  // 6. Logo blanc du site (le même que dans le footer : logo/logo-white.png),
+  // en haut à gauche, sans pastille ni ombre. Dessiné en dernier.
   if (style?.show_logo !== false) {
     const logoBytes = new Uint8Array(await (await fetch(`${siteUrl.replace(/\/$/, "")}/logo/logo-white.png`)).arrayBuffer());
     const rawLogo = await Image.decode(logoBytes);
@@ -503,13 +503,7 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
     const targetLogoHeight = Math.round(rawLogo.height * (targetLogoWidth / rawLogo.width));
     const logo = rawLogo.resize(targetLogoWidth, targetLogoHeight);
 
-    // Ombre : copie du logo en noir très transparent, superposée avec de petits décalages
-    const shadow = logo.clone();
-    const px = shadow.bitmap;
-    for (let i = 0; i < px.length; i += 4) { px[i] = 0; px[i + 1] = 0; px[i + 2] = 0; px[i + 3] = Math.round(px[i + 3] * 0.07); }
-    shadow.bitmap = px;
     const lx = 36, ly = 32;
-    for (let dx = -1; dx <= 5; dx++) for (let dy = 1; dy <= 7; dy++) canvas.composite(shadow, lx + dx, ly + dy);
     canvas.composite(logo, lx, ly);
   }
 
