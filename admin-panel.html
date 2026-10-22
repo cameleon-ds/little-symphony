@@ -2932,6 +2932,17 @@ async function compressImage(file, maxSize = 1200, quality = 0.82) {
   }
 }
 
+// Copie une image depuis un lien externe vers le stockage Supabase (fonction Edge "import-image", réservée aux admins)
+async function importExternalImage(url, slug) {
+  try {
+    const { data, error } = await _supabase.functions.invoke('import-image', { body: { url, slug } });
+    if (error) return { ok: false, error: error.message || 'erreur réseau' };
+    return data && data.ok ? { ok: true, url: data.url } : { ok: false, error: (data && data.error) || 'erreur inconnue' };
+  } catch (e) {
+    return { ok: false, error: e.message || String(e) };
+  }
+}
+
 async function saveProduit() {
   const name     = document.getElementById('pf-name').value.trim();
   const slug     = document.getElementById('pf-slug').value.trim();
@@ -2957,6 +2968,10 @@ async function saveProduit() {
 
   // Images : traiter chaque slot (upload si fichier, sinon URL directe)
   const resolvedImages = [];
+  const saveBtn = document.getElementById('pf-save-btn');
+  const saveLabel = saveBtn ? saveBtn.firstChild.textContent : 'Enregistrer';
+  let imported = 0;
+  const importFails = [];
   for (let i = 0; i < _imageSlots.length; i++) {
     const slot = _imageSlots[i];
     if (slot.file) {
@@ -2969,9 +2984,19 @@ async function saveProduit() {
       const { data: pubData } = _supabase.storage.from('products').getPublicUrl(path);
       resolvedImages.push(pubData.publicUrl);
     } else if (slot.url.trim()) {
-      resolvedImages.push(slot.url.trim());
+      const u = slot.url.trim();
+      // Lien externe : copie automatique de l'image dans le stockage Supabase
+      if (/^https?:\/\//i.test(u) && !u.startsWith(SUPABASE_URL)) {
+        if (saveBtn) saveBtn.firstChild.textContent = `Copie de l'image ${i + 1}…`;
+        const res = await importExternalImage(u, slug || name);
+        if (res.ok) { resolvedImages.push(res.url); slot.url = res.url; imported++; }
+        else { resolvedImages.push(u); importFails.push(`Image ${i + 1} : ${res.error}`); }
+      } else {
+        resolvedImages.push(u);
+      }
     }
   }
+  if (saveBtn) saveBtn.firstChild.textContent = saveLabel;
 
   const payload = {
     name, slug, subtitle,
@@ -3007,7 +3032,12 @@ async function saveProduit() {
   } else {
     closeProduitForm(true);
   }
-  showToast('Les changements ont bien été enregistrés', null, null, 'success');
+  showToast('Les changements ont bien été enregistrés',
+    imported ? `${imported} image${imported > 1 ? 's' : ''} copiée${imported > 1 ? 's' : ''} dans le stockage du site` : null, null, 'success');
+  if (importFails.length) {
+    alert("Certaines images n'ont pas pu être copiées dans le stockage du site :\n\n" + importFails.join('\n') +
+      "\n\nLe lien d'origine est conservé en attendant. Pour ne plus dépendre de ce site, téléchargez l'image puis envoyez-la avec le bouton d'upload.");
+  }
 }
 
 // Suppression d'un produit : popup de confirmation avec code à recopier
