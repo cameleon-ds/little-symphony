@@ -707,6 +707,15 @@ function setSub(s) {
   activeSub = (activeSub === s || s === 'Tous') ? null : s;
   buildCatList();
   applyFilters();
+  // Mobile / tablette : le menu des catégories est un panneau par-dessus la page.
+  // Dès qu'on choisit une sous-catégorie, on le ferme et on montre les résultats.
+  const sb = document.getElementById('sidebar');
+  if (sb && sb.classList.contains('open')) {
+    closeSidebar();
+    const main = document.querySelector('.main');
+    if (main) window.scrollTo({ top: Math.max(0, main.getBoundingClientRect().top + window.scrollY - 68), behavior: 'smooth' });
+    return;
+  }
   scrollToResults();
 }
 
