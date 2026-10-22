@@ -1498,6 +1498,29 @@ function routeFromHash() {
 }
 window.addEventListener('popstate', routeFromHash);
 
+// Clic dans le menu latéral = page rechargée sur la section choisie, pour toujours
+// travailler sur des données à jour (ex. un produit modifié entre-temps ailleurs).
+// Les modifications non enregistrées déclenchent l'avertissement habituel du navigateur.
+document.addEventListener('click', e => {
+  if (!e.isTrusted) return;                       // clics simulés par le routage : pas de rechargement
+  const sb = document.getElementById('sidebar');
+  const btn = e.target.closest && e.target.closest('button');
+  if (!sb || !btn || !sb.contains(btn)) return;
+  let target = null;
+  const m = (btn.getAttribute('onclick') || '').match(/showPanel\('([^']+)'/);
+  if (btn.classList.contains('nav-item') && m) target = m[1];
+  else if (btn.classList.contains('nav-sub') && btn.dataset.page) target = 'contenu/' + btn.dataset.page;
+  else if (btn.id === 'nav-contenu' && !document.getElementById('nav-group-contenu')?.classList.contains('open')) target = 'contenu/accueil';
+  if (!target) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  const prevHash = location.hash;
+  history.replaceState(null, '', '#' + target);   // sans déclencher le routage
+  location.reload();
+  // Si l'utilisateur annule (modifications non enregistrées), on remet l'adresse d'avant
+  setTimeout(() => { if (location.hash === '#' + target && prevHash !== '#' + target) history.replaceState(null, '', prevHash || location.pathname); }, 1500);
+}, true);
+
 function filterTable(tableId, query) {
   const q = query.toLowerCase();
   document.querySelectorAll('#' + tableId + ' tbody tr').forEach(tr => {
