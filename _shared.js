@@ -367,6 +367,26 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') _snSearchClo
   (document.head || document.documentElement).appendChild(st);
 })();
 
+// ── IMAGES PRODUIT EN HAUTEUR ────────────────────────────────────────────────
+// Une photo produit nettement plus haute que large (ex. une guitare) est
+// affichée en entier (ajustée à la hauteur) au lieu d'être recadrée en carré.
+const LS_PRODUCT_IMG = '.prod-img,.feat-img,.img-main,.img-thumb,.suggest-img,.product-img img,.detail-img-main,.detail-img-thumbs img,.item-img,.sum-img';
+function _lsCheckTall(img) {
+  if (!img || img.tagName !== 'IMG' || !img.naturalWidth || !img.matches(LS_PRODUCT_IMG)) return;
+  img.classList.toggle('img-tall', img.naturalHeight > img.naturalWidth * 1.15);
+}
+document.addEventListener('load', e => _lsCheckTall(e.target), true);
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll(LS_PRODUCT_IMG).forEach(i => { if (i.complete) _lsCheckTall(i); });
+});
+(function () {
+  if (document.getElementById('ls-img-tall-css')) return;
+  const st = document.createElement('style');
+  st.id = 'ls-img-tall-css';
+  st.textContent = 'img.img-tall{object-fit:contain!important;object-position:center!important;background:#fff!important}';
+  (document.head || document.documentElement).appendChild(st);
+})();
+
 // ── RENDER NAV ────────────────────────────────────────────────────────────────
 function renderNav(activePage, opts) {
   opts = opts || {};
