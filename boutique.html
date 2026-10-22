@@ -118,11 +118,14 @@ input,select{font-family:var(--sans)}
 /* Barre de recherche */
 .shop-search{position:relative;display:flex;align-items:center;margin-bottom:1.4rem}
 .shop-search>svg{position:absolute;left:18px;width:18px;height:18px;stroke:var(--text-muted);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none}
-.shop-search input{width:100%;padding:13px 48px 13px 48px;border:1.5px solid var(--border);border-radius:40px;background:#fff;font-family:var(--sans);font-size:14px;color:var(--charcoal);outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+.shop-search input{width:100%;padding:13px 92px 13px 48px;border:1.5px solid var(--border);border-radius:40px;background:#fff;font-family:var(--sans);font-size:14px;color:var(--charcoal);outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
 .shop-search input::-webkit-search-cancel-button{display:none}
 .shop-search input:focus{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-light)}
 .shop-search input::placeholder{color:var(--text-muted)}
-.shop-search-clear{position:absolute;right:10px;width:30px;height:30px;border-radius:50%;border:none;background:var(--primary-light);color:var(--primary-dark);display:none;align-items:center;justify-content:center;cursor:pointer}
+.shop-search-go{position:absolute;right:6px;width:40px;height:40px;border-radius:50%;border:none;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}
+.shop-search-go:hover{background:var(--primary-dark)}
+.shop-search-go svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.shop-search-clear{position:absolute;right:54px;width:30px;height:30px;border-radius:50%;border:none;background:var(--primary-light);color:var(--primary-dark);display:none;align-items:center;justify-content:center;cursor:pointer}
 .shop-search-clear.show{display:flex}
 .shop-search-clear svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round}
 @media(max-width:900px){.shop-search input{font-size:16px}}
@@ -447,13 +450,16 @@ input,select{font-family:var(--sans)}
     </div>
 
     <!-- Recherche -->
-    <div class="shop-search">
+    <form class="shop-search" role="search" onsubmit="event.preventDefault(); lsBoutiqueSearch(document.getElementById('shop-search-input').value, true); document.getElementById('shop-search-input').blur();">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="search" id="shop-search-input" placeholder="Rechercher un produit…" autocomplete="off" aria-label="Rechercher un produit" oninput="lsBoutiqueSearch(this.value)">
       <button type="button" class="shop-search-clear" id="shop-search-clear" onclick="lsBoutiqueSearch('', true)" aria-label="Effacer la recherche">
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
-    </div>
+      <button type="submit" class="shop-search-go" aria-label="Rechercher" title="Rechercher">
+        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+    </form>
 
     <!-- Featured / promo -->
     <div class="featured-grid" id="featured-grid"></div>
@@ -475,7 +481,7 @@ input,select{font-family:var(--sans)}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="_shared.js?v=5"></script>
+<script src="_shared.js?v=6"></script>
 <script>
 renderNav('boutique');
 renderFooter();

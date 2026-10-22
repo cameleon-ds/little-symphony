@@ -308,6 +308,7 @@ function _snSearchFormHTML(id) {
   return `<form class="sn-search" action="boutique.html" method="get" role="search" onsubmit="return _snSearchSubmit(this)">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="search" name="q" id="${id}" value="${v}" placeholder="Rechercher un produit…" autocomplete="off" aria-label="Rechercher un produit">
+      <button type="submit" class="sn-search-go" aria-label="Rechercher" title="Rechercher"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
     </form>`;
 }
 function _snSearchSubmit(form) {
@@ -346,16 +347,21 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') _snSearchClo
   st.id = 'sn-search-css';
   st.textContent = `
 .sn-search{position:relative;display:flex;align-items:center;width:100%}
-.sn-search svg{position:absolute;left:16px;width:18px;height:18px;stroke:var(--text-muted);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none}
-.sn-search input{width:100%;padding:13px 18px 13px 46px;border:1.5px solid var(--border);border-radius:40px;background:var(--primary-xlight);font-family:var(--sans);font-size:15px;color:var(--charcoal);outline:none;transition:border-color .2s,background .2s;-webkit-appearance:none;appearance:none}
+.sn-search>svg{position:absolute;left:16px;width:18px;height:18px;stroke:var(--text-muted);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none}
+.sn-search input{width:100%;padding:13px 56px 13px 46px;border:1.5px solid var(--border);border-radius:40px;background:var(--primary-xlight);font-family:var(--sans);font-size:15px;color:var(--charcoal);outline:none;transition:border-color .2s,background .2s;-webkit-appearance:none;appearance:none}
 .sn-search input:focus{border-color:var(--primary);background:#fff}
 .sn-search input::placeholder{color:var(--text-muted)}
+.sn-search input::-webkit-search-cancel-button{display:none}
+.sn-search-go{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;border:none;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}
+.sn-search-go:hover{background:var(--primary-dark)}
+.sn-search-go svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .sn-drawer .sn-search{max-width:420px;margin-bottom:1.6rem}
 .sn-drawer .sn-search input{font-size:16px}
 .sn-search-wrap{position:relative;display:flex}
 .sn-search-pop{position:absolute;top:calc(100% + 10px);right:0;width:340px;padding:10px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-md);opacity:0;pointer-events:none;transform:translateY(-8px);transition:opacity .2s,transform .2s;z-index:300}
 .sn-search-wrap.open .sn-search-pop{opacity:1;pointer-events:auto;transform:translateY(0)}
-.sn-search-pop .sn-search input{font-size:14px;padding:11px 16px 11px 44px}
+.sn-search-pop .sn-search input{font-size:14px;padding:11px 52px 11px 44px}
+.sn-search-pop .sn-search-go{width:34px;height:34px}
 @media (max-width:900px){.sn-search-wrap{display:none}}
 `;
   (document.head || document.documentElement).appendChild(st);
