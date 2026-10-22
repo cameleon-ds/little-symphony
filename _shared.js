@@ -367,13 +367,15 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') _snSearchClo
   (document.head || document.documentElement).appendChild(st);
 })();
 
-// ── IMAGES PRODUIT EN HAUTEUR ────────────────────────────────────────────────
-// Une photo produit nettement plus haute que large (ex. une guitare) est
-// affichée en entier (ajustée à la hauteur) au lieu d'être recadrée en carré.
+// ── IMAGES PRODUIT NON CARRÉES ───────────────────────────────────────────────
+// Une photo produit nettement plus haute que large (ex. une guitare) ou plus
+// large que haute (ex. un étui) est affichée en entier dans le cadre carré,
+// au lieu d'être recadrée.
 const LS_PRODUCT_IMG = '.prod-img,.feat-img,.img-main,.img-thumb,.suggest-img,.product-img img,.detail-img-main,.detail-img-thumbs img,.item-img,.sum-img';
 function _lsCheckTall(img) {
   if (!img || img.tagName !== 'IMG' || !img.naturalWidth || !img.matches(LS_PRODUCT_IMG)) return;
-  img.classList.toggle('img-tall', img.naturalHeight > img.naturalWidth * 1.15);
+  const w = img.naturalWidth, h = img.naturalHeight;
+  img.classList.toggle('img-tall', h > w * 1.15 || w > h * 1.15);
 }
 document.addEventListener('load', e => _lsCheckTall(e.target), true);
 document.addEventListener('DOMContentLoaded', () => {
