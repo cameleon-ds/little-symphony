@@ -968,6 +968,13 @@ tr.row-selected td{background:#FBF6F5}
                 style="resize:vertical;min-height:90px;font-family:var(--sans);line-height:1.5"></textarea>
             </div>
 
+            <!-- Mots-clés de recherche -->
+            <div class="detail-card">
+              <div class="detail-card-title">Mots-clés de recherche</div>
+              <input id="pf-keywords" type="text" class="detail-input" placeholder="Ex : bébé, musique, jouet, éveil, apprentissage">
+              <div style="font-size:12px;color:var(--text-muted);margin-top:6px;line-height:1.5">Séparez les mots par une virgule ou un point-virgule. Ils ne s'affichent pas sur le site, mais permettent de trouver ce produit avec la barre de recherche (ex. « bébé musique »).</div>
+            </div>
+
             <!-- Bullet points -->
             <div class="detail-card">
               <div class="detail-card-title">Caractéristiques</div>
@@ -2383,6 +2390,7 @@ async function loadProduits() {
     gender:         p.gender || 'mixte',
     age_ranges:     p.age_ranges || [],
     description:    p.description || '',
+    keywords:       p.keywords    || '',
     attributes:     p.attributes  || [],
     sort_order:     p.sort_order ?? 0,
     cat_order:      p.category_sort_order ?? 999,
@@ -2782,6 +2790,7 @@ function openProduitForm(id) {
     document.getElementById('pf-promo').checked    = p.is_promo;
     document.getElementById('pf-featured').checked = p.is_featured;
     document.getElementById('pf-description').value = p.description || '';
+    document.getElementById('pf-keywords').value = p.keywords || '';
     renderAttrSlots(p.attributes || []);
     document.getElementById('pf-gender').value   = p.gender || 'mixte';
     ['0-6','6-12','1-3','3-6','6-12ans','maman'].forEach(v => {
@@ -2798,7 +2807,7 @@ function openProduitForm(id) {
   } else {
     // Mode création
     document.getElementById('produit-form-title').textContent = 'Nouveau produit';
-    ['pf-name','pf-subtitle','pf-slug','pf-oldprice','pf-description'].forEach(id => document.getElementById(id).value = '');
+    ['pf-name','pf-subtitle','pf-slug','pf-oldprice','pf-description','pf-keywords'].forEach(id => document.getElementById(id).value = '');
     renderAttrSlots([]);
     document.getElementById('pf-price').value  = '';
     document.getElementById('pf-stock').value  = '0';
@@ -2960,6 +2969,9 @@ async function saveProduit() {
   const ageRanges   = ['0-6','6-12','1-3','3-6','6-12ans','maman']
     .filter(v => document.getElementById('age-' + v)?.checked);
   const description = document.getElementById('pf-description').value.trim();
+  // Mots-clés : séparés par , ou ; — nettoyés, sans doublons, enregistrés « mot1, mot2, … »
+  const keywords = [...new Set(document.getElementById('pf-keywords').value
+    .split(/[,;]+/).map(k => k.trim().replace(/\s+/g, ' ')).filter(Boolean))].join(', ');
   const attributes  = readAttrSlots();
 
   if (!name)  { alert('Le nom est obligatoire.'); return; }
@@ -3009,6 +3021,7 @@ async function saveProduit() {
     age_ranges: ageRanges,
     images: resolvedImages,
     description: description || null,
+    keywords: keywords || null,
     attributes: attributes.length ? attributes : null
   };
 

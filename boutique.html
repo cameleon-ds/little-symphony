@@ -695,6 +695,7 @@ async function loadProducts() {
     catKey:      p.category_key,
     stock:       p.stock       ?? null,
     description: p.description || null,
+    keywords:    p.keywords    || '',
     attributes:  p.attributes  || null,
   }));
   setPriceCap();
@@ -942,7 +943,7 @@ function applyFilters() {
     if (genders.length && !genders.includes(p.gender)) return false;
     if (p.price < priceMin || p.price > priceMax) return false;
     if (searchTerms.length) {
-      const hay = _norm([p.name, p.sub, p.catName, p.subCat].join(' '));
+      const hay = _norm([p.name, p.sub, p.catName, p.subCat, p.keywords].join(' '));
       if (!searchTerms.every(t => hay.includes(t))) return false;
     }
     return true;
