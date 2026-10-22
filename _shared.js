@@ -367,20 +367,26 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') _snSearchClo
   (document.head || document.documentElement).appendChild(st);
 })();
 
-// ── IMAGES PRODUIT NON CARRÉES ───────────────────────────────────────────────
-// Une photo produit nettement plus haute que large (ex. une guitare) ou plus
-// large que haute (ex. un étui) est affichée en entier dans le cadre carré,
-// au lieu d'être recadrée.
+// ── IMAGES PRODUIT : TOUJOURS ENTIÈRES ───────────────────────────────────────
+// On compare la forme de la photo à celle de son cadre (carré dans la boutique,
+// rectangle sur l'accueil…). Si elles diffèrent nettement — photo en hauteur
+// (ex. une guitare) ou en largeur (ex. un étui) — la photo est affichée en
+// entier, bords complétés en blanc, au lieu d'être recadrée.
 const LS_PRODUCT_IMG = '.prod-img,.feat-img,.img-main,.img-thumb,.suggest-img,.product-img img,.detail-img-main,.detail-img-thumbs img,.item-img,.sum-img';
 function _lsCheckTall(img) {
   if (!img || img.tagName !== 'IMG' || !img.naturalWidth || !img.matches(LS_PRODUCT_IMG)) return;
-  const w = img.naturalWidth, h = img.naturalHeight;
-  img.classList.toggle('img-tall', h > w * 1.15 || w > h * 1.15);
+  const imgR = img.naturalWidth / img.naturalHeight;
+  const boxR = (img.clientWidth && img.clientHeight) ? img.clientWidth / img.clientHeight : 1;
+  const diff = imgR / boxR;
+  img.classList.toggle('img-tall', diff > 1.15 || diff < 1 / 1.15);
+}
+function lsRecheckImages() {
+  document.querySelectorAll(LS_PRODUCT_IMG).forEach(i => { if (i.complete) _lsCheckTall(i); });
 }
 document.addEventListener('load', e => _lsCheckTall(e.target), true);
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll(LS_PRODUCT_IMG).forEach(i => { if (i.complete) _lsCheckTall(i); });
-});
+document.addEventListener('DOMContentLoaded', lsRecheckImages);
+let _lsImgT = null;
+window.addEventListener('resize', () => { clearTimeout(_lsImgT); _lsImgT = setTimeout(lsRecheckImages, 200); });
 (function () {
   if (document.getElementById('ls-img-tall-css')) return;
   const st = document.createElement('style');
