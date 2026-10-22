@@ -115,6 +115,18 @@ input,select{font-family:var(--sans)}
   .filter-chip svg{width:14px;height:14px}
 }
 
+/* Barre de recherche */
+.shop-search{position:relative;display:flex;align-items:center;margin-bottom:1.4rem}
+.shop-search>svg{position:absolute;left:18px;width:18px;height:18px;stroke:var(--text-muted);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none}
+.shop-search input{width:100%;padding:13px 48px 13px 48px;border:1.5px solid var(--border);border-radius:40px;background:#fff;font-family:var(--sans);font-size:14px;color:var(--charcoal);outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+.shop-search input::-webkit-search-cancel-button{display:none}
+.shop-search input:focus{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-light)}
+.shop-search input::placeholder{color:var(--text-muted)}
+.shop-search-clear{position:absolute;right:10px;width:30px;height:30px;border-radius:50%;border:none;background:var(--primary-light);color:var(--primary-dark);display:none;align-items:center;justify-content:center;cursor:pointer}
+.shop-search-clear.show{display:flex}
+.shop-search-clear svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round}
+@media(max-width:900px){.shop-search input{font-size:16px}}
+
 /* ── MAIN CONTENT ── */
 .main{flex:1;padding:1.5rem 1.5rem 4rem;min-width:0;margin-left:280px}
 
@@ -434,6 +446,15 @@ input,select{font-family:var(--sans)}
       </div>
     </div>
 
+    <!-- Recherche -->
+    <div class="shop-search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="shop-search-input" placeholder="Rechercher un produit…" autocomplete="off" aria-label="Rechercher un produit" oninput="lsBoutiqueSearch(this.value)">
+      <button type="button" class="shop-search-clear" id="shop-search-clear" onclick="lsBoutiqueSearch('', true)" aria-label="Effacer la recherche">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
     <!-- Featured / promo -->
     <div class="featured-grid" id="featured-grid"></div>
 
@@ -454,7 +475,7 @@ input,select{font-family:var(--sans)}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
-<script src="_shared.js"></script>
+<script src="_shared.js?v=5"></script>
 <script>
 renderNav('boutique');
 renderFooter();
@@ -608,6 +629,7 @@ function setPriceCap() {
 // ── STATE ──────────────────────────────────────────────────────────────────────
 var activeCat = null;
 var activeSub = null;
+var searchQuery = '';     // recherche texte (boutique.html?q=…)
 var badgeFilter = null;   // 'new' (Nouveautés) ou 'promo' (Promotions) — via boutique.html#nouveautes / #promotions
 var PRICE_CAP = 600;
 var priceMin = 0, priceMax = PRICE_CAP;
@@ -758,7 +780,36 @@ window.addEventListener('hashchange', () => {
   if (applyHashFilter()) { applyFilters(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 });
 
+// Texte sans accents ni majuscules, pour une recherche tolérante
+function _norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+
+// Recherche : appelée par la barre de la boutique et par la barre du menu (_shared.js)
+let _searchTimer = null;
+function lsBoutiqueSearch(q, now) {
+  searchQuery = String(q || '');
+  const input = document.getElementById('shop-search-input');
+  if (input && input.value !== searchQuery) input.value = searchQuery;
+  document.querySelectorAll('.sn-search input[name="q"]').forEach(i => { if (i.value !== searchQuery) i.value = searchQuery; });
+  const clr = document.getElementById('shop-search-clear');
+  if (clr) clr.classList.toggle('show', !!searchQuery);
+  // Garder ?q=… dans l'adresse (partageable), sans recharger
+  try {
+    const u = new URL(location.href);
+    if (searchQuery.trim()) u.searchParams.set('q', searchQuery.trim()); else u.searchParams.delete('q');
+    history.replaceState(null, '', u.pathname + u.search + u.hash);
+  } catch (e) {}
+  clearTimeout(_searchTimer);
+  if (!ALL_PRODUCTS.length) return;
+  if (now) { applyFilters(); if (searchQuery) scrollToResults(); }
+  else _searchTimer = setTimeout(applyFilters, 150);
+}
+window.lsBoutiqueSearch = lsBoutiqueSearch;
+
 function resetAll() {
+  searchQuery = '';
+  const _si = document.getElementById('shop-search-input'); if (_si) _si.value = '';
+  const _sc = document.getElementById('shop-search-clear'); if (_sc) _sc.classList.remove('show');
+  try { const u = new URL(location.href); if (u.searchParams.has('q')) { u.searchParams.delete('q'); history.replaceState(null, '', u.pathname + u.search + u.hash); } } catch (e) {}
   activeCat = null;
   activeSub = null;
   badgeFilter = null;
@@ -783,6 +834,7 @@ function applyFilters() {
   const ages    = getActiveAges();
   const genders = getActiveGenders();
   const sort    = _currentSort;
+  const searchTerms = _norm(searchQuery).split(/\s+/).filter(Boolean);
 
   let filtered = ALL_PRODUCTS.filter(p => {
     if (activeCat !== null && CATS_META[activeCat].key !== p.catKey) return false;
@@ -792,6 +844,10 @@ function applyFilters() {
     if (ages.length && !ages.some(a => p.age.includes(a))) return false;
     if (genders.length && !genders.includes(p.gender)) return false;
     if (p.price < priceMin || p.price > priceMax) return false;
+    if (searchTerms.length) {
+      const hay = _norm([p.name, p.sub, p.catName, p.subCat].join(' '));
+      if (!searchTerms.every(t => hay.includes(t))) return false;
+    }
     return true;
   });
 
@@ -801,7 +857,7 @@ function applyFilters() {
   if (sort === 'new')        filtered = filtered.filter(p => p.badge === 'new').concat(filtered.filter(p => p.badge !== 'new'));
   if (sort === 'promo')      filtered = filtered.filter(p => p.badge === 'promo').concat(filtered.filter(p => p.badge !== 'promo'));
   // Par défaut (toutes catégories) : d'abord 2 produits de chaque catégorie, dans l'ordre des catégories
-  if (sort === 'default' && activeCat === null) {
+  if (sort === 'default' && activeCat === null && !searchTerms.length) {
     const head = [];
     CATS_META.forEach(c => { head.push(...filtered.filter(p => p.catKey === c.key).slice(0, 2)); });
     filtered = head.concat(filtered.filter(p => !head.includes(p)));
@@ -979,6 +1035,7 @@ function renderChips(ages, genders) {
   const chips = [];
   if (activeCat !== null) chips.push({label: CATS_META[activeCat].name, action: 'resetCat()'});
   if (activeSub) chips.push({label: activeSub, action: 'clearSub()'});
+  if (searchQuery.trim()) chips.push({label: `« ${searchQuery.trim().replace(/</g,'&lt;')} »`, action: "lsBoutiqueSearch('', true)"});
   if (badgeFilter) chips.push({label: badgeFilter === 'new' ? 'Nouveautés' : 'Promotions', action: 'clearBadge()'});
   ages.forEach(a => chips.push({label: AGE_LABELS[a], action: `resetOneCheck('${a}')`}));
   genders.forEach(g => chips.push({label: GEN_LABELS[g], action: `resetOneCheck('${g}')`}));
@@ -1059,6 +1116,12 @@ function addToCart(e, idx) {
 
   // Check if a category was passed via URL hash
   applyHashFilter();
+
+  // Recherche passée dans l'adresse : boutique.html?q=…
+  try {
+    const q0 = new URLSearchParams(location.search).get('q');
+    if (q0) { searchQuery = q0; const i = document.getElementById('shop-search-input'); if (i) i.value = q0; document.getElementById('shop-search-clear').classList.add('show'); }
+  } catch (e) {}
 
   // Render promo banner
   renderPromoBanner();

@@ -300,6 +300,67 @@ document.addEventListener('click', e => {
   if (wrap && !wrap.contains(e.target)) _pdropClose();
 });
 
+// ── RECHERCHE (menu ouvert + icône PC) → boutique.html?q=… ─────────────────────
+function _snSearchFormHTML(id) {
+  let q = '';
+  try { q = new URLSearchParams(location.search).get('q') || ''; } catch (e) {}
+  const v = q.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  return `<form class="sn-search" action="boutique.html" method="get" role="search" onsubmit="return _snSearchSubmit(this)">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" name="q" id="${id}" value="${v}" placeholder="Rechercher un produit…" autocomplete="off" aria-label="Rechercher un produit">
+    </form>`;
+}
+function _snSearchSubmit(form) {
+  const q = (form.q.value || '').trim();
+  // Déjà sur la boutique : on filtre sans recharger la page
+  if (typeof window.lsBoutiqueSearch === 'function') {
+    window.lsBoutiqueSearch(q, true);
+    const drawer = document.getElementById('sn-drawer');
+    if (drawer && drawer.classList.contains('open')) _snBurgerToggle();
+    _snSearchClose();
+    form.q.blur();
+    return false;
+  }
+  location.href = 'boutique.html' + (q ? '?q=' + encodeURIComponent(q) : '');
+  return false;
+}
+function _snSearchToggle() {
+  const w = document.getElementById('sn-search-wrap');
+  if (!w) return;
+  const open = !w.classList.contains('open');
+  w.classList.toggle('open', open);
+  if (open) setTimeout(() => { const i = document.getElementById('sn-search-pc'); if (i) i.focus(); }, 50);
+}
+function _snSearchClose() {
+  const w = document.getElementById('sn-search-wrap');
+  if (w) w.classList.remove('open');
+}
+document.addEventListener('click', e => {
+  const w = document.getElementById('sn-search-wrap');
+  if (w && w.classList.contains('open') && !w.contains(e.target)) _snSearchClose();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') _snSearchClose(); });
+(function _snSearchStyles() {
+  if (document.getElementById('sn-search-css')) return;
+  const st = document.createElement('style');
+  st.id = 'sn-search-css';
+  st.textContent = `
+.sn-search{position:relative;display:flex;align-items:center;width:100%}
+.sn-search svg{position:absolute;left:16px;width:18px;height:18px;stroke:var(--text-muted);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none}
+.sn-search input{width:100%;padding:13px 18px 13px 46px;border:1.5px solid var(--border);border-radius:40px;background:var(--primary-xlight);font-family:var(--sans);font-size:15px;color:var(--charcoal);outline:none;transition:border-color .2s,background .2s;-webkit-appearance:none;appearance:none}
+.sn-search input:focus{border-color:var(--primary);background:#fff}
+.sn-search input::placeholder{color:var(--text-muted)}
+.sn-drawer .sn-search{max-width:420px;margin-bottom:1.6rem}
+.sn-drawer .sn-search input{font-size:16px}
+.sn-search-wrap{position:relative;display:flex}
+.sn-search-pop{position:absolute;top:calc(100% + 10px);right:0;width:340px;padding:10px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-md);opacity:0;pointer-events:none;transform:translateY(-8px);transition:opacity .2s,transform .2s;z-index:300}
+.sn-search-wrap.open .sn-search-pop{opacity:1;pointer-events:auto;transform:translateY(0)}
+.sn-search-pop .sn-search input{font-size:14px;padding:11px 16px 11px 44px}
+@media (max-width:900px){.sn-search-wrap{display:none}}
+`;
+  (document.head || document.documentElement).appendChild(st);
+})();
+
 // ── RENDER NAV ────────────────────────────────────────────────────────────────
 function renderNav(activePage, opts) {
   opts = opts || {};
@@ -330,6 +391,12 @@ function renderNav(activePage, opts) {
       </a>
       <div class="sn-links">${navLinksHTML}</div>
       <div class="sn-right">
+        <div class="sn-search-wrap" id="sn-search-wrap">
+          <button type="button" class="sn-icon sn-search-btn" title="Rechercher" aria-label="Rechercher" onclick="_snSearchToggle()">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <div class="sn-search-pop" id="sn-search-pop">${_snSearchFormHTML('sn-search-pc')}</div>
+        </div>
         <a href="cart.html" class="sn-icon" title="Panier">
           <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
           <span class="sn-cart-badge cart-count"></span>
@@ -352,7 +419,7 @@ function renderNav(activePage, opts) {
     drawer.id = 'sn-drawer';
     document.body.appendChild(drawer);
   }
-  drawer.innerHTML = `<div class="sn-drawer-links">${drawerLinksHTML}</div>`;
+  drawer.innerHTML = `${_snSearchFormHTML('sn-search-drawer')}<div class="sn-drawer-links">${drawerLinksHTML}</div>`;
 
   LS.updateCartBadge();
   window.addEventListener('scroll', () => el.classList.toggle('scrolled', scrollY > 20));
