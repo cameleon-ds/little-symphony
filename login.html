@@ -56,6 +56,10 @@ input:focus{border-color:var(--primary)}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
 .register-link{text-align:center;font-size:13px;color:var(--text-soft)}
 .register-link a{color:var(--primary-dark);font-weight:600}
+.ok-msg{background:#F1F8F1;border:1px solid #C8E6C9;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.55;color:#2E7D32;margin-bottom:1rem}
+.back-link{display:block;width:100%;text-align:center;background:none;border:none;font-family:var(--sans);font-size:13px;color:var(--text-soft);cursor:pointer;padding:6px}
+.back-link:hover{color:var(--primary-dark)}
+.btn-submit:disabled{opacity:.7;cursor:default;transform:none}
 .error-msg{background:#FFF3F0;border:1px solid #FFCCC7;border-radius:8px;
   padding:10px 14px;font-size:13px;color:#C62828;display:none;margin-bottom:1rem}
 </style>
@@ -76,7 +80,7 @@ input:focus{border-color:var(--primary)}
     </div>
   </div>
   <div class="split-form">
-    <div class="form-box">
+    <div class="form-box" id="login-box">
       <h1 class="form-title">Bon retour !</h1>
       <p class="form-sub">Connectez-vous à votre compte</p>
 
@@ -96,13 +100,31 @@ input:focus{border-color:var(--primary)}
             </button>
           </div>
         </div>
-        <div class="forgot"><a href="#">Mot de passe oublié ?</a></div>
+        <div class="forgot"><a href="#oubli" onclick="showForgot(event)">Mot de passe oublié ?</a></div>
         <button type="submit" class="btn-submit">Se connecter</button>
       </form>
 
       <div class="divider">ou</div>
       <p class="register-link">Pas encore de compte ? <a href="register.html">Créer un compte</a></p>
 
+    </div>
+
+    <!-- Mot de passe oublié -->
+    <div class="form-box" id="forgot-box" style="display:none">
+      <h1 class="form-title">Mot de passe oublié ?</h1>
+      <p class="form-sub" id="forgot-sub">Indiquez l'adresse email de votre compte : nous vous envoyons un lien pour choisir un nouveau mot de passe.</p>
+
+      <div class="error-msg" id="forgot-error"></div>
+      <div class="ok-msg" id="forgot-ok" style="display:none"></div>
+
+      <form id="forgot-form" onsubmit="sendReset(event)">
+        <div class="form-group">
+          <label for="forgot-email">Adresse email</label>
+          <input type="email" id="forgot-email" placeholder="votre@email.com" required autocomplete="email">
+        </div>
+        <button type="submit" class="btn-submit" id="forgot-btn">Recevoir le lien</button>
+      </form>
+      <button type="button" class="back-link" onclick="showLogin()">← Retour à la connexion</button>
     </div>
   </div>
 </div>
@@ -111,6 +133,71 @@ input:focus{border-color:var(--primary)}
 <script src="supabase-client.js"></script>
 <script src="_shared.js?v=5"></script>
 <script>
+// ── Mot de passe oublié ──
+function showForgot(e) {
+  if (e) e.preventDefault();
+  document.getElementById('login-box').style.display = 'none';
+  document.getElementById('forgot-box').style.display = 'block';
+  document.getElementById('forgot-error').style.display = 'none';
+  document.getElementById('forgot-ok').style.display = 'none';
+  document.getElementById('forgot-form').style.display = 'block';
+  const typed = document.getElementById('email').value.trim();
+  const f = document.getElementById('forgot-email');
+  if (typed && !f.value) f.value = typed;
+  if (location.hash !== '#oubli') history.replaceState(null, '', location.pathname + location.search + '#oubli');
+  setTimeout(() => f.focus(), 50);
+}
+function showLogin() {
+  document.getElementById('forgot-box').style.display = 'none';
+  document.getElementById('login-box').style.display = 'block';
+  const f = document.getElementById('forgot-email').value.trim();
+  const l = document.getElementById('email');
+  if (f && !l.value) l.value = f;
+  history.replaceState(null, '', location.pathname + location.search);
+}
+async function sendReset(e) {
+  e.preventDefault();
+  const email = document.getElementById('forgot-email').value.trim();
+  const err = document.getElementById('forgot-error');
+  const ok  = document.getElementById('forgot-ok');
+  const btn = document.getElementById('forgot-btn');
+  err.style.display = 'none'; ok.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Envoi…';
+  const { error } = await _supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: new URL('reset-password.html', window.location.href).href
+  });
+  btn.disabled = false; btn.textContent = 'Recevoir le lien';
+  if (error) {
+    const m = String(error.message || '');
+    const wait = m.match(/after (\d+) seconds?/i);
+    if (error.status === 429 || /rate limit|security purposes/i.test(m)) {
+      err.textContent = wait
+        ? `Un e-mail vient déjà d'être demandé. Merci de patienter ${wait[1]} secondes avant de réessayer.`
+        : "Trop de demandes en peu de temps. Merci de réessayer dans quelques minutes.";
+    } else if (/invalid/i.test(m) && /email/i.test(m)) {
+      err.textContent = "Cette adresse email n'est pas valide.";
+    } else {
+      err.textContent = "L'envoi a échoué. Merci de réessayer dans un instant.";
+    }
+    err.style.display = 'block';
+    return;
+  }
+  // Message volontairement identique, que le compte existe ou non (confidentialité)
+  ok.innerHTML = `<strong>E-mail envoyé !</strong><br>Si un compte existe pour <strong>${email.replace(/[<>&"]/g, '')}</strong>, vous allez recevoir un lien pour choisir un nouveau mot de passe. Pensez à vérifier vos courriers indésirables (spams).`;
+  ok.style.display = 'block';
+  document.getElementById('forgot-form').style.display = 'none';
+}
+if (location.hash === '#oubli') showForgot();
+
+// Message après un changement de mot de passe réussi
+if (new URLSearchParams(location.search).get('reset') === 'ok') {
+  const box = document.getElementById('login-box');
+  const msg = document.createElement('div');
+  msg.className = 'ok-msg';
+  msg.textContent = 'Votre mot de passe a bien été modifié. Vous pouvez maintenant vous connecter.';
+  box.insertBefore(msg, document.getElementById('error-msg'));
+}
+
 function togglePwd() {
   const el = document.getElementById('password');
   el.type = el.type === 'password' ? 'text' : 'password';
