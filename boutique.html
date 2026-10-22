@@ -142,6 +142,10 @@ input,select{font-family:var(--sans)}
   font-size:13px;color:var(--charcoal);background:#fff;outline:none;cursor:pointer}
 .sort-select:focus{border-color:var(--primary)}
 
+/* Tri : sélecteur classique sur PC, bouton icône sur mobile/tablette */
+.sort-wrap{position:relative;display:flex}
+.sort-ico{display:none}
+
 /* View toggle */
 .view-toggle{display:flex;border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
 .view-btn{width:48px;height:34px;display:flex;align-items:center;justify-content:center;
@@ -297,6 +301,27 @@ input,select{font-family:var(--sans)}
   .main{padding:1rem 1rem 4rem;margin-left:0}
   .sticky-filter-bar{display:flex}
 }
+/* ── Barre d'outils mobile/tablette ──
+   Ligne 1 : Catégories & Filtres · Trier (icône) · Mosaïque/Liste
+   Ligne 2 : filtres actifs (bulles) · Ligne 3 : nombre de produits */
+@media(max-width:900px){
+  .toolbar{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:0.7rem 0.5rem}
+  .toolbar-left,.toolbar-left-row,.toolbar-right{display:contents}
+  .toolbar .sidebar-toggle{grid-column:1;grid-row:1;height:38px}
+  .toolbar .sort-wrap{grid-column:3;grid-row:1;width:42px;height:38px;align-items:center;justify-content:center;
+    border:1.5px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--charcoal)}
+  .toolbar .sort-wrap.sorted,.sticky-filter-bar .sort-wrap.sorted{border-color:var(--primary);color:var(--primary-dark);background:var(--primary-light)}
+  .toolbar .sort-wrap.sorted::after,.sticky-filter-bar .sort-wrap.sorted::after{content:'';position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--primary-dark);border:2px solid #fff}
+  .toolbar .sort-ico,.sticky-filter-bar .sort-ico{display:block;width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+  .toolbar .sort-wrap .sort-select,.sticky-filter-bar .sort-wrap .sort-select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px}
+  .sticky-filter-bar .sort-wrap{flex-shrink:0;width:40px;height:34px;align-items:center;justify-content:center;
+    border:1.5px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--charcoal)}
+  .toolbar .view-toggle{grid-column:4;grid-row:1}
+  .toolbar .view-btn{width:42px;height:35px}
+  .toolbar .active-filters{grid-column:1/-1;grid-row:2;width:auto;padding-left:0}
+  .toolbar .active-filters:empty{display:none}
+  .toolbar .results-count{grid-column:1/-1;grid-row:3}
+}
 /* Footer offset — sidebar is fixed so footer needs same left margin as .main */
 #main-footer{margin-left:280px}
 @media(max-width:900px){
@@ -326,13 +351,16 @@ input,select{font-family:var(--sans)}
     Catégories & Filtres
   </button>
   <div class="active-filters" id="sticky-active-filters" style="flex:1;min-height:0;margin-bottom:0"></div>
-  <select class="sort-select" style="font-size:12px;padding:6px 10px" onchange="setSort(this.value)">
-    <option value="default">Par défaut</option>
-    <option value="price-asc">Prix ↑</option>
-    <option value="price-desc">Prix ↓</option>
-    <option value="new">Nouveautés</option>
-    <option value="promo">Promotions</option>
-  </select>
+  <div class="sort-wrap" title="Trier">
+    <svg class="sort-ico" viewBox="0 0 24 24"><path d="M7 4v16"/><polyline points="3 8 7 4 11 8"/><path d="M17 20V4"/><polyline points="13 16 17 20 21 16"/></svg>
+    <select class="sort-select" onchange="setSort(this.value)" aria-label="Trier les produits">
+      <option value="default">Trier par défaut</option>
+      <option value="price-asc">Prix croissant</option>
+      <option value="price-desc">Prix décroissant</option>
+      <option value="new">Nouveautés</option>
+      <option value="promo">Promotions</option>
+    </select>
+  </div>
   <div class="view-toggle" style="flex-shrink:0">
     <button class="view-btn" id="sticky-btn-grid" onclick="setView('grid')" title="Mosaïque">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -431,13 +459,16 @@ input,select{font-family:var(--sans)}
         <div class="active-filters" id="active-filters"></div>
       </div>
       <div class="toolbar-right">
-        <select class="sort-select" onchange="setSort(this.value)">
-          <option value="default">Trier par défaut</option>
-          <option value="price-asc">Prix croissant</option>
-          <option value="price-desc">Prix décroissant</option>
-          <option value="new">Nouveautés</option>
-          <option value="promo">Promotions</option>
-        </select>
+        <div class="sort-wrap" title="Trier">
+          <svg class="sort-ico" viewBox="0 0 24 24"><path d="M7 4v16"/><polyline points="3 8 7 4 11 8"/><path d="M17 20V4"/><polyline points="13 16 17 20 21 16"/></svg>
+          <select class="sort-select" onchange="setSort(this.value)" aria-label="Trier les produits">
+            <option value="default">Trier par défaut</option>
+            <option value="price-asc">Prix croissant</option>
+            <option value="price-desc">Prix décroissant</option>
+            <option value="new">Nouveautés</option>
+            <option value="promo">Promotions</option>
+          </select>
+        </div>
         <div class="view-toggle">
           <button class="view-btn active" id="btn-grid" onclick="setView('grid')" title="Mosaïque">
             <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -842,6 +873,7 @@ let _currentSort = 'default';
 function setSort(val) {
   _currentSort = val;
   document.querySelectorAll('.sort-select').forEach(s => s.value = val);
+  document.querySelectorAll('.sort-wrap').forEach(w => w.classList.toggle('sorted', val !== 'default'));
   applyFilters();
 }
 
