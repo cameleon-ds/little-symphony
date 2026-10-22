@@ -264,6 +264,22 @@ input,select{font-family:var(--sans)}
 .product-grid.view-list .prod-name{white-space:normal;font-size:13px}
 .product-grid.view-list .prod-sub{font-size:11px;margin-bottom:0}
 .product-grid.view-list .prod-right{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:0.5rem 0.8rem;border-left:1px solid var(--border);min-width:90px}
+/* Vue liste : toutes les lignes ont la même hauteur (image carrée 120 px),
+   y compris les cartes « Promotion / Nouveau » du haut */
+.product-grid.view-list .prod-card{height:120px;grid-template-rows:120px}
+.product-grid.view-list .prod-img-wrap{height:120px}
+.product-grid.view-list .prod-img-wrap .prod-badge{top:6px;left:6px;padding:3px 7px;font-size:8px}
+.product-grid.view-list .prod-body{min-width:0;overflow:hidden}
+.product-grid.view-list .prod-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3}
+body.is-list .feat-card{height:120px;min-height:0}
+body.is-list .feat-img{width:120px;height:120px}
+body.is-list .feat-body{padding:0.55rem 0.8rem;min-width:0;justify-content:center;gap:4px}
+body.is-list .feat-body>div:first-child{min-width:0}
+body.is-list .feat-badge{font-size:8px;padding:2px 7px;margin-bottom:3px}
+body.is-list .feat-cat{margin-bottom:1px}
+body.is-list .feat-name{font-size:13px;margin-bottom:0;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+body.is-list .feat-sub{display:none}
+body.is-list .feat-price{font-size:14px}
 
 /* Empty state */
 .empty-state{text-align:center;padding:4rem 2rem;color:var(--text-muted)}
