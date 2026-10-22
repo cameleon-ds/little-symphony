@@ -142,6 +142,8 @@ input,select{font-family:var(--sans)}
   font-size:13px;color:var(--charcoal);background:#fff;outline:none;cursor:pointer}
 .sort-select:focus{border-color:var(--primary)}
 
+/* Bouton unique mosaïque/liste + loupe : mobile/tablette uniquement */
+.view-switch,.sticky-search-btn{display:none}
 /* Tri : sélecteur classique sur PC, bouton icône sur mobile/tablette */
 .sort-wrap{position:relative;display:flex}
 .sort-ico{display:none}
@@ -316,8 +318,17 @@ input,select{font-family:var(--sans)}
   .toolbar .sort-wrap .sort-select,.sticky-filter-bar .sort-wrap .sort-select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px}
   .sticky-filter-bar .sort-wrap{flex-shrink:0;width:40px;height:34px;align-items:center;justify-content:center;
     border:1.5px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--charcoal)}
-  .toolbar .view-toggle{grid-column:4;grid-row:1}
-  .toolbar .view-btn{width:42px;height:35px}
+  .toolbar .view-toggle,.sticky-filter-bar .view-toggle{display:none}
+  .toolbar .view-switch{grid-column:4;grid-row:1}
+  .view-switch,.sticky-search-btn{display:flex;flex-shrink:0;width:42px;height:38px;align-items:center;justify-content:center;
+    border:1.5px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--charcoal);cursor:pointer;padding:0}
+  .sticky-filter-bar .view-switch,.sticky-filter-bar .sticky-search-btn{width:40px;height:34px}
+  .sticky-search-btn{background:var(--primary);border-color:var(--primary);color:#fff}
+  .view-switch svg,.sticky-search-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  /* L'icône montre la vue vers laquelle on bascule */
+  .view-switch .vs-grid{display:none}
+  body.is-list .view-switch .vs-grid{display:block}
+  body.is-list .view-switch .vs-list{display:none}
   .toolbar .active-filters{grid-column:1/-1;grid-row:2;width:auto;padding-left:0}
   .toolbar .active-filters:empty{display:none}
   .toolbar .results-count{grid-column:1/-1;grid-row:3}
@@ -369,6 +380,10 @@ input,select{font-family:var(--sans)}
       <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
   </div>
+  <button type="button" class="view-switch" onclick="toggleView()" title="Changer de vue" aria-label="Changer de vue"><svg class="vs-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><svg class="vs-list" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+  <button type="button" class="sticky-search-btn" onclick="focusShopSearch()" title="Rechercher" aria-label="Rechercher">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  </button>
 </div>
 
 <div id="promo-banner-wrap"></div>
@@ -477,6 +492,7 @@ input,select{font-family:var(--sans)}
             <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
         </div>
+        <button type="button" class="view-switch" onclick="toggleView()" title="Changer de vue" aria-label="Changer de vue"><svg class="vs-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><svg class="vs-list" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
       </div>
     </div>
 
@@ -1110,7 +1126,24 @@ function setView(v) {
   const sl = document.getElementById('sticky-btn-list');
   if (sg) sg.classList.toggle('active', v === 'grid');
   if (sl) sl.classList.toggle('active', v === 'list');
-  localStorage.setItem('boutique_view', v);
+  document.body.classList.toggle('is-list', v === 'list');
+  document.querySelectorAll('.view-switch').forEach(b => {
+    const t = v === 'list' ? 'Passer en vue mosaïque' : 'Passer en vue liste';
+    b.title = t; b.setAttribute('aria-label', t);
+  });
+  try { localStorage.setItem('boutique_view', v); } catch (e) {}
+}
+function toggleView() { setView(currentView === 'list' ? 'grid' : 'list'); }
+
+// Loupe de la barre collante : remonte à la barre de recherche et l'active
+function focusShopSearch() {
+  const input = document.getElementById('shop-search-input');
+  if (!input) return;
+  input.focus({ preventScroll: true });
+  const bar = document.getElementById('sticky-filter-bar');
+  const barH = bar ? bar.offsetHeight : 0;
+  const top = input.getBoundingClientRect().top + window.scrollY - 68 - barH - 14;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
 }
 
 // ── OPEN PRODUCT ───────────────────────────────────────────────────────────────
