@@ -362,6 +362,22 @@ body.is-list .feat-price{font-size:14px}
   .product-grid{grid-template-columns:repeat(2,1fr)}
   .product-grid.view-list{grid-template-columns:1fr}
 }
+/* Mobile, vue mosaïque : les 2 cartes Promotion/Nouveau du haut prennent
+   le même format que les autres produits (image carrée + texte dessous) */
+@media(max-width:560px){
+  body:not(.is-list) .featured-grid{grid-template-columns:repeat(2,1fr);gap:1rem}
+  body:not(.is-list) .feat-card{flex-direction:column;min-height:0}
+  body:not(.is-list) .feat-img{width:100%;height:auto;aspect-ratio:1;object-fit:cover}
+  body:not(.is-list) .feat-body{padding:0.8rem;min-width:0}
+  body:not(.is-list) .feat-body>div:first-child{min-width:0}
+  body:not(.is-list) .feat-badge{position:absolute;top:10px;left:10px;z-index:2;margin:0;font-size:9px;padding:5px 11px;letter-spacing:0.06em}
+  body:not(.is-list) .feat-cat{font-size:10px;letter-spacing:0.08em;margin-bottom:3px}
+  body:not(.is-list) .feat-name{font-family:var(--serif);font-size:15px;font-weight:500;margin-bottom:2px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body:not(.is-list) .feat-sub{font-size:11px;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body:not(.is-list) .feat-footer{gap:6px}
+  body:not(.is-list) .feat-price{font-size:14px;color:var(--charcoal)}
+  body:not(.is-list) .feat-old{font-size:11px;margin-left:0}
+}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
 <link rel="stylesheet" href="main.css">
