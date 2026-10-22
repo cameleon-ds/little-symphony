@@ -37,7 +37,9 @@ const FONT_TITLE_URL =
 
 const BRAND_PRIMARY = 0xc9a09aff; // --primary du site
 const TITLE_COLOR = 0xffffffff;  // titre du produit en blanc…
-const TITLE_SHADOW = 0x5a321e06; // …avec une ombre marron floue (superposée de nombreuses fois) pour rester lisible
+const TITLE_SHADOW_RGB = 0x5a321e; // …avec une ombre marron très douce (vrai flou) pour rester lisible
+const TITLE_SHADOW_BLUR = 8;        // rayon du flou (px)
+const TITLE_SHADOW_OPACITY = 0.55;  // intensité de l'ombre (0 à 1)
 
 const AGE_LABELS: Record<string, string> = {
   "0-6": "0-6 mois",
@@ -368,6 +370,39 @@ function truncate(text: string, max: number): string {
   return text.length > max ? text.slice(0, max - 1) + "…" : text;
 }
 
+// Ombre douce d'un texte : vrai flou (3 passes de flou-boîte ≈ gaussien) appliqué au canal alpha,
+// puis teinte et opacité. Renvoie l'image de l'ombre et la marge ajoutée autour du texte.
+function softShadow(textImg: Image, rgb: number, radius: number, opacity: number, bold: boolean): { img: Image; pad: number } {
+  const P = radius * 3;
+  const w = textImg.width + P * 2 + 2, h = textImg.height + P * 2 + 2;
+  const mask = new Image(w, h);
+  const offs = bold ? [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]] : [[0, 0]];
+  for (const [dx, dy] of offs) mask.composite(textImg, P + dx, P + dy);
+  const src = mask.bitmap;
+  const a = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) a[i] = src[i * 4 + 3];
+  const tmp = new Float32Array(w * h);
+  const r = Math.max(1, Math.round(radius / 1.7));
+  for (let pass = 0; pass < 3; pass++) {
+    for (let y = 0; y < h; y++) {
+      const row = y * w; let s = 0;
+      for (let x = -r; x <= r; x++) s += a[row + Math.min(w - 1, Math.max(0, x))];
+      for (let x = 0; x < w; x++) { tmp[row + x] = s / (2 * r + 1); s += a[row + Math.min(w - 1, x + r + 1)] - a[row + Math.max(0, x - r)]; }
+    }
+    for (let x = 0; x < w; x++) {
+      let s = 0;
+      for (let y = -r; y <= r; y++) s += tmp[Math.min(h - 1, Math.max(0, y)) * w + x];
+      for (let y = 0; y < h; y++) { a[y * w + x] = s / (2 * r + 1); s += tmp[Math.min(h - 1, y + r + 1) * w + x] - tmp[Math.max(0, y - r) * w + x]; }
+    }
+  }
+  const out = new Image(w, h);
+  const bm = out.bitmap;
+  const R = (rgb >> 16) & 255, G = (rgb >> 8) & 255, B = rgb & 255;
+  for (let i = 0; i < w * h; i++) { bm[i * 4] = R; bm[i * 4 + 1] = G; bm[i * 4 + 2] = B; bm[i * 4 + 3] = Math.min(255, Math.round(a[i] * opacity)); }
+  out.bitmap = bm;
+  return { img: out, pad: P };
+}
+
 // deno-lint-ignore no-explicit-any
 // Coupe un titre trop long en deux lignes aussi équilibrées que possible (coupure entre deux mots)
 function splitTitle(name: string): string[] {
@@ -435,7 +470,7 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
   // Tous les éléments texte sont préparés d'abord, pour calculer la hauteur
   // totale et placer le bloc de façon à ne jamais chevaucher l'adresse du site
   // (utile quand le titre passe sur deux lignes).
-  const blocks: { img: Image; x: number; gap: number; bold?: boolean; bubble?: Image; padX?: number; padY?: number; shadow?: Image }[] = [];
+  const blocks: { img: Image; x: number; gap: number; bold?: boolean; bubble?: Image; padX?: number; padY?: number; shadow?: Image; shadowPad?: number }[] = [];
 
   if (style?.show_title !== false) {
     // Titre blanc avec ombre noire, plus gras, coupé sur deux lignes équilibrées
@@ -443,8 +478,8 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
     const lines = splitTitle(product.name || "");
     for (let i = 0; i < lines.length; i++) {
       const t = await Image.renderText(titleFontBytes, 68, lines[i], TITLE_COLOR);
-      const sh = await Image.renderText(titleFontBytes, 68, lines[i], TITLE_SHADOW);
-      blocks.push({ img: t, shadow: sh, x: 40, gap: i === lines.length - 1 ? 18 : 4, bold: true });
+      const sh = softShadow(t, TITLE_SHADOW_RGB, TITLE_SHADOW_BLUR, TITLE_SHADOW_OPACITY, true);
+      blocks.push({ img: t, shadow: sh.img, shadowPad: sh.pad, x: 40, gap: i === lines.length - 1 ? 18 : 4, bold: true });
     }
   }
 
@@ -486,7 +521,8 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
       cursorY += b.bubble.height + b.gap;
     } else {
       // Ombre douce : texte noir très transparent superposé avec des décalages (plus foncé au centre)
-      if (b.shadow) { for (let dx = -11; dx <= 11; dx++) for (let dy = -11; dy <= 11; dy++) { if (dx * dx + dy * dy > 121) continue; canvas.composite(b.shadow, b.x + 4 + dx, cursorY + 6 + dy); } }
+      // Ombre douce, légèrement décalée vers le bas
+      if (b.shadow) canvas.composite(b.shadow, b.x - (b.shadowPad || 0) + 2, cursorY - (b.shadowPad || 0) + 4);
       if (b.bold) { for (let dx = 0; dx <= 2; dx++) for (let dy = 0; dy <= 2; dy++) canvas.composite(b.img, b.x + dx, cursorY + dy); }
       else canvas.composite(b.img, b.x, cursorY);
       cursorY += b.img.height + b.gap;
