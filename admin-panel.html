@@ -4190,7 +4190,7 @@ function renderSocialPreview(p) {
     <div class="rs-img-tools" id="rs-img-tools">
       <label class="btn-detail" title="Remplacer l'image de cette publication"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Uploader<input type="file" accept="image/*" style="display:none" onchange="rsPickImage(this)"></label>
       <button class="btn-detail" title="Télécharger le visuel" onclick="rsDownloadVisual(this)"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Télécharger</span></button>
-      <button class="rs-post-now" onclick="rsAskPostNow()">Poster maintenant</button>
+      <button class="rs-post-now" onclick="rsAskPostNow()">Poster</button>
     </div>
     ${p.customImage ? `<div class="rs-img-tools" style="padding-top:6px;padding-bottom:6px"><span class="rs-img-note">Image personnalisée pour cette publication ·</span>
       <button class="rs-img-link" onclick="rsResetImage()">revenir à la photo principale</button></div>` : ''}
