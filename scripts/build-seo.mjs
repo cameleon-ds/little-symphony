@@ -15,6 +15,9 @@ const SB_KEY = client.match(/eyJ[A-Za-z0-9._-]+/)[0];
 const esc  = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const fmt  = n => Number(n).toFixed(3).replace('.', ',') + ' DT';
 const clip = (s, n) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length <= n ? s : s.slice(0, n - 1).replace(/\s+\S*$/, '') + '…'; };
+// Texte par défaut (produits sans vrai descriptif) : ne sert pas de description Google
+const DEFAULT_DESC = 'Produit sélectionné avec soin par notre équipe Little Symphony pour le bien-être de votre enfant. Qualité premium, matériaux certifiés, adapté aux petits.';
+const realDesc = p => { const d = String(p.description || '').trim(); return d && d !== DEFAULT_DESC ? d : ''; };
 const abs  = u => !u ? SITE + 'images/og-image.jpg?v=2' : /^https?:/.test(u) ? u : SITE + u.replace(/^\//, '');
 
 async function sb(q) {
@@ -37,8 +40,8 @@ for (const p of products) {
   const cat   = p.categories?.name || '';
   const attrs = Object.fromEntries((p.attributes || []).map(a => [a.title, a.desc]));
   const img   = abs((p.images || [])[0]);
-  const desc  = p.description
-    ? clip(p.description, 158)
+  const desc  = realDesc(p)
+    ? clip(realDesc(p), 158)
     : clip(`${p.name}${p.subtitle ? ' – ' + p.subtitle : ''}. ${cat ? cat + ' pour bébé et enfant. ' : ''}Prix : ${fmt(p.price)}. Commandez en ligne chez Little Symphony, livraison Grand-Tunis.`, 158);
   const title = clip(`${p.name} – ${fmt(p.price)} | Little Symphony Tunisie`, 70);
 
@@ -49,7 +52,7 @@ for (const p of products) {
         '@type': 'Product',
         name: p.name,
         image: (p.images || []).length ? p.images.map(abs) : [img],
-        description: p.description || desc,
+        description: realDesc(p) || desc,
         sku: attrs['Référence'] || p.slug,
         ...(/^\d{13}$/.test(attrs['Code-barres'] || '') ? { gtin13: attrs['Code-barres'] } : {}),
         ...(attrs['Marque'] ? { brand: { '@type': 'Brand', name: attrs['Marque'] } } : {}),
