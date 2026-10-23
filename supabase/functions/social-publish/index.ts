@@ -67,7 +67,13 @@ Deno.serve(async (req) => {
     // ── 0. Authentification : cron (service_role) vs admin (JWT) ──
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
-    const isCron = token === SERVICE_ROLE_KEY;
+    let isCron = token === SERVICE_ROLE_KEY;
+    // Appel planifié (pg_cron) : secret partagé stocké dans la table privée _cron_secret
+    const cronHeader = req.headers.get("x-cron-secret") || "";
+    if (!isCron && cronHeader) {
+      const { data: cs } = await supabase.from("_cron_secret").select("secret").eq("id", true).maybeSingle();
+      isCron = !!cs?.secret && cs.secret === cronHeader;
+    }
 
     let body: Record<string, unknown> = {};
     try {
@@ -133,7 +139,7 @@ Deno.serve(async (req) => {
     const todayStr = tzNow.toISOString().slice(0, 10);
 
     const lastRunDay = settings.last_run_at
-      ? new Date(settings.last_run_at).toISOString().slice(0, 10)
+      ? new Date(new Date(settings.last_run_at).toLocaleString("en-US", { timeZone: settings.timezone || "Africa/Tunis" })).toISOString().slice(0, 10)
       : null;
 
     if (!settings.post_days.includes(isoDay)) {
@@ -235,14 +241,13 @@ Deno.serve(async (req) => {
       })
       .eq("id", queueItem.id);
 
-    if (success) {
-      await supabase
-        .from("social_settings")
-        .update({ last_run_at: new Date().toISOString() })
-        .eq("id", true);
-    }
+    // Même en cas d'échec, on note le passage du jour pour ne pas réessayer toutes les 5 minutes
+    await supabase
+      .from("social_settings")
+      .update({ last_run_at: new Date().toISOString() })
+      .eq("id", true);
 
-    return json({ ok: true, product: product.name, results, errors });
+    return json({ ok: !!success, product: product.name, results, errors });
   } catch (e) {
     console.error(e);
     // Statut 200 volontaire, voir la note dans le bloc d'authentification plus haut.
@@ -535,6 +540,11 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
   if (style?.show_logo !== false) {
     const logoBytes = new Uint8Array(await (await fetch(`${siteUrl.replace(/\/$/, "")}/logo/logo-white.png`)).arrayBuffer());
     const rawLogo = await Image.decode(logoBytes);
+    // Logo blanc à plat : on force toutes les couleurs en blanc (seule la transparence varie),
+    // sinon le redimensionnement mélange le noir des zones transparentes et crée un liseré sombre.
+    const lb = rawLogo.bitmap;
+    for (let i = 0; i < lb.length; i += 4) { lb[i] = 255; lb[i + 1] = 255; lb[i + 2] = 255; }
+    rawLogo.bitmap = lb;
     const targetLogoWidth = 420; // largeur du logo (px, sur 1080)
     const targetLogoHeight = Math.round(rawLogo.height * (targetLogoWidth / rawLogo.width));
     const logo = rawLogo.resize(targetLogoWidth, targetLogoHeight);
@@ -580,6 +590,14 @@ async function postToInstagram(settings: any, imageUrl: string, caption: string)
   const createData = await createRes.json();
   if (!createRes.ok) {
     throw new Error(createData?.error?.message || "Échec création média Instagram");
+  }
+
+  // Instagram doit finir de traiter l'image avant la publication : on attend que le conteneur soit prêt
+  for (let i = 0; i < 10; i++) {
+    const st = await (await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${createData.id}?fields=status_code&access_token=${encodeURIComponent(settings.facebook_page_token)}`)).json();
+    if (st?.status_code === "FINISHED") break;
+    if (st?.status_code === "ERROR") throw new Error("Instagram n'a pas pu traiter l'image");
+    await new Promise((r) => setTimeout(r, 2000));
   }
 
   // Étape 2 : publier le conteneur
