@@ -102,6 +102,9 @@ Deno.serve(async (req) => {
       if (profile?.role !== "admin") {
         return json({ ok: false, error: "Accès refusé" });
       }
+      if (body.action === "post_now") {
+        return await handlePostNow(supabase, body.queueId as string | undefined);
+      }
       if (body.action !== "preview") {
         return json({ ok: false, error: "Action non autorisée pour ce compte" });
       }
@@ -184,70 +187,9 @@ Deno.serve(async (req) => {
       return json({ skipped: true, reason: "Produit sans image, marqué en échec" });
     }
 
-    // ── 5. Générer l'image avec le texte incrusté ───────────
-    const siteUrl = (settings.site_url || "https://little-symphony.com").replace(/\/$/, "");
-    const composedBytes = await composeImage(product, settings.template_style, siteUrl, queueItem.source_image);
-
-    const fileName = `${product.slug}-${Date.now()}.jpg`;
-    const { error: uploadErr } = await supabase.storage
-      .from("social-media")
-      .upload(fileName, composedBytes, { contentType: "image/jpeg", upsert: true });
-    if (uploadErr) throw uploadErr;
-
-    const { data: pub } = supabase.storage.from("social-media").getPublicUrl(fileName);
-    const imageUrl = pub.publicUrl;
-
-    // ── 6. Construire le texte de publication ───────────────
-    const caption = buildCaption(product, siteUrl);
-
-    // ── 7. Publier ───────────────────────────────────────────
-    const results: Record<string, unknown> = {};
-    let fbPostId: string | null = null;
-    let igMediaId: string | null = null;
-    const errors: string[] = [];
-
-    if (queueItem.platform === "facebook" || queueItem.platform === "both") {
-      try {
-        fbPostId = await postToFacebook(settings, imageUrl, caption);
-        results.facebook = fbPostId;
-      } catch (e) {
-        errors.push(`Facebook: ${(e as Error).message}`);
-      }
-    }
-
-    if (
-      (queueItem.platform === "instagram" || queueItem.platform === "both") &&
-      settings.instagram_business_id
-    ) {
-      try {
-        igMediaId = await postToInstagram(settings, imageUrl, caption);
-        results.instagram = igMediaId;
-      } catch (e) {
-        errors.push(`Instagram: ${(e as Error).message}`);
-      }
-    }
-
-    // ── 8. Mettre à jour la file + les réglages ─────────────
-    const success = fbPostId || igMediaId;
-    await supabase
-      .from("social_queue")
-      .update({
-        status: success ? "posted" : "failed",
-        posted_at: success ? new Date().toISOString() : null,
-        image_used_url: imageUrl,
-        fb_post_id: fbPostId,
-        ig_media_id: igMediaId,
-        error_message: errors.length ? errors.join(" | ") : null,
-      })
-      .eq("id", queueItem.id);
-
-    // Même en cas d'échec, on note le passage du jour pour ne pas réessayer toutes les 5 minutes
-    await supabase
-      .from("social_settings")
-      .update({ last_run_at: new Date().toISOString() })
-      .eq("id", true);
-
-    return json({ ok: !!success, product: product.name, results, errors });
+    // ── 5 à 8. Générer le visuel, publier, mettre à jour la file ─
+    const out = await publishQueueItem(supabase, settings, queueItem);
+    return json({ ok: out.success, product: product.name, results: out.results, errors: out.errors });
   } catch (e) {
     console.error(e);
     // Statut 200 volontaire, voir la note dans le bloc d'authentification plus haut.
@@ -321,10 +263,98 @@ async function handlePreview(
       caption: buildCaption(product, siteUrl),
       platform: queueItem.platform,
       productName: product.name,
+      productSlug: product.slug,
       productId: product.id,
       customImage: !!queueItem.source_image,
     },
   });
+}
+
+// ── Génère le visuel d'un élément de la file, le publie et met à jour la file ──
+// Utilisé par la publication automatique et par le bouton « Poster maintenant ».
+async function publishQueueItem(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  // deno-lint-ignore no-explicit-any
+  settings: any,
+  // deno-lint-ignore no-explicit-any
+  queueItem: any,
+): Promise<{ success: boolean; results: Record<string, unknown>; errors: string[] }> {
+  const product = queueItem.products;
+  const siteUrl = (settings.site_url || "https://little-symphony.com").replace(/\/$/, "");
+  const composedBytes = await composeImage(product, settings.template_style, siteUrl, queueItem.source_image);
+
+  const fileName = `${product.slug}-${Date.now()}.jpg`;
+  const { error: uploadErr } = await supabase.storage
+    .from("social-media")
+    .upload(fileName, composedBytes, { contentType: "image/jpeg", upsert: true });
+  if (uploadErr) throw uploadErr;
+  const { data: pub } = supabase.storage.from("social-media").getPublicUrl(fileName);
+  const imageUrl = pub.publicUrl;
+
+  const caption = buildCaption(product, siteUrl);
+  const results: Record<string, unknown> = {};
+  let fbPostId: string | null = null;
+  let igMediaId: string | null = null;
+  const errors: string[] = [];
+
+  if (queueItem.platform === "facebook" || queueItem.platform === "both") {
+    try {
+      fbPostId = await postToFacebook(settings, imageUrl, caption);
+      results.facebook = fbPostId;
+    } catch (e) {
+      errors.push(`Facebook: ${(e as Error).message}`);
+    }
+  }
+  if ((queueItem.platform === "instagram" || queueItem.platform === "both") && settings.instagram_business_id) {
+    try {
+      igMediaId = await postToInstagram(settings, imageUrl, caption);
+      results.instagram = igMediaId;
+    } catch (e) {
+      errors.push(`Instagram: ${(e as Error).message}`);
+    }
+  }
+
+  const success = !!(fbPostId || igMediaId);
+  await supabase
+    .from("social_queue")
+    .update({
+      status: success ? "posted" : "failed",
+      posted_at: success ? new Date().toISOString() : null,
+      image_used_url: imageUrl,
+      fb_post_id: fbPostId,
+      ig_media_id: igMediaId,
+      error_message: errors.length ? errors.join(" | ") : null,
+    })
+    .eq("id", queueItem.id);
+
+  // Une publication (auto ou manuelle) compte pour la journée : l'automatisme ne repostera pas aujourd'hui.
+  // Même en cas d'échec, pour ne pas réessayer toutes les 5 minutes.
+  await supabase.from("social_settings").update({ last_run_at: new Date().toISOString() }).eq("id", true);
+
+  return { success, results, errors };
+}
+
+// ── Bouton « Poster maintenant » du panel admin ──
+async function handlePostNow(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  queueId: string | undefined,
+) {
+  if (!queueId) return json({ ok: false, error: "queueId manquant" });
+  const { data: settings } = await supabase.from("social_settings").select("*").eq("id", true).single();
+  if (!settings?.facebook_page_id || !settings?.facebook_page_token) {
+    return json({ ok: false, error: "Facebook n'est pas connecté" });
+  }
+  const { data: queueItem, error: qErr } = await supabase
+    .from("social_queue").select("*, products(*)").eq("id", queueId).single();
+  if (qErr || !queueItem) return json({ ok: false, error: "Élément de file introuvable" });
+  if (queueItem.status === "posted") return json({ ok: false, error: "Ce produit a déjà été publié" });
+  if (!queueItem.products?.images?.length) return json({ ok: false, error: "Ce produit n'a pas d'image" });
+
+  const out = await publishQueueItem(supabase, settings, queueItem);
+  return json({ ok: out.success, product: queueItem.products.name, results: out.results, errors: out.errors,
+    error: out.success ? undefined : out.errors.join(" | ") });
 }
 
 async function markFailed(

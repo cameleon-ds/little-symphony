@@ -390,6 +390,18 @@ tbody tr:hover{background:var(--primary-xlight)}
 .rs-img-save:disabled{opacity:.6;cursor:wait}
 .rs-img-link{border:none;background:none;color:var(--primary-dark);font-size:12px;text-decoration:underline;cursor:pointer;font-family:var(--sans);padding:0}
 .rs-preview-loading{padding:3rem 1rem;text-align:center;color:var(--text-muted);font-size:13px}
+.rs-post-actions{display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border)}
+.rs-post-actions .btn-detail{cursor:pointer}
+.rs-post-now{padding:8px 18px;border-radius:20px;border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);margin-left:auto}
+.rs-post-now:hover{background:var(--primary-dark)}
+.rs-confirm-box{padding:20px 22px}
+.rs-confirm-box p{font-size:14px;line-height:1.55;color:var(--charcoal);margin-bottom:6px}
+.rs-confirm-box .rs-confirm-sub{font-size:12.5px;color:var(--text-muted);margin-bottom:18px}
+.rs-confirm-btns{display:flex;justify-content:flex-end;gap:10px}
+.rs-confirm-cancel{padding:9px 18px;border-radius:20px;border:1.5px solid var(--border);background:#fff;color:var(--charcoal);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.rs-confirm-go{padding:9px 22px;border-radius:20px;border:none;background:var(--charcoal);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.rs-confirm-go:disabled,.rs-confirm-cancel:disabled{opacity:.6;cursor:wait}
+.rs-confirm-err{display:none;background:#FFF3F0;border:1px solid #FFCCC7;color:#C62828;border-radius:8px;padding:9px 12px;font-size:12.5px;margin-bottom:14px}
 
 /* ── Animation réordonnancement file d'attente ── */
 #tbl-social-queue tbody tr{transition:background-color 0.4s ease}
@@ -1337,6 +1349,24 @@ tr.row-selected td{background:#FBF6F5}
 </div>
 
 <!-- SÉLECTION DES CATÉGORIES RÉSEAUX SOCIAUX -->
+<div class="rs-preview-overlay" id="rs-confirm-overlay" style="z-index:1100" onclick="if(event.target===this)rsCloseConfirm()">
+  <div class="rs-preview-card" style="max-width:400px">
+    <div class="rs-preview-head">
+      <span class="rs-preview-head-title">Poster maintenant</span>
+      <button class="rs-preview-close" onclick="rsCloseConfirm()">&times;</button>
+    </div>
+    <div class="rs-confirm-box">
+      <p id="rs-confirm-text"></p>
+      <div class="rs-confirm-sub">La publication est immédiate et compte comme le post du jour : l'automatisme ne publiera pas d'autre produit aujourd'hui.</div>
+      <div class="rs-confirm-err" id="rs-confirm-err"></div>
+      <div class="rs-confirm-btns">
+        <button class="rs-confirm-cancel" id="rs-confirm-cancel" onclick="rsCloseConfirm()">Annuler</button>
+        <button class="rs-confirm-go" id="rs-confirm-go" onclick="rsPostNow()">Poster</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="rs-preview-overlay" id="rs-categories-overlay" onclick="if(event.target===this)closeSocialCategoriesModal()">
   <div class="rs-preview-card" style="max-width:520px">
     <div class="rs-preview-head">
@@ -4006,10 +4036,79 @@ function renderSocialPreview(p) {
       ${p.customImage ? `<span class="rs-img-note">Image personnalisée pour cette publication ·</span>
         <button class="rs-img-link" onclick="rsResetImage()">revenir à la photo principale</button>` : ''}
     </div>
+    <div class="rs-post-actions">
+      <button class="btn-detail" onclick="rsDownloadVisual(this)">⬇️ Télécharger le visuel</button>
+      <button class="rs-post-now" onclick="rsAskPostNow()">Poster maintenant</button>
+    </div>
     <div class="rs-preview-body">
       <div class="rs-preview-platform">${SOCIAL_PLATFORM_LABELS[p.platform] || p.platform}</div>
       <div class="rs-preview-caption">${escapeHtml(p.caption)}</div>
     </div>`;
+}
+
+// ── Télécharger le visuel (pour le poster à la main si besoin) ───
+async function rsDownloadVisual(btn) {
+  const p = _rsPreviewData;
+  if (!p?.imageUrl) return;
+  const label = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Téléchargement…'; }
+  try {
+    const blob = await fetch(p.imageUrl, { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `little-symphony-${p.productSlug || 'visuel'}.jpg`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  } catch (e) {
+    window.open(p.imageUrl, '_blank');            // repli : ouvrir l'image (clic droit > Enregistrer)
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = label; }
+  }
+}
+
+// ── Poster maintenant (hors planning) ─────────────────────────────
+function rsAskPostNow() {
+  const p = _rsPreviewData;
+  if (!p || !_rsPreviewQueueId) return;
+  if (_rsNewImageFile) { alert("Enregistrez d'abord la nouvelle image (ou annulez-la) avant de poster."); return; }
+  const where = p.platform === 'facebook' ? 'Facebook' : p.platform === 'instagram' ? 'Instagram' : 'Facebook et Instagram';
+  document.getElementById('rs-confirm-text').innerHTML =
+    `Vous êtes sur le point de poster <strong>${escapeHtml(p.productName)}</strong> sur <strong>${where}</strong>.`;
+  const err = document.getElementById('rs-confirm-err'); err.style.display = 'none'; err.textContent = '';
+  const go = document.getElementById('rs-confirm-go'); go.disabled = false; go.textContent = 'Poster';
+  document.getElementById('rs-confirm-cancel').disabled = false;
+  document.getElementById('rs-confirm-overlay').classList.add('show');
+}
+function rsCloseConfirm() {
+  if (document.getElementById('rs-confirm-go').disabled) return;   // publication en cours
+  document.getElementById('rs-confirm-overlay').classList.remove('show');
+}
+async function rsPostNow() {
+  const go = document.getElementById('rs-confirm-go');
+  const cancel = document.getElementById('rs-confirm-cancel');
+  const err = document.getElementById('rs-confirm-err');
+  go.disabled = true; cancel.disabled = true; go.textContent = 'Publication en cours…'; err.style.display = 'none';
+  try {
+    const { data, error } = await _supabase.functions.invoke('social-publish', { body: { action: 'post_now', queueId: _rsPreviewQueueId } });
+    if (error) throw error;
+    if (!data?.ok) throw new Error(data?.error || (data?.errors || []).join(' | ') || 'Erreur inconnue');
+    go.disabled = false; cancel.disabled = false;
+    document.getElementById('rs-confirm-overlay').classList.remove('show');
+    closeSocialPreview();
+    const parts = [];
+    if (data.results?.facebook) parts.push('Facebook');
+    if (data.results?.instagram) parts.push('Instagram');
+    showToast('Publication envoyée', `${data.product || 'Produit'} — ${parts.join(' + ') || 'publié'}`, null, 'success');
+    if (data.errors?.length) alert('Publié, mais avec une erreur :\n\n' + data.errors.join('\n'));
+    if (typeof loadSocialQueue === 'function') loadSocialQueue();
+    if (typeof loadSocialHistory === 'function') loadSocialHistory();
+  } catch (e) {
+    go.disabled = false; cancel.disabled = false; go.textContent = 'Réessayer';
+    err.textContent = "La publication a échoué : " + (e.message || e) + ". Vous pouvez télécharger le visuel et le poster à la main.";
+    err.style.display = 'block';
+    if (typeof loadSocialQueue === 'function') loadSocialQueue();
+    if (typeof loadSocialHistory === 'function') loadSocialHistory();
+  }
 }
 
 // ── Image personnalisée pour une publication ─────────────────────
