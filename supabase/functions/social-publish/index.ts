@@ -382,16 +382,11 @@ function captionParts(product: any, siteUrl: string, customText?: string | null)
 
   // Texte d'accroche : texte personnalisé pour cette publication (admin), sinon le descriptif du produit
   const custom = (customText || "").trim();
-  const intro = custom || (product.description ? truncate(String(product.description).trim(), 300) : "");
+  const intro = custom || (product.description ? truncate(String(product.description).trim(), 1500) : "");
 
-  const footer = [
-    `✨ ${product.name}`,
-    product.subtitle || "",
-    `💰 ${price}`,
-    ages ? `👶 ${ages}` : "",
-    `🔗 Voir le produit : ${productLink}`,
-    "#LittleSymphony #Tunisie #Bebe #Enfant",
-  ].filter(Boolean).join("\n");
+  const head = [`✨ ${product.name}`, product.subtitle || "", `💰 ${price}`, ages ? `👶 ${ages}` : ""].filter(Boolean).join("\n");
+  // Lien et hashtags séparés par une ligne vide pour la lisibilité
+  const footer = [head, `🔗 Voir le produit : ${productLink}`, "#LittleSymphony  #Tunisie  #Bebe  #Enfant"].join("\n\n");
 
   return { intro, introIsCustom: !!custom, footer };
 }
@@ -440,10 +435,36 @@ function softShadow(textImg: Image, rgb: number, radius: number, opacity: number
 }
 
 // deno-lint-ignore no-explicit-any
+// Découpe le titre en lignes qui tiennent dans la largeur du visuel (mesure réelle du texte).
+// Taille réduite automatiquement si le titre dépasse 3 lignes.
+async function wrapTitle(fontBytes: Uint8Array, name: string, maxWidth: number): Promise<{ lines: string[]; size: number }> {
+  const words = (name || "").trim().split(/\s+/).filter(Boolean);
+  const measure = async (txt: string, size: number) => (await Image.renderText(fontBytes, size, txt, 0xffffffff)).width + 2;
+  for (const size of [68, 60, 52, 46]) {
+    const lines: string[] = [];
+    let cur = "";
+    for (const w of words) {
+      const test = cur ? `${cur} ${w}` : w;
+      if (!cur || (await measure(test, size)) <= maxWidth) cur = test;
+      else { lines.push(cur); cur = w; }
+    }
+    if (cur) lines.push(cur);
+    // Équilibrer 2 lignes (évite une ligne pleine + un mot seul)
+    if (lines.length === 2) {
+      const balanced = splitTitle(name);
+      if (balanced.length === 2 && (await measure(balanced[0], size)) <= maxWidth && (await measure(balanced[1], size)) <= maxWidth) {
+        lines.splice(0, 2, balanced[0], balanced[1]);
+      }
+    }
+    if (lines.length <= 3) return { lines, size };
+  }
+  return { lines: [name], size: 46 };
+}
+
 // Coupe un titre trop long en deux lignes aussi équilibrées que possible (coupure entre deux mots)
 function splitTitle(name: string): string[] {
   const words = name.trim().split(/\s+/);
-  if (name.length <= 18 || words.length < 2) return [name];
+  if (words.length < 2) return [name];
   let best = [name], bestScore = Infinity;
   for (let i = 1; i < words.length; i++) {
     const a = words.slice(0, i).join(" "), b = words.slice(i).join(" ");
@@ -511,9 +532,13 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
   if (style?.show_title !== false) {
     // Titre blanc avec ombre noire, plus gras, coupé sur deux lignes équilibrées
     // dès qu'il est un peu long (ex. « Mes comptines de / la ferme (sonore) »).
-    const lines = splitTitle(product.name || "");
+    // Une seule ligne si le titre tient, sinon retour à la ligne avant le bord droit (marge de 40 px)
+    const fullW = (await Image.renderText(titleFontBytes, 68, product.name || "", TITLE_COLOR)).width + 2;
+    const { lines, size } = fullW <= SIZE - 80 && (product.name || "").length <= 18
+      ? { lines: [product.name || ""], size: 68 }
+      : await wrapTitle(titleFontBytes, product.name || "", SIZE - 80);
     for (let i = 0; i < lines.length; i++) {
-      const t = await Image.renderText(titleFontBytes, 68, lines[i], TITLE_COLOR);
+      const t = await Image.renderText(titleFontBytes, size, lines[i], TITLE_COLOR);
       const sh = softShadow(t, TITLE_SHADOW_RGB, TITLE_SHADOW_BLUR, TITLE_SHADOW_OPACITY, true);
       blocks.push({ img: t, shadow: sh.img, shadowPad: sh.pad, x: 40, gap: i === lines.length - 1 ? 18 : 4, bold: true });
     }
