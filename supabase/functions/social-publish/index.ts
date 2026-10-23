@@ -160,21 +160,19 @@ Deno.serve(async (req) => {
 
     // ── 3. Catégories autorisées à la publication automatique ───
     const allowedCategories = settings.enabled_categories || [];
-    if (!allowedCategories.length) {
-      return json({ skipped: true, reason: "Aucune catégorie sélectionnée pour la publication" });
-    }
 
     // ── 4. Prochain produit dans la file (parmi ces catégories) ─
-    const { data: queueItem, error: queueErr } = await supabase
+    // Premier produit de la file : catégorie cochée OU ajouté à la main depuis l'admin (manual)
+    const { data: candidates, error: queueErr } = await supabase
       .from("social_queue")
       .select("*, products!inner(*)")
       .eq("status", "pending")
-      .in("products.category_id", allowedCategories)
       .or(`scheduled_for.is.null,scheduled_for.lte.${todayStr}`)
       .order("priority", { ascending: false })
       .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+      .limit(500);
+    // deno-lint-ignore no-explicit-any
+    const queueItem = (candidates || []).find((q: any) => q.manual || allowedCategories.includes(q.products?.category_id));
 
     if (queueErr) throw queueErr;
     if (!queueItem) {

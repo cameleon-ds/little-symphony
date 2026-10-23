@@ -390,6 +390,20 @@ tbody tr:hover{background:var(--primary-xlight)}
 .rs-img-save:disabled{opacity:.6;cursor:wait}
 .rs-img-link{border:none;background:none;color:var(--primary-dark);font-size:12px;text-decoration:underline;cursor:pointer;font-family:var(--sans);padding:0}
 .rs-preview-loading{padding:3rem 1rem;text-align:center;color:var(--text-muted);font-size:13px}
+.rs-add-bar{display:flex;gap:8px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);background:#FCFAF9}
+.rs-add-search{position:relative;flex:1;min-width:0}
+.rs-add-search>svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--text-muted);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none}
+.rs-add-search input{width:100%;padding:9px 12px 9px 34px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:var(--sans);outline:none;background:#fff}
+.rs-add-search input:focus{border-color:var(--primary)}
+.rs-add-results{display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50}
+.rs-add-results.show{display:block}
+.rs-add-item{display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;font-size:13px}
+.rs-add-item:hover,.rs-add-item.active{background:var(--primary-light,#F5EDED)}
+.rs-add-item img{width:30px;height:30px;border-radius:6px;object-fit:cover;background:#eee;flex-shrink:0}
+.rs-add-item small{display:block;color:var(--text-muted);font-size:11px}
+.rs-add-btn{padding:9px 18px;border-radius:10px;border:none;background:var(--charcoal);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.rs-add-btn:disabled{opacity:.4;cursor:default}
+.rs-badge-manual{display:inline-block;font-size:10px;font-weight:700;color:var(--primary-dark);background:#F5EDED;border-radius:10px;padding:2px 7px;margin-left:6px}
 .rs-post-actions{display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border)}
 .rs-post-actions .btn-detail{cursor:pointer}
 .rs-post-now{padding:8px 18px;border-radius:20px;border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);margin-left:auto}
@@ -1194,6 +1208,15 @@ tr.row-selected td{background:#FBF6F5}
           <span style="font-size:12px;color:var(--text-muted)" class="col-hide-mobile">Un nouveau produit passe automatiquement en tête de file</span>
         </div>
         <div id="rs-queue-collapse">
+          <div class="rs-add-bar">
+            <div class="rs-add-search">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="rs-add-input" placeholder="Ajouter un produit à la file : tapez son nom…" autocomplete="off"
+                oninput="rsAddSearch()" onfocus="rsAddSearch()" onkeydown="rsAddKey(event)">
+              <div class="rs-add-results" id="rs-add-results"></div>
+            </div>
+            <button class="rs-add-btn" id="rs-add-btn" onclick="rsOpenAddModal()" disabled>Ajouter</button>
+          </div>
           <table id="tbl-social-queue">
             <thead><tr>
               <th>Produit</th><th>Plateforme</th><th class="col-hide-mobile">Priorité</th><th>Prévu le</th><th></th>
@@ -1362,6 +1385,26 @@ tr.row-selected td{background:#FBF6F5}
       <div class="rs-confirm-btns">
         <button class="rs-confirm-cancel" id="rs-confirm-cancel" onclick="rsCloseConfirm()">Annuler</button>
         <button class="rs-confirm-go" id="rs-confirm-go" onclick="rsPostNow()">Poster</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="rs-preview-overlay" id="rs-add-overlay" onclick="if(event.target===this)rsCloseAddModal()">
+  <div class="rs-preview-card" style="max-width:400px">
+    <div class="rs-preview-head">
+      <span class="rs-preview-head-title">Ajouter à la file d'attente</span>
+      <button class="rs-preview-close" onclick="rsCloseAddModal()">&times;</button>
+    </div>
+    <div class="rs-confirm-box">
+      <p id="rs-add-text"></p>
+      <label style="display:block;font-size:13px;font-weight:600;margin:12px 0 6px">Position dans la file</label>
+      <input type="number" id="rs-add-pos" min="1" value="1" class="detail-input" style="width:120px">
+      <div class="rs-confirm-sub" id="rs-add-hint" style="margin-top:8px"></div>
+      <div class="rs-confirm-err" id="rs-add-err"></div>
+      <div class="rs-confirm-btns">
+        <button class="rs-confirm-cancel" onclick="rsCloseAddModal()">Annuler</button>
+        <button class="rs-confirm-go" id="rs-add-go" onclick="rsConfirmAdd()">Ajouter</button>
       </div>
     </div>
   </div>
@@ -3854,23 +3897,23 @@ async function loadSocialQueue() {
   const countEl = document.getElementById('rs-queue-count');
   const enabledCategories = SOCIAL_SETTINGS?.enabled_categories || [];
 
-  if (!enabledCategories.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#C62828;padding:2rem">Aucune catégorie sélectionnée — rien à publier (voir "Catégories publiées automatiquement")</td></tr>`;
+  // Montre les produits des catégories cochées dans "Catégories publiées automatiquement"
+  // + ceux ajoutés à la main (manual), quelle que soit leur catégorie
+  // (même règle que celle utilisée par la fonction de publication).
+  const { data: all, error } = await _supabase
+    .from('social_queue')
+    .select('id, platform, priority, scheduled_for, status, manual, products!inner(name, images, category_id)')
+    .eq('status', 'pending')
+    .order('priority', { ascending: false })
+    .order('created_at', { ascending: true });
+  const data = (all || []).filter(q => q.manual || enabledCategories.includes(q.products?.category_id));
+
+  if (!error && !data.length && !enabledCategories.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#C62828;padding:2rem">Aucune catégorie sélectionnée — ajoutez un produit avec la recherche ci-dessus ou cochez des catégories</td></tr>`;
     window._socialQueueCache = [];
     countEl.textContent = '0';
     return;
   }
-
-  // Ne montre que les produits appartenant aux catégories cochées
-  // dans "Catégories publiées automatiquement" (même filtre que celui
-  // utilisé par la fonction de publication).
-  const { data, error } = await _supabase
-    .from('social_queue')
-    .select('id, platform, priority, scheduled_for, status, products!inner(name, images, category_id)')
-    .eq('status', 'pending')
-    .in('products.category_id', enabledCategories)
-    .order('priority', { ascending: false })
-    .order('created_at', { ascending: true });
 
   if (error) { tbody.innerHTML = `<tr><td colspan="5" style="color:#C62828;padding:1.5rem">Erreur: ${error.message}</td></tr>`; countEl.textContent = '0'; return; }
 
@@ -3892,7 +3935,7 @@ function renderSocialQueueRows(data) {
     <tr data-id="${q.id}">
       <td style="display:flex;align-items:center;gap:10px">
         <img src="${(q.products?.images || [])[0] || ''}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;background:#eee">
-        ${q.products?.name || '(produit supprimé)'}
+        <span>${q.products?.name || '(produit supprimé)'}${q.manual ? '<span class="rs-badge-manual" title="Ajouté à la main : publié même si sa catégorie n\'est pas cochée">ajouté</span>' : ''}</span>
       </td>
       <td>${SOCIAL_PLATFORM_LABELS[q.platform] || q.platform}</td>
       <td class="col-hide-mobile">${i + 1}</td>
@@ -3963,6 +4006,111 @@ async function moveQueueItem(id, direction) {
     alert('Erreur lors du réordonnancement.');
     await loadSocialQueue();
   }
+}
+
+// ── Ajouter un produit à la file (recherche + position) ───────────
+let _rsAddProducts = null, _rsAddSel = null, _rsAddIdx = -1;
+const _rsNorm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+async function rsAddLoadProducts() {
+  if (_rsAddProducts) return _rsAddProducts;
+  const { data } = await _supabase.from('products_full').select('id, name, images, category_name, keywords, is_active').order('name');
+  _rsAddProducts = (data || []).filter(p => p.is_active !== false);
+  return _rsAddProducts;
+}
+async function rsAddSearch() {
+  const input = document.getElementById('rs-add-input');
+  const box = document.getElementById('rs-add-results');
+  const terms = _rsNorm(input.value).split(/\s+/).filter(Boolean);
+  if (_rsAddSel && input.value !== _rsAddSel.name) { _rsAddSel = null; document.getElementById('rs-add-btn').disabled = true; }
+  if (!terms.length) { box.classList.remove('show'); return; }
+  const list = (await rsAddLoadProducts()).filter(p => {
+    const hay = _rsNorm([p.name, p.category_name, p.keywords].join(' '));
+    return terms.every(t => hay.includes(t));
+  }).slice(0, 12);
+  const queued = new Set((window._socialQueueCache || []).map(q => q.products?.name));
+  _rsAddIdx = -1;
+  box.innerHTML = list.length ? list.map((p, i) => `
+    <div class="rs-add-item" data-i="${i}" onmousedown="event.preventDefault();rsAddPick(${i})">
+      <img src="${(p.images || [])[0] || ''}" alt="">
+      <div>${escapeHtml(p.name)}<small>${escapeHtml(p.category_name || '')}${queued.has(p.name) ? ' · déjà dans la file' : ''}</small></div>
+    </div>`).join('') : '<div class="rs-add-item" style="cursor:default;color:var(--text-muted)">Aucun produit trouvé</div>';
+  box._list = list;
+  box.classList.add('show');
+}
+function rsAddPick(i) {
+  const box = document.getElementById('rs-add-results');
+  const p = (box._list || [])[i];
+  if (!p) return;
+  _rsAddSel = p;
+  document.getElementById('rs-add-input').value = p.name;
+  document.getElementById('rs-add-btn').disabled = false;
+  box.classList.remove('show');
+}
+function rsAddKey(e) {
+  const box = document.getElementById('rs-add-results');
+  const items = [...box.querySelectorAll('.rs-add-item[data-i]')];
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (!items.length) return;
+    e.preventDefault();
+    _rsAddIdx = (_rsAddIdx + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    items.forEach((el, k) => el.classList.toggle('active', k === _rsAddIdx));
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (box.classList.contains('show') && items.length) rsAddPick(_rsAddIdx >= 0 ? _rsAddIdx : 0);
+    else if (_rsAddSel) rsOpenAddModal();
+  } else if (e.key === 'Escape') box.classList.remove('show');
+}
+document.addEventListener('click', e => {
+  const wrap = document.querySelector('.rs-add-search');
+  if (wrap && !wrap.contains(e.target)) document.getElementById('rs-add-results')?.classList.remove('show');
+});
+function rsOpenAddModal() {
+  if (!_rsAddSel) return;
+  const n = (window._socialQueueCache || []).filter(q => q.products?.name !== _rsAddSel.name).length;
+  document.getElementById('rs-add-text').innerHTML = `Ajouter <strong>${escapeHtml(_rsAddSel.name)}</strong> à la file de publication.`;
+  const pos = document.getElementById('rs-add-pos');
+  pos.max = n + 1; pos.value = 1;
+  document.getElementById('rs-add-hint').textContent = `1 = en tête de file (prochain produit publié), ${n + 1} = en dernier.`;
+  document.getElementById('rs-add-err').style.display = 'none';
+  document.getElementById('rs-add-go').disabled = false;
+  document.getElementById('rs-add-overlay').classList.add('show');
+  setTimeout(() => pos.select(), 50);
+}
+function rsCloseAddModal() { document.getElementById('rs-add-overlay').classList.remove('show'); }
+async function rsConfirmAdd() {
+  const p = _rsAddSel; if (!p) return;
+  const go = document.getElementById('rs-add-go'), err = document.getElementById('rs-add-err');
+  const showErr = m => { err.textContent = m; err.style.display = 'block'; go.disabled = false; };
+  const others = (window._socialQueueCache || []).filter(q => q.products?.name !== p.name);
+  let pos = parseInt(document.getElementById('rs-add-pos').value, 10);
+  if (!pos || pos < 1) pos = 1;
+  if (pos > others.length + 1) pos = others.length + 1;
+  go.disabled = true;
+  // Ligne "en attente" existante pour ce produit (même si sa catégorie n'est pas cochée) ?
+  const { data: existing, error: e1 } = await _supabase.from('social_queue')
+    .select('id').eq('product_id', p.id).eq('status', 'pending').limit(1);
+  if (e1) return showErr('Erreur : ' + e1.message);
+  let rowId = existing?.[0]?.id;
+  if (rowId) {
+    const { error } = await _supabase.from('social_queue').update({ manual: true }).eq('id', rowId);
+    if (error) return showErr('Erreur : ' + error.message);
+  } else {
+    const { data: ins, error } = await _supabase.from('social_queue')
+      .insert({ product_id: p.id, platform: 'both', status: 'pending', manual: true }).select('id').single();
+    if (error) return showErr('Erreur : ' + error.message);
+    rowId = ins.id;
+  }
+  // Nouvel ordre : on insère le produit à la position choisie puis on renumérote toute la file
+  const order = others.map(q => q.id);
+  order.splice(pos - 1, 0, rowId);
+  const base = order.length * 10;
+  const res = await Promise.all(order.map((id, i) => _supabase.from('social_queue').update({ priority: base - i * 10 }).eq('id', id)));
+  if (res.some(r => r.error)) return showErr("Produit ajouté, mais l'ordre n'a pas pu être enregistré.");
+  rsCloseAddModal();
+  document.getElementById('rs-add-input').value = '';
+  _rsAddSel = null; document.getElementById('rs-add-btn').disabled = true;
+  await loadSocialQueue();
+  showToast('Produit ajouté à la file', `${p.name} — position ${pos}`, null, 'success');
 }
 
 async function removeFromQueue(id) {
