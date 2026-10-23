@@ -540,27 +540,47 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
     for (let i = 0; i < lines.length; i++) {
       const t = await Image.renderText(titleFontBytes, size, lines[i], TITLE_COLOR);
       const sh = softShadow(t, TITLE_SHADOW_RGB, TITLE_SHADOW_BLUR, TITLE_SHADOW_OPACITY, true);
-      blocks.push({ img: t, shadow: sh.img, shadowPad: sh.pad, x: 40, gap: i === lines.length - 1 ? 18 : 4, bold: true });
+      blocks.push({ img: t, shadow: sh.img, shadowPad: sh.pad, x: 40, gap: i === lines.length - 1 ? 6 : 4, bold: true });
     }
   }
 
+  // Prix et tranche d'âge : en haut à droite, alignés à droite (bulles arrondies)
+  const topRight: { bubble: Image; img: Image; padX: number; padY: number }[] = [];
   if (style?.show_price !== false) {
-    const priceText = product.is_promo && product.price_old
-      ? `${product.price} DT (au lieu de ${product.price_old} DT)`
-      : `${product.price} DT`;
-    // Prix affiché dans une bulle blanche, texte couleur primaire.
-    const priceTextImg = await Image.renderText(fontBytes, 38, priceText, BRAND_PRIMARY);
-    const padX = 22, padY = 12;
-    const bubble = new Image(priceTextImg.width + padX * 2, priceTextImg.height + padY * 2);
+    // Prix dans une bulle blanche, texte couleur primaire ; en promo, l'ancien prix en petit sur une 2e ligne
+    const priceImg = await Image.renderText(fontBytes, 38, `${product.price} DT`, BRAND_PRIMARY);
+    const oldImg = product.is_promo && product.price_old
+      ? await Image.renderText(fontBytes, 22, `au lieu de ${product.price_old} DT`, 0x9a7a75ff)
+      : null;
+    const padX = 22, padY = 12, lineGap = 2;
+    const innerW = Math.max(priceImg.width, oldImg ? oldImg.width : 0);
+    const innerH = priceImg.height + (oldImg ? lineGap + oldImg.height : 0);
+    const text = new Image(innerW, innerH);
+    text.composite(priceImg, innerW - priceImg.width, 0);
+    if (oldImg) text.composite(oldImg, innerW - oldImg.width, priceImg.height + lineGap);
+    const bubble = new Image(innerW + padX * 2, innerH + padY * 2);
     bubble.fill(0xffffffff);
-    bubble.roundCorners(Math.round(bubble.height / 2));
-    blocks.push({ img: priceTextImg, x: 40, gap: 14, bubble, padX, padY });
+    bubble.roundCorners(Math.round(Math.min(bubble.height / 2, 34)));
+    topRight.push({ bubble, img: text, padX, padY });
   }
-
   if (style?.show_age_range !== false && product.age_ranges?.length) {
     const ages = product.age_ranges.map((a: string) => AGE_LABELS[a] || a).join(" · ");
-    const ageImg = await Image.renderText(fontBytes, 30, ages, 0xffffffff);
-    blocks.push({ img: ageImg, x: 40, gap: 18 });
+    // Âge en blanc dans une bulle rose semi-transparente (lisible même sur une photo claire)
+    const ageImg = await Image.renderText(fontBytes, 28, ages, 0xffffffff);
+    const padX = 18, padY = 9;
+    const bubble = new Image(ageImg.width + padX * 2, ageImg.height + padY * 2);
+    bubble.fill(0xa86860d9);
+    bubble.roundCorners(Math.round(bubble.height / 2));
+    topRight.push({ bubble, img: ageImg, padX, padY });
+  }
+  {
+    let ty = 40;
+    for (const t of topRight) {
+      const tx = SIZE - 40 - t.bubble.width;
+      canvas.composite(t.bubble, tx, ty);
+      canvas.composite(t.img, tx + t.padX, ty + t.padY);
+      ty += t.bubble.height + 10;
+    }
   }
 
   // 5. Site web — toujours collé tout en bas de l'image. Note : une image
@@ -573,7 +593,8 @@ async function composeImage(product: any, style: any, siteUrl: string, sourceIma
   }
   const bottomLimit = siteImg ? SIZE - 40 - siteImg.height - 16 : SIZE - 40;
   const blockHeight = blocks.reduce((h, b) => h + (b.bubble ? b.bubble.height : b.img.height) + b.gap, 0);
-  let cursorY = Math.min(SIZE - bandHeight + 24, bottomLimit - blockHeight);
+  // Titre descendu en bas de l'image, juste au-dessus du site web
+  let cursorY = bottomLimit - blockHeight;
 
   for (const b of blocks) {
     if (b.bubble) {
