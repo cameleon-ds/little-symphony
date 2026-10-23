@@ -404,6 +404,14 @@ tbody tr:hover{background:var(--primary-xlight)}
 .rs-add-btn{padding:9px 18px;border-radius:10px;border:none;background:var(--charcoal);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)}
 .rs-add-btn:disabled{opacity:.4;cursor:default}
 .rs-badge-manual{display:inline-block;font-size:10px;font-weight:700;color:var(--primary-dark);background:#F5EDED;border-radius:10px;padding:2px 7px;margin-left:6px}
+.rs-img-tools .rs-post-now{margin-left:auto}
+.rs-intro-label{display:block;font-size:12px;font-weight:600;color:var(--charcoal);margin-bottom:6px}
+.rs-intro-label span{font-weight:400;color:var(--text-muted)}
+.rs-intro{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;line-height:1.5;font-family:var(--sans);resize:vertical;min-height:80px;outline:none}
+.rs-intro:focus{border-color:var(--primary)}
+.rs-intro.is-modified{border-color:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,.15)}
+.rs-intro-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 12px;min-height:22px}
+.rs-caption-footer{background:#FBF9F9;border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text-soft,#6E6460)}
 .rs-post-actions{display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border)}
 .rs-post-actions .btn-detail{cursor:pointer}
 .rs-post-now{padding:8px 18px;border-radius:20px;border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);margin-left:auto}
@@ -4181,16 +4189,21 @@ function renderSocialPreview(p) {
     <img class="rs-preview-img" id="rs-preview-img" src="${p.imageUrl}" alt="${p.productName}">
     <div class="rs-img-tools" id="rs-img-tools">
       <label class="btn-detail">📷 Modifier l'image<input type="file" accept="image/*" style="display:none" onchange="rsPickImage(this)"></label>
-      ${p.customImage ? `<span class="rs-img-note">Image personnalisée pour cette publication ·</span>
-        <button class="rs-img-link" onclick="rsResetImage()">revenir à la photo principale</button>` : ''}
-    </div>
-    <div class="rs-post-actions">
       <button class="btn-detail" onclick="rsDownloadVisual(this)">⬇️ Télécharger le visuel</button>
       <button class="rs-post-now" onclick="rsAskPostNow()">Poster maintenant</button>
     </div>
+    ${p.customImage ? `<div class="rs-img-tools" style="padding-top:6px;padding-bottom:6px"><span class="rs-img-note">Image personnalisée pour cette publication ·</span>
+      <button class="rs-img-link" onclick="rsResetImage()">revenir à la photo principale</button></div>` : ''}
     <div class="rs-preview-body">
       <div class="rs-preview-platform">${SOCIAL_PLATFORM_LABELS[p.platform] || p.platform}</div>
-      <div class="rs-preview-caption">${escapeHtml(p.caption)}</div>
+      <label class="rs-intro-label" for="rs-intro">Texte d'accroche <span>(uniquement pour cette publication)</span></label>
+      <textarea id="rs-intro" class="rs-intro" rows="4" maxlength="1500" oninput="rsIntroChanged()"
+        placeholder="Ex : Bonjour les loulous ! Aujourd'hui, découvrez…">${escapeHtml(p.intro || '')}</textarea>
+      <div class="rs-intro-tools">
+        <button class="rs-img-save" id="rs-intro-save" style="display:none" onclick="rsSaveIntro()">Enregistrer le texte</button>
+        ${p.introIsCustom ? `<button class="rs-img-link" onclick="rsResetIntro()">revenir au descriptif du produit</button>` : `<span class="rs-img-note">${p.productDescription ? 'Pré-rempli avec le descriptif du produit' : 'Le produit n\'a pas de descriptif : écrivez un texte si vous le souhaitez'}</span>`}
+      </div>
+      <div class="rs-preview-caption rs-caption-footer">${escapeHtml(p.footer || p.caption)}</div>
     </div>`;
 }
 
@@ -4214,11 +4227,45 @@ async function rsDownloadVisual(btn) {
   }
 }
 
+// ── Texte d'accroche personnalisé (uniquement pour la publication Meta) ──
+function rsIntroDirty() {
+  const el = document.getElementById('rs-intro');
+  return !!el && el.value.trim() !== String(_rsPreviewData?.intro || '').trim();
+}
+function rsIntroChanged() {
+  const d = rsIntroDirty();
+  document.getElementById('rs-intro')?.classList.toggle('is-modified', d);
+  const b = document.getElementById('rs-intro-save'); if (b) b.style.display = d ? '' : 'none';
+}
+async function rsSaveIntro(silent) {
+  const el = document.getElementById('rs-intro');
+  if (!el || !_rsPreviewQueueId) return true;
+  const val = el.value.trim();
+  const desc = String(_rsPreviewData?.productDescription || '').trim();
+  const custom = (!val || val === desc) ? null : val;     // identique au descriptif = pas de texte personnalisé
+  const btn = document.getElementById('rs-intro-save');
+  if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+  const { error } = await _supabase.from('social_queue').update({ custom_text: custom }).eq('id', _rsPreviewQueueId);
+  if (btn) { btn.disabled = false; btn.textContent = 'Enregistrer le texte'; }
+  if (error) { alert("Le texte n'a pas pu être enregistré : " + error.message); return false; }
+  _rsPreviewData.intro = val; _rsPreviewData.introIsCustom = !!custom;
+  _rsPreviewData.caption = val ? `${val}\n\n${_rsPreviewData.footer}` : _rsPreviewData.footer;
+  rsIntroChanged();
+  if (!silent) showToast('Texte enregistré', 'Il sera utilisé pour cette publication', null, 'success');
+  return true;
+}
+async function rsResetIntro() {
+  const { error } = await _supabase.from('social_queue').update({ custom_text: null }).eq('id', _rsPreviewQueueId);
+  if (error) { alert('Erreur : ' + error.message); return; }
+  previewSocialPost(_rsPreviewQueueId);
+}
+
 // ── Poster maintenant (hors planning) ─────────────────────────────
 function rsAskPostNow() {
   const p = _rsPreviewData;
   if (!p || !_rsPreviewQueueId) return;
   if (_rsNewImageFile) { alert("Enregistrez d'abord la nouvelle image (ou annulez-la) avant de poster."); return; }
+  if (rsIntroDirty()) { alert("Enregistrez d'abord le texte d'accroche (bouton « Enregistrer le texte ») avant de poster."); return; }
   const where = p.platform === 'facebook' ? 'Facebook' : p.platform === 'instagram' ? 'Instagram' : 'Facebook et Instagram';
   document.getElementById('rs-confirm-text').innerHTML =
     `Vous êtes sur le point de poster <strong>${escapeHtml(p.productName)}</strong> sur <strong>${where}</strong>.`;

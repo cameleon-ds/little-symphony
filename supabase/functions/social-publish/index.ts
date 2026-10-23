@@ -226,7 +226,7 @@ async function handlePreview(
 
   const { data: queueItem, error: queueErr } = await supabase
     .from("social_queue")
-    .select("id, platform, source_image, products(*)")
+    .select("id, platform, source_image, custom_text, products(*)")
     .eq("id", queueId)
     .single();
 
@@ -258,7 +258,9 @@ async function handlePreview(
     ok: true,
     preview: {
       imageUrl,
-      caption: buildCaption(product, siteUrl),
+      caption: buildCaption(product, siteUrl, queueItem.custom_text),
+      ...captionParts(product, siteUrl, queueItem.custom_text),
+      productDescription: product.description || "",
       platform: queueItem.platform,
       productName: product.name,
       productSlug: product.slug,
@@ -290,7 +292,7 @@ async function publishQueueItem(
   const { data: pub } = supabase.storage.from("social-media").getPublicUrl(fileName);
   const imageUrl = pub.publicUrl;
 
-  const caption = buildCaption(product, siteUrl);
+  const caption = buildCaption(product, siteUrl, queueItem.custom_text);
   const results: Record<string, unknown> = {};
   let fbPostId: string | null = null;
   let igMediaId: string | null = null;
@@ -368,35 +370,36 @@ async function markFailed(
 }
 
 // deno-lint-ignore no-explicit-any
-function buildCaption(product: any, siteUrl: string): string {
+function captionParts(product: any, siteUrl: string, customText?: string | null) {
   const ages = (product.age_ranges || [])
     .map((a: string) => AGE_LABELS[a] || a)
     .join(", ");
   const price = product.is_promo && product.price_old
     ? `${product.price} DT (au lieu de ${product.price_old} DT)`
     : `${product.price} DT`;
-
-  // Lien direct vers la fiche produit — c'est le vrai CTA cliquable
-  // (Facebook transforme automatiquement les URLs du texte en lien ;
-  // Instagram, lui, n'hyperlie jamais le texte d'une publication —
-  // c'est une limitation de la plateforme, pas de notre code).
-  // Page produit statique (meilleur aperçu du lien sur Facebook) — redirige vers la fiche si elle n'existe pas encore
+  // Page produit statique (meilleur aperçu du lien sur Facebook). Instagram n'hyperlie jamais le texte.
   const productLink = `${siteUrl}/produit/${product.slug}.html`;
 
-  const lines = [
+  // Texte d'accroche : texte personnalisé pour cette publication (admin), sinon le descriptif du produit
+  const custom = (customText || "").trim();
+  const intro = custom || (product.description ? truncate(String(product.description).trim(), 300) : "");
+
+  const footer = [
     `✨ ${product.name}`,
     product.subtitle || "",
-    "",
-    product.description ? truncate(product.description, 300) : "",
-    "",
     `💰 ${price}`,
     ages ? `👶 ${ages}` : "",
-    "",
     `🔗 Voir le produit : ${productLink}`,
     "#LittleSymphony #Tunisie #Bebe #Enfant",
-  ].filter(Boolean);
+  ].filter(Boolean).join("\n");
 
-  return lines.join("\n");
+  return { intro, introIsCustom: !!custom, footer };
+}
+
+// deno-lint-ignore no-explicit-any
+function buildCaption(product: any, siteUrl: string, customText?: string | null): string {
+  const { intro, footer } = captionParts(product, siteUrl, customText);
+  return intro ? `${intro}\n\n${footer}` : footer;
 }
 
 function truncate(text: string, max: number): string {
