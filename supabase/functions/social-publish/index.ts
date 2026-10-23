@@ -33,7 +33,7 @@ const GRAPH_VERSION = "v25.0";
 const FONT_BOLD_URL =
   "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf";
 const FONT_TITLE_URL =
-  "https://raw.githubusercontent.com/google/fonts/main/ofl/playwriteusmodern/PlaywriteUSModern%5Bwght%5D.ttf";
+  "https://raw.githubusercontent.com/cameleon-ds/little-symphony/main/fonts/GoogleSans-Bold.ttf"; // police du titre : Google Sans Bold (version statique, latin) // police du titre : Lobster
 
 const BRAND_PRIMARY = 0xc9a09aff; // --primary du site
 const TITLE_COLOR = 0xffffffff;  // titre du produit en blanc…
@@ -239,7 +239,7 @@ async function handlePreview(
     return json({ ok: false, error: "Ce produit n'a pas d'image" });
   }
 
-  const composedBytes = await composeImage(product, settings?.template_style, siteUrl, queueItem.source_image);
+  const composedBytes = await composeImage(product, settings?.template_style, siteUrl, queueItem.source_image, await getCategoryColor(supabase, product.category_id));
 
   // Fichier "preview-<id>" réutilisé/écrasé à chaque aperçu : ne pollue pas le bucket.
   const fileName = `preview-${queueItem.id}.jpg`;
@@ -282,7 +282,7 @@ async function publishQueueItem(
 ): Promise<{ success: boolean; results: Record<string, unknown>; errors: string[] }> {
   const product = queueItem.products;
   const siteUrl = (settings.site_url || "https://little-symphony.com").replace(/\/$/, "");
-  const composedBytes = await composeImage(product, settings.template_style, siteUrl, queueItem.source_image);
+  const composedBytes = await composeImage(product, settings.template_style, siteUrl, queueItem.source_image, await getCategoryColor(supabase, product.category_id));
 
   const fileName = `${product.slug}-${Date.now()}.jpg`;
   const { error: uploadErr } = await supabase.storage
@@ -293,6 +293,14 @@ async function publishQueueItem(
   const imageUrl = pub.publicUrl;
 
   const caption = buildCaption(product, siteUrl, queueItem.custom_text);
+  // L'API Instagram refuse le 3:4 (ratio min. 4:5) : version 1080 x 1350 du même visuel pour Instagram
+  let igImageUrl = imageUrl;
+  if ((queueItem.platform === "instagram" || queueItem.platform === "both") && settings.instagram_business_id) {
+    const igBytes = await composeImage(product, settings.template_style, siteUrl, queueItem.source_image, await getCategoryColor(supabase, product.category_id), 1350);
+    const igName = `${product.slug}-${Date.now()}-ig.jpg`;
+    const { error: igErr } = await supabase.storage.from("social-media").upload(igName, igBytes, { contentType: "image/jpeg", upsert: true });
+    if (!igErr) igImageUrl = supabase.storage.from("social-media").getPublicUrl(igName).data.publicUrl;
+  }
   const results: Record<string, unknown> = {};
   let fbPostId: string | null = null;
   let igMediaId: string | null = null;
@@ -308,7 +316,7 @@ async function publishQueueItem(
   }
   if ((queueItem.platform === "instagram" || queueItem.platform === "both") && settings.instagram_business_id) {
     try {
-      igMediaId = await postToInstagram(settings, imageUrl, caption);
+      igMediaId = await postToInstagram(settings, igImageUrl, caption);
       results.instagram = igMediaId;
     } catch (e) {
       errors.push(`Instagram: ${(e as Error).message}`);
@@ -440,7 +448,7 @@ function softShadow(textImg: Image, rgb: number, radius: number, opacity: number
 async function wrapTitle(fontBytes: Uint8Array, name: string, maxWidth: number): Promise<{ lines: string[]; size: number }> {
   const words = (name || "").trim().split(/\s+/).filter(Boolean);
   const measure = async (txt: string, size: number) => (await Image.renderText(fontBytes, size, txt, 0xffffffff)).width + 2;
-  for (const size of [68, 60, 52, 46]) {
+  for (const size of [84, 76, 68, 60]) {
     const lines: string[] = [];
     let cur = "";
     for (const w of words) {
@@ -458,7 +466,7 @@ async function wrapTitle(fontBytes: Uint8Array, name: string, maxWidth: number):
     }
     if (lines.length <= 3) return { lines, size };
   }
-  return { lines: [name], size: 46 };
+  return { lines: [name], size: 60 };
 }
 
 // Coupe un titre trop long en deux lignes aussi équilibrées que possible (coupure entre deux mots)
@@ -474,161 +482,169 @@ function splitTitle(name: string): string[] {
   return best;
 }
 
-async function composeImage(product: any, style: any, siteUrl: string, sourceImage?: string | null): Promise<Uint8Array> {
-  const SIZE = 1080; // format carré, compatible FB + IG
+// Rendu d'une ligne du titre lettre par lettre : avec Lobster, certaines lettres (f, T…) débordent
+// sur la lettre précédente et le moteur de rendu les effaçait. Positions calculées sur la ligne entière.
+async function renderTitleLine(font: Uint8Array, size: number, text: string, color: number): Promise<{ img: Image; offset: number }> {
+  const full = await Image.renderText(font, size, text, color);
+  const offset = Math.round(size * 0.3);
+  const out = new Image(full.width + offset * 2, full.height);
+  const barW = (await Image.renderText(font, size, "|", color)).width;
+  const chars = [...text];
+  for (let i = 0; i < chars.length; i++) {
+    if (chars[i] === " ") continue;
+    const pre = chars.slice(0, i).join("");
+    const x = pre ? (await Image.renderText(font, size, pre + "|", color)).width - barW : 0;
+    const g = await Image.renderText(font, size, chars[i], color);
+    out.composite(g, offset + x, 0);
+  }
+  return { img: out, offset };
+}
 
-  // 1. Photo produit — image choisie spécialement pour cette publication (admin → Aperçu → Modifier l'image),
-  // sinon la photo principale du produit
+// Couleur de la catégorie du produit (même couleur que sur l'accueil et la boutique)
+// deno-lint-ignore no-explicit-any
+async function getCategoryColor(supabase: any, categoryId?: string | null): Promise<string | null> {
+  if (!categoryId) return null;
+  const { data } = await supabase.from("categories").select("color").eq("id", categoryId).maybeSingle();
+  return data?.color || null;
+}
+
+// Palette du visuel dérivée de la couleur de catégorie : teinte foncée (bulle prix, texte âge),
+// teinte moyenne (cercle) et teinte très foncée (ombre du titre)
+function paletteFrom(hex?: string | null) {
+  const m = /^#?([0-9a-f]{6})$/i.exec((hex || "").trim());
+  const base = m ? parseInt(m[1], 16) : 0xc9a09a; // --primary du site par défaut
+  const r = (base >> 16) & 255, g = (base >> 8) & 255, b = base & 255;
+  const shade = (f: number) => {
+    const c = (v: number) => Math.max(0, Math.min(255, Math.round(v * f)));
+    return (c(r) << 16) | (c(g) << 8) | c(b);
+  };
+  const rgba = (rgb: number, a: number) => ((rgb << 8) | a) >>> 0;
+  return {
+    dark: rgba(shade(0.72), 0xff),     // bulle du prix / texte de l'âge
+    circle: rgba(shade(0.8), 0x90),    // grand cercle semi-transparent
+    shadowRgb: shade(0.38),            // ombre douce du titre
+    old: rgba(shade(0.9), 0xff),       // « au lieu de … » dans la bulle du prix
+  };
+}
+
+// deno-lint-ignore no-explicit-any
+async function composeImage(product: any, style: any, siteUrl: string, sourceImage?: string | null, categoryColor?: string | null, height = 1440): Promise<Uint8Array> {
+  // Format portrait Instagram 1080 x 1440 (3:4)
+  const W = 1080, H = height; // 1080 x 1440 (3:4) ; 1080 x 1350 (4:5) pour l'API Instagram
+  const pal = paletteFrom(categoryColor);
+
   const photoRes = await fetch(sourceImage || product.images[0]);
   const photoBuf = new Uint8Array(await photoRes.arrayBuffer());
   let photo = await Image.decode(photoBuf);
 
-  // Recadrage carré centré + redimensionnement
-  const side = Math.min(photo.width, photo.height);
-  photo = photo.crop(
-    Math.floor((photo.width - side) / 2),
-    Math.floor((photo.height - side) / 2),
-    side,
-    side,
-  ).resize(SIZE, SIZE);
+  // Recadrage centré au ratio 3:4 (remplit tout le visuel)
+  const ratio = W / H;
+  let cw = photo.width, ch = photo.height;
+  if (cw / ch > ratio) cw = Math.round(ch * ratio); else ch = Math.round(cw / ratio);
+  photo = photo.crop(Math.floor((photo.width - cw) / 2), Math.floor((photo.height - ch) / 2), cw, ch).resize(W, H);
 
-  const canvas = new Image(SIZE, SIZE);
+  const canvas = new Image(W, H);
   canvas.composite(photo, 0, 0);
 
-  // Luminosité de la photo ramenée à 90 % (voile noir à 10 %) : un fond blanc
-  // devient légèrement grisé, ce qui rend les textes incrustés plus lisibles.
-  const dim = new Image(SIZE, SIZE);
+  const dim = new Image(W, H);
   dim.fill(0x0000001a);
   canvas.composite(dim, 0, 0);
 
-  // 3. Grand cercle décoratif (à la place du bandeau rectangulaire) —
-  // couleur primaire foncée, plus transparente, et plus bas dans l'image
-  // (dôme moins haut). Centré sur le bord bas de l'image, aligné à
-  // gauche et s'étirant presque jusqu'au bord droit, façon design
-  // "univers enfant".
-  // Note technique : "drawCircle" dessine directement sur l'image et
-  // écrase les pixels (il ne mélange pas avec la photo en dessous), donc
-  // la transparence n'avait aucun effet visible. On dessine le cercle sur
-  // un calque à part, transparent, qu'on fusionne ensuite avec "composite"
-  // (qui, lui, tient compte de l'opacité).
-  const bandHeight = Math.round(SIZE * 0.38); // garde la même zone de texte qu'avant
-  const circleRadius = Math.round(SIZE * 0.55);
-  const circleCenterX = Math.round(SIZE * 0.4); // décalé vers la gauche (au lieu du centre)
-  const circleLayer = new Image(SIZE, SIZE);
-  circleLayer.drawCircle(circleCenterX, SIZE, circleRadius, 0xa8686080); // --primary-dark, ~50% opacité
+  // Grand cercle couleur de la catégorie, en bas à gauche
+  const circleLayer = new Image(W, H);
+  circleLayer.drawCircle(Math.round(W * 0.4), H, Math.round(W * 0.6), pal.circle);
   canvas.composite(circleLayer, 0, 0);
 
-  // 4. Polices — ImageScript attend directement les octets bruts du fichier
-  // .ttf (pas de classe "Font" à instancier, contrairement à une version
-  // précédente de cette fonction qui provoquait une erreur au démarrage).
   const fontBytes = new Uint8Array(await (await fetch(FONT_BOLD_URL)).arrayBuffer());
   const titleFontBytes = new Uint8Array(await (await fetch(FONT_TITLE_URL)).arrayBuffer());
 
-  // Tous les éléments texte sont préparés d'abord, pour calculer la hauteur
-  // totale et placer le bloc de façon à ne jamais chevaucher l'adresse du site
-  // (utile quand le titre passe sur deux lignes).
-  const blocks: { img: Image; x: number; gap: number; bold?: boolean; bubble?: Image; padX?: number; padY?: number; shadow?: Image; shadowPad?: number }[] = [];
-
+  // Titre (Lobster) : retour à la ligne avant le bord droit, interligne resserré
+  const titleLines: { img: Image; shadow: Image; pad: number; offset: number }[] = [];
+  let lineGap = 0;
   if (style?.show_title !== false) {
-    // Titre blanc avec ombre noire, plus gras, coupé sur deux lignes équilibrées
-    // dès qu'il est un peu long (ex. « Mes comptines de / la ferme (sonore) »).
-    // Une seule ligne si le titre tient, sinon retour à la ligne avant le bord droit (marge de 40 px)
-    const fullW = (await Image.renderText(titleFontBytes, 68, product.name || "", TITLE_COLOR)).width + 2;
-    const { lines, size } = fullW <= SIZE - 80 && (product.name || "").length <= 18
-      ? { lines: [product.name || ""], size: 68 }
-      : await wrapTitle(titleFontBytes, product.name || "", SIZE - 80);
-    for (let i = 0; i < lines.length; i++) {
-      const t = await Image.renderText(titleFontBytes, size, lines[i], TITLE_COLOR);
-      const sh = softShadow(t, TITLE_SHADOW_RGB, TITLE_SHADOW_BLUR, TITLE_SHADOW_OPACITY, true);
-      blocks.push({ img: t, shadow: sh.img, shadowPad: sh.pad, x: 40, gap: i === lines.length - 1 ? 6 : 4, bold: true });
+    const name = product.name || "";
+    const fullW = (await Image.renderText(titleFontBytes, 84, name, TITLE_COLOR)).width + 2;
+    const { lines, size } = fullW <= W - 80 && name.length <= 18
+      ? { lines: [name], size: 84 }
+      : await wrapTitle(titleFontBytes, name, W - 80);
+    lineGap = -Math.round(size * 0.12);
+    for (const line of lines) {
+      const t = await Image.renderText(titleFontBytes, size, line, TITLE_COLOR); const offset = 0;
+      const sh = softShadow(t, pal.shadowRgb, TITLE_SHADOW_BLUR, TITLE_SHADOW_OPACITY, false);
+      titleLines.push({ img: t, shadow: sh.img, pad: sh.pad + offset, offset });
     }
   }
 
-  // Prix et tranche d'âge : en haut à droite, alignés à droite (bulles arrondies)
+  // Prix et tranche d'âge : en haut à droite, alignés à droite
   const topRight: { bubble: Image; img: Image; padX: number; padY: number }[] = [];
   if (style?.show_price !== false) {
-    // Prix dans une bulle blanche, texte couleur primaire ; en promo, l'ancien prix en petit sur une 2e ligne
-    const priceImg = await Image.renderText(fontBytes, 38, `${product.price} DT`, BRAND_PRIMARY);
+    // Bulle couleur de la catégorie, texte blanc ; en promo, l'ancien prix en petit sur une 2e ligne
+    const priceImg = await Image.renderText(fontBytes, 48, `${product.price} DT`, 0xffffffff);
     const oldImg = product.is_promo && product.price_old
-      ? await Image.renderText(fontBytes, 22, `au lieu de ${product.price_old} DT`, 0x9a7a75ff)
+      ? await Image.renderText(fontBytes, 26, `au lieu de ${product.price_old} DT`, 0xffffffe0)
       : null;
-    const padX = 22, padY = 12, lineGap = 2;
+    const padX = 28, padY = 14, gap = 2;
     const innerW = Math.max(priceImg.width, oldImg ? oldImg.width : 0);
-    const innerH = priceImg.height + (oldImg ? lineGap + oldImg.height : 0);
+    const innerH = priceImg.height + (oldImg ? gap + oldImg.height : 0);
     const text = new Image(innerW, innerH);
     text.composite(priceImg, innerW - priceImg.width, 0);
-    if (oldImg) text.composite(oldImg, innerW - oldImg.width, priceImg.height + lineGap);
+    if (oldImg) text.composite(oldImg, innerW - oldImg.width, priceImg.height + gap);
     const bubble = new Image(innerW + padX * 2, innerH + padY * 2);
-    bubble.fill(0xffffffff);
-    bubble.roundCorners(Math.round(Math.min(bubble.height / 2, 34)));
+    bubble.fill(pal.dark);
+    bubble.roundCorners(Math.round(Math.min(bubble.height / 2, 40)));
     topRight.push({ bubble, img: text, padX, padY });
   }
   if (style?.show_age_range !== false && product.age_ranges?.length) {
+    // Bulle blanche, texte couleur de la catégorie
     const ages = product.age_ranges.map((a: string) => AGE_LABELS[a] || a).join(" · ");
-    // Âge en blanc dans une bulle rose semi-transparente (lisible même sur une photo claire)
-    const ageImg = await Image.renderText(fontBytes, 28, ages, 0xffffffff);
+    const ageImg = await Image.renderText(fontBytes, 28, ages, pal.dark);
     const padX = 18, padY = 9;
     const bubble = new Image(ageImg.width + padX * 2, ageImg.height + padY * 2);
-    bubble.fill(0xa86860d9);
+    bubble.fill(0xffffffff);
     bubble.roundCorners(Math.round(bubble.height / 2));
     topRight.push({ bubble, img: ageImg, padX, padY });
   }
-  {
-    let ty = 40;
-    for (const t of topRight) {
-      const tx = SIZE - 40 - t.bubble.width;
-      canvas.composite(t.bubble, tx, ty);
-      canvas.composite(t.img, tx + t.padX, ty + t.padY);
-      ty += t.bubble.height + 10;
-    }
-  }
-
-  // 5. Site web — toujours collé tout en bas de l'image. Note : une image
-  // publiée sur Facebook/Instagram ne peut pas contenir de zone cliquable ;
-  // le vrai lien cliquable est dans le texte de la publication (buildCaption).
-  let siteImg: Image | null = null;
-  if (style?.show_website !== false) {
-    const site = siteUrl.replace(/^https?:\/\//, "");
-    siteImg = await Image.renderText(fontBytes, 30, site, 0xffffffff);
-  }
-  const bottomLimit = siteImg ? SIZE - 40 - siteImg.height - 16 : SIZE - 40;
-  const blockHeight = blocks.reduce((h, b) => h + (b.bubble ? b.bubble.height : b.img.height) + b.gap, 0);
-  // Titre descendu en bas de l'image, juste au-dessus du site web
-  let cursorY = bottomLimit - blockHeight;
-
-  for (const b of blocks) {
-    if (b.bubble) {
-      canvas.composite(b.bubble, b.x, cursorY);
-      canvas.composite(b.img, b.x + (b.padX || 0), cursorY + (b.padY || 0));
-      cursorY += b.bubble.height + b.gap;
-    } else {
-      // Ombre douce : texte noir très transparent superposé avec des décalages (plus foncé au centre)
-      // Ombre douce, légèrement décalée vers le bas
-      if (b.shadow) canvas.composite(b.shadow, b.x - (b.shadowPad || 0) + 2, cursorY - (b.shadowPad || 0) + 4);
-      if (b.bold) { for (let dx = 0; dx <= 2; dx++) for (let dy = 0; dy <= 2; dy++) canvas.composite(b.img, b.x + dx, cursorY + dy); }
-      else canvas.composite(b.img, b.x, cursorY);
-      cursorY += b.img.height + b.gap;
-    }
-  }
-  if (siteImg) canvas.composite(siteImg, 40, SIZE - 40 - siteImg.height);
-
-  // 6. Logo blanc du site (le même que dans le footer : logo/logo-white.png),
-  // en haut à gauche, sans pastille ni ombre. Dessiné en dernier.
+  // Logo blanc à plat (dessiné à la fin) ; les bulles du haut s'alignent sur le haut visible du logo
+  const LOGO_Y = 32;
+  let logo: Image | null = null;
+  let logoTop = 40;
   if (style?.show_logo !== false) {
     const logoBytes = new Uint8Array(await (await fetch(`${siteUrl.replace(/\/$/, "")}/logo/logo-white.png`)).arrayBuffer());
     const rawLogo = await Image.decode(logoBytes);
-    // Logo blanc à plat : on force toutes les couleurs en blanc (seule la transparence varie),
-    // sinon le redimensionnement mélange le noir des zones transparentes et crée un liseré sombre.
     const lb = rawLogo.bitmap;
     for (let i = 0; i < lb.length; i += 4) { lb[i] = 255; lb[i + 1] = 255; lb[i + 2] = 255; }
     rawLogo.bitmap = lb;
-    const targetLogoWidth = 420; // largeur du logo (px, sur 1080)
-    const targetLogoHeight = Math.round(rawLogo.height * (targetLogoWidth / rawLogo.width));
-    const logo = rawLogo.resize(targetLogoWidth, targetLogoHeight);
-
-    const lx = 36, ly = 32;
-    canvas.composite(logo, lx, ly);
+    const targetLogoWidth = 420;
+    logo = rawLogo.resize(targetLogoWidth, Math.round(rawLogo.height * (targetLogoWidth / rawLogo.width)));
+    const bm = logo.bitmap, lw = logo.width;
+    let first = 0;
+    search: for (let y = 0; y < logo.height; y++) for (let x = 0; x < lw; x++) if (bm[(y * lw + x) * 4 + 3] > 60) { first = y; break search; }
+    logoTop = LOGO_Y + first;
   }
+  let ty = logoTop;
+  for (const t of topRight) {
+    const tx = W - 40 - t.bubble.width;
+    canvas.composite(t.bubble, tx, ty);
+    canvas.composite(t.img, tx + t.padX, ty + t.padY);
+    ty += t.bubble.height + 10;
+  }
+
+  // Site web tout en bas, titre juste au-dessus
+  let siteImg: Image | null = null;
+  if (style?.show_website !== false) {
+    siteImg = await Image.renderText(fontBytes, 30, siteUrl.replace(/^https?:\/\//, ""), 0xffffffff);
+  }
+  const bottomLimit = siteImg ? H - 40 - siteImg.height - 14 : H - 40;
+  const titleH = titleLines.reduce((h, l, i) => h + l.img.height + (i ? lineGap : 0), 0);
+  let cursorY = bottomLimit - titleH;
+  for (const l of titleLines) {
+    canvas.composite(l.shadow, 40 - l.pad + 2, cursorY - (l.pad - l.offset) + 4);
+    canvas.composite(l.img, 40 - l.offset, cursorY);
+    cursorY += l.img.height + lineGap;
+  }
+  if (siteImg) canvas.composite(siteImg, 40, H - 40 - siteImg.height);
+
+  if (logo) canvas.composite(logo, 36, LOGO_Y);
 
   return await canvas.encodeJPEG(90);
 }
