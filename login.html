@@ -228,7 +228,7 @@ async function doLogin(e) {
   // Récupérer le profil (prénom, nom)
   const { data: profile } = await _supabase
     .from('profiles')
-    .select('first_name, last_name, phone, address_line1, city, postal_code, country')
+    .select('first_name, last_name, phone, address_line1, city, postal_code, country, first_login_done')
     .eq('id', data.user.id)
     .single();
 
@@ -244,7 +244,10 @@ async function doLogin(e) {
     country:   profile?.country       || 'Tunisie'
   });
 
-  const next = new URLSearchParams(window.location.search).get('next') || 'profile.html';
+  // Première connexion (compte confirmé par email) → page profil ; connexions suivantes → accueil
+  const firstLogin = profile && profile.first_login_done === false;
+  if (firstLogin) await _supabase.from('profiles').update({ first_login_done: true }).eq('id', data.user.id);
+  const next = new URLSearchParams(window.location.search).get('next') || (firstLogin ? 'profile.html' : 'index.html');
   window.location.href = next;
 }
 </script>

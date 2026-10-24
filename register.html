@@ -240,7 +240,7 @@ async function doRegister(e) {
 
   if (data.session) {
     // Connexion directe (confirm email désactivé)
-    await _supabase.from('profiles').update({ phone, address_line1: address }).eq('id', data.user.id);
+    await _supabase.from('profiles').update({ phone, address_line1: address, first_login_done: true }).eq('id', data.user.id);
     Auth.setUser({ id: data.user.id, email, firstName, lastName, phone, address });
     const next = new URLSearchParams(window.location.search).get('next') || 'profile.html';
     window.location.href = next;
