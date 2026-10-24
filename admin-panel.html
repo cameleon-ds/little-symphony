@@ -3661,6 +3661,8 @@ async function loadSocialModule() {
 }
 
 async function loadSocialSettings() {
+  // L'onglet peut s'ouvrir directement (rechargement de page) avant que les catégories soient chargées
+  if (!CATEGORIES.length) await loadCategories();
   const { data, error } = await _supabase
     .from('social_settings').select('*').eq('id', true).single();
   if (error) { console.error(error); return; }
