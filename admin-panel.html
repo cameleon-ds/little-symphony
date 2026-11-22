@@ -99,6 +99,25 @@ img{display:block;max-width:100%}
 .del-cancel{background:#fff;border:1.5px solid var(--border);color:var(--charcoal)}
 .del-confirm{background:#C62828;border:none;color:#fff}
 .del-confirm:disabled{background:#E8B4B4;cursor:not-allowed}
+.imp-sum{margin:.8rem 0;padding-left:1.1rem;font-size:13.5px;line-height:1.7;color:var(--charcoal)}
+.imp-missing{background:#FBF7F6;border:1px solid var(--border);border-radius:10px;padding:.9rem 1rem;font-size:13px;color:var(--charcoal)}
+.imp-missing p{margin:0 0 .7rem;line-height:1.5}
+.imp-missing label{display:flex;gap:10px;align-items:flex-start;padding:.5rem 0;cursor:pointer}
+.imp-missing input{margin-top:3px;accent-color:var(--charcoal)}
+.imp-missing small{color:var(--text-muted)}
+/* Historique */
+.hist-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.hist-tab{padding:7px 12px;border:1.5px solid var(--border);border-radius:20px;background:#fff;font-size:12.5px;font-weight:600;color:var(--text-soft);cursor:pointer;font-family:var(--sans)}
+.hist-tab.active{background:var(--charcoal);border-color:var(--charcoal);color:#fff}
+.hist-badge{display:inline-block;padding:3px 9px;border-radius:12px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.hist-new{background:#E8F5EC;color:#2E7D4F}.hist-upd{background:#FFF4E0;color:#A86400}.hist-del{background:#FDECEC;color:#C62828}
+.hist-cat{font-size:11px;color:var(--text-muted);margin-top:3px}
+.hist-src{font-size:11.5px;color:var(--text-muted);margin-top:2px}
+.hist-detail{font-size:12.5px;color:var(--text-soft);line-height:1.6}
+.hist-f{color:var(--text-muted)}.hist-arrow{color:var(--primary-dark);font-weight:700}
+#tbl-historique tr.day-sep td{padding:16px 0 8px;border:none;background:transparent;text-align:center;position:relative}
+#tbl-historique tr.day-sep td::before{content:"";position:absolute;left:0;right:0;top:calc(50% + 4px);height:2px;background:#E6DCD9;transform:translateY(-50%)}
+#tbl-historique tr.day-sep span{position:relative;display:inline-block;padding:2px 12px;background:#fff;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-soft)}
 .dirty-dot{display:none;position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:#22C55E;border:2.5px solid #fff;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:dirtyPulse 1.6s infinite}
 #pf-save-btn.is-dirty .dirty-dot{display:block}
 /* Champ modifié et pas encore enregistré : contour vert (fiche produit) */
@@ -556,6 +575,11 @@ tr.row-selected td{background:#FBF6F5}
       <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
       Messagerie
     </button>
+
+    <button class="nav-item" onclick="showPanel('historique', this);closeSidebar();loadHistorique()">
+      <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/><polyline points="12 7 12 12 15 15"/></svg>
+      Historique
+    </button>
   </nav>
 
   <div style="padding:1rem 1.5rem;border-top:1px solid var(--border)">
@@ -898,6 +922,10 @@ tr.row-selected td{background:#FBF6F5}
           <button type="button" onclick="downloadProduitsCsvTemplate()" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:#fff;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--sans);color:var(--charcoal)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Télécharger le modèle CSV
+          </button>
+          <button type="button" id="btn-csv-export" onclick="exportProduitsCsv()" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:#fff;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--sans);color:var(--charcoal)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+            <span id="btn-csv-export-label">Exporter tous les produits (CSV)</span>
           </button>
           <button type="button" id="btn-csv-import" onclick="triggerCsvImport()" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:var(--charcoal);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--sans)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -1267,6 +1295,36 @@ tr.row-selected td{background:#FBF6F5}
       </div>
     </div>
 
+    <!-- HISTORIQUE -->
+    <div class="panel" id="panel-historique">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Historique</h1>
+          <p class="page-sub">Toutes les actions effectuées sur la boutique, des plus récentes aux plus anciennes (conservées 12 mois)</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header" style="flex-wrap:wrap;gap:10px">
+          <div class="hist-tabs">
+            <button class="hist-tab active" onclick="histSetCat('', this)">Tout</button>
+            <button class="hist-tab" onclick="histSetCat('commandes', this)">Commandes</button>
+            <button class="hist-tab" onclick="histSetCat('clients', this)">Clients</button>
+            <button class="hist-tab" onclick="histSetCat('produits', this)">Produits</button>
+            <button class="hist-tab" onclick="histSetCat('categories', this)">Catégories</button>
+            <button class="hist-tab" onclick="histSetCat('contenu', this)">Contenu</button>
+            <button class="hist-tab" onclick="histSetCat('reseaux', this)">Réseaux sociaux</button>
+          </div>
+        </div>
+        <table id="tbl-historique">
+          <thead><tr><th>Heure</th><th>Action</th><th>Élément</th><th>Détail</th><th class="col-hide-mobile">Par</th></tr></thead>
+          <tbody id="tbody-historique"><tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement…</td></tr></tbody>
+        </table>
+        <div style="text-align:center;padding:1rem">
+          <button type="button" id="hist-more" class="btn-detail" onclick="loadHistorique(false)" style="display:none;margin:0 auto">Voir plus</button>
+        </div>
+      </div>
+    </div>
+
     <!-- MESSAGERIE -->
     <div class="panel" id="panel-messagerie">
       <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
@@ -1538,7 +1596,7 @@ const SVG_EDIT  = `<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2
 const SVG_TRASH = `<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`;
 
 // ── NAVIGATION ───────────────────────────────────────────────────
-const titles = { commandes:'Commandes', clients:'Clients', produits:'Produits', categories:'Catégories', contenu:'Contenu', 'reseaux-sociaux':'Réseaux sociaux', messagerie:'Messagerie' };
+const titles = { commandes:'Commandes', clients:'Clients', produits:'Produits', categories:'Catégories', contenu:'Contenu', 'reseaux-sociaux':'Réseaux sociaux', messagerie:'Messagerie', historique:'Historique' };
 
 function setBreadcrumb(root, sub) {
   const el = document.getElementById('topbar-title');
@@ -1582,7 +1640,7 @@ function showPanel(name, btn) {
 }
 
 // ── Routage par URL (#section) ───────────────────────────────────
-const ADMIN_ROUTES = ['commandes', 'clients', 'produits', 'categories', 'contenu', 'reseaux-sociaux', 'messagerie'];
+const ADMIN_ROUTES = ['commandes', 'clients', 'produits', 'categories', 'contenu', 'reseaux-sociaux', 'messagerie', 'historique'];
 
 function routeFromHash() {
   const parts = decodeURIComponent(location.hash.replace(/^#\/?/, '')).split('/');
@@ -2725,6 +2783,8 @@ let _lastFilteredProd = [];
 
 function updateBulkUi() {
   const n = _selectedProd.size;
+  const exp = document.getElementById('btn-csv-export-label');
+  if (exp) exp.textContent = n ? `Exporter ${n} produit${n > 1 ? 's' : ''} sélectionné${n > 1 ? 's' : ''} (CSV)` : 'Exporter tous les produits (CSV)';
   const btn = document.getElementById('btn-bulk');
   if (btn) btn.disabled = n === 0;
   const c = document.getElementById('bulk-count');
@@ -3301,6 +3361,75 @@ function downloadProduitsCsvTemplate() {
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
+// Export complet des produits (toutes les données de la base, avec l'ID) :
+// produits sélectionnés, ou tout le catalogue si aucune sélection.
+async function exportProduitsCsv() {
+  const btn = document.getElementById('btn-csv-export');
+  const label = document.getElementById('btn-csv-export-label');
+  const old = label.textContent;
+  btn.disabled = true; label.textContent = 'Préparation…';
+  try {
+    const ids = [..._selectedProd];
+    // Lecture directe en base (données à jour), par paquets de 1000
+    let rows = [];
+    for (let from = 0; ; from += 1000) {
+      let q = _supabase.from('products').select('*').order('name').range(from, from + 999);
+      if (ids.length) q = q.in('id', ids);
+      const { data, error } = await q;
+      if (error) throw error;
+      rows = rows.concat(data || []);
+      if (!data || data.length < 1000) break;
+    }
+    if (!rows.length) { alert('Aucun produit à exporter.'); return; }
+
+    if (!CATEGORIES.length) await loadCategories();
+    const catById = {}, subById = {};
+    CATEGORIES.forEach(c => { catById[c.id] = c; (c.subs || []).forEach(s => { subById[s.id] = s; }); });
+
+    const yn = v => v ? 'oui' : 'non';
+    const etat = st => (st ?? 0) <= 0 ? 'Rupture' : ((st ?? 0) <= LOW_STOCK_MAX ? 'Stock faible' : 'En stock');
+    const maxAttr = Math.max(2, ...rows.map(p => Array.isArray(p.attributes) ? p.attributes.length : 0));
+
+    const headers = ['id', 'slug', 'categorie', 'sous_categorie', 'nom', 'sous_titre', 'description',
+      'prix', 'prix_barre', 'stock', 'etat_stock', 'sexe', 'ages', 'images',
+      'actif', 'nouveau', 'promo', 'vedette'];
+    for (let i = 1; i <= maxAttr; i++) headers.push(`attribut${i}_titre`, `attribut${i}_valeur`);
+    headers.push('mots_cles', 'ordre', 'note', 'nb_avis', 'category_id', 'subcategory_id', 'cree_le', 'modifie_le', 'lien_produit');
+
+    const lines = [headers];
+    rows.forEach(p => {
+      const attrs = Array.isArray(p.attributes) ? p.attributes : [];
+      const line = [
+        p.id, p.slug, catById[p.category_id]?.nom || '', subById[p.subcategory_id]?.nom || '',
+        p.name, p.subtitle || '', p.description || '',
+        p.price ?? '', p.price_old ?? '', p.stock ?? 0, etat(p.stock), p.gender || '',
+        (p.age_ranges || []).join(';'), (p.images || []).join(';'),
+        yn(p.is_active), yn(p.is_new), yn(p.is_promo), yn(p.is_featured)
+      ];
+      for (let i = 0; i < maxAttr; i++) line.push(attrs[i]?.title || '', attrs[i]?.desc || '');
+      line.push(p.keywords || '', p.sort_order ?? '', p.rating ?? '', p.review_count ?? '',
+        p.category_id || '', p.subcategory_id || '', p.created_at || '', p.updated_at || '',
+        p.slug ? `https://little-symphony.com/produit/${p.slug}.html` : '');
+      lines.push(line);
+    });
+
+    const csv = '\uFEFF' + lines.map(r => r.map(csvEscape).join(',')).join('\r\n'); // BOM : accents corrects dans Excel
+    const d = new Date();
+    const stamp = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `little-symphony-products-${ids.length ? 'selection' : 'all'}-${stamp}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (e) {
+    alert("L'export a échoué : " + (e.message || e));
+  } finally {
+    btn.disabled = false; label.textContent = old;
+  }
+}
+
 // Parseur CSV simple (gère les champs entre guillemets contenant virgules/retours à la ligne)
 function parseCSV(text) {
   const rows = [];
@@ -3337,6 +3466,51 @@ function slugifyProductName(name) {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
+// Client Supabase dédié à une action groupée : même session, avec un en-tête « source »
+// enregistré dans l'Historique (ex. « import:produits.csv »).
+async function _auditClient(source) {
+  const { data: { session } } = await _supabase.auth.getSession();
+  return supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${session?.access_token || SUPABASE_KEY}`, 'x-audit-source': source } }
+  });
+}
+
+// Fenêtre de confirmation de l'import (résumé + choix pour les produits absents du fichier)
+function _importConfirmModal({ fileName, nUpdate, nInsert, nMissing, nCurrent, nFile, errors }) {
+  return new Promise(resolve => {
+    document.getElementById('imp-modal')?.remove();
+    const m = document.createElement('div');
+    m.id = 'imp-modal'; m.className = 'del-overlay';
+    const pl = (n, s, p) => n + ' ' + (n > 1 ? p : s);
+    m.innerHTML = `
+      <div class="del-box imp-box" role="dialog" aria-modal="true" style="max-width:480px;text-align:left">
+        <h3 style="text-align:center">Importer « ${escapeHtml(fileName)} »</h3>
+        <ul class="imp-sum">
+          <li><b>${pl(nUpdate, 'produit existant', 'produits existants')}</b> ${nUpdate > 1 ? 'seront mis' : 'sera mis'} à jour (reconnus par leur ID)</li>
+          <li><b>${pl(nInsert, 'nouveau produit', 'nouveaux produits')}</b> ${nInsert > 1 ? 'seront ajoutés' : 'sera ajouté'} (lignes sans ID)</li>
+          ${errors.length ? `<li style="color:#C62828"><b>${pl(errors.length, 'ligne ignorée', 'lignes ignorées')}</b> (détail après l'import)</li>` : ''}
+        </ul>
+        ${nMissing ? `
+        <div class="imp-missing">
+          <p>Le fichier importé contient <b>${nFile}</b> produit${nFile > 1 ? 's' : ''}, alors que la boutique en compte actuellement <b>${nCurrent}</b>.
+          Que souhaitez-vous faire des <b>${nMissing}</b> produit${nMissing > 1 ? 's' : ''} absent${nMissing > 1 ? 's' : ''} du fichier ?</p>
+          <label><input type="radio" name="imp-missing" value="keep" checked> <span><b>Les conserver tels quels</b><br><small>Aucun changement : ils restent visibles sur le site.</small></span></label>
+          <label><input type="radio" name="imp-missing" value="hide"> <span><b>Les conserver mais les masquer du site</b><br><small>Ils restent dans l'admin et peuvent être réactivés à tout moment.</small></span></label>
+        </div>` : ''}
+        <div class="del-actions" style="margin-top:1rem">
+          <button type="button" class="del-cancel" id="imp-cancel">Annuler</button>
+          <button type="button" class="del-confirm" id="imp-ok" style="background:var(--charcoal)">Importer</button>
+        </div>
+      </div>`;
+    document.body.appendChild(m);
+    const close = v => { m.remove(); resolve(v); };
+    m.querySelector('#imp-cancel').onclick = () => close(null);
+    m.addEventListener('click', e => { if (e.target === m) close(null); });
+    m.querySelector('#imp-ok').onclick = () => close({ missing: m.querySelector('input[name="imp-missing"]:checked')?.value || 'keep' });
+  });
+}
+
 async function handleCsvImport(event) {
   const file = event.target.files[0];
   event.target.value = ''; // permet de réimporter le même fichier ensuite
@@ -3353,37 +3527,51 @@ async function handleCsvImport(event) {
       return;
     }
 
-    const header = allRows[0].map(h => h.trim().toLowerCase());
+    const header = allRows[0].map(h => h.trim().toLowerCase().replace(/^﻿/, ''));
     const col = name => header.indexOf(name);
+    const has = name => header.includes(name);
     const idx = {
+      id: col('id'),
       categorie: col('categorie'), sousCategorie: col('sous_categorie'),
       nom: col('nom'), sousTitre: col('sous_titre'), description: col('description'),
       prix: col('prix'), prixBarre: col('prix_barre'), stock: col('stock'),
       sexe: col('sexe'), ages: col('ages'), images: col('images'),
       actif: col('actif'), nouveau: col('nouveau'), promo: col('promo'), vedette: col('vedette'),
-      a1t: col('attribut1_titre'), a1v: col('attribut1_valeur'),
-      a2t: col('attribut2_titre'), a2v: col('attribut2_valeur'),
+      motsCles: col('mots_cles'),
     };
+    // Attributs : attribut1_titre / attribut1_valeur, attribut2_…, autant qu'il y en a
+    const attrCols = [];
+    for (let i = 1; has(`attribut${i}_titre`) || has(`attribut${i}_valeur`); i++) {
+      attrCols.push([col(`attribut${i}_titre`), col(`attribut${i}_valeur`)]);
+    }
 
     if (idx.categorie === -1 || idx.nom === -1 || idx.prix === -1) {
       alert('Le fichier CSV doit contenir au minimum les colonnes : categorie, nom, prix.\nTéléchargez le modèle CSV pour respecter le bon format.');
       return;
     }
 
+    if (!CATEGORIES.length) await loadCategories();
     const parseBool = (v, def) => {
       const s = (v || '').trim().toLowerCase();
       if (!s) return def;
       return ['oui', 'yes', 'true', '1', 'vrai'].includes(s);
     };
-    const validAges = ['0-6', '6-12', '1-3', '3-6', '6-12ans', 'maman'];
+    const validAges = ['0-6', '6-12', '1-3', '3-6', '6-9', '9-12', '6-12ans', 'maman'];
+    const byId = new Map(PRODUITS.map(p => [p.id, p]));
     const existingSlugs = new Set(PRODUITS.map(p => p.slug).filter(Boolean));
     const errors = [];
-    const payloads = [];
+    const inserts = [];
+    const updates = [];          // { id, payload }
+    const seenIds = new Set();
 
     for (let r = 1; r < allRows.length; r++) {
       const row = allRows[r];
       const get = i => (i >= 0 && row[i] !== undefined) ? row[i].trim() : '';
       const lineNo = r + 1;
+
+      const id = get(idx.id);
+      if (id && !byId.has(id)) { errors.push(`Ligne ${lineNo} : ID "${id}" introuvable dans la boutique (ligne ignorée pour éviter un doublon).`); continue; }
+      if (id && seenIds.has(id)) { errors.push(`Ligne ${lineNo} : ID "${id}" présent plusieurs fois dans le fichier.`); continue; }
 
       const catName = get(idx.categorie);
       const subName = get(idx.sousCategorie);
@@ -3404,60 +3592,88 @@ async function handleCsvImport(event) {
         subId = sub.id;
       }
 
-      const prixBarreRaw = get(idx.prixBarre).replace(',', '.');
-      const prixBarre = prixBarreRaw ? parseFloat(prixBarreRaw) : null;
-      const stockRaw = get(idx.stock);
-      const stock = stockRaw ? parseInt(stockRaw, 10) : 0;
+      // Seules les colonnes présentes dans le fichier sont prises en compte (les autres ne changent pas)
+      const payload = { name: nom, category_id: cat.id, price: prix };
+      if (idx.sousCategorie !== -1) payload.subcategory_id = subId;
+      if (idx.sousTitre !== -1) payload.subtitle = get(idx.sousTitre) || null;
+      if (idx.description !== -1) payload.description = get(idx.description) || null;
+      if (idx.prixBarre !== -1) {
+        const v = parseFloat(get(idx.prixBarre).replace(',', '.'));
+        payload.price_old = isNaN(v) ? null : v;
+      }
+      if (idx.stock !== -1) { const v = parseInt(get(idx.stock), 10); payload.stock = isNaN(v) ? 0 : v; }
+      if (idx.sexe !== -1) {
+        let sexe = get(idx.sexe).toLowerCase() || 'mixte';
+        payload.gender = ['mixte', 'fille', 'garcon'].includes(sexe) ? sexe : 'mixte';
+      }
+      if (idx.ages !== -1) payload.age_ranges = get(idx.ages).split(';').map(a => a.trim()).filter(a => validAges.includes(a));
+      if (idx.images !== -1) payload.images = get(idx.images).split(';').map(u => u.trim()).filter(Boolean);
+      if (idx.actif !== -1)   payload.is_active   = parseBool(get(idx.actif), true);
+      if (idx.nouveau !== -1) payload.is_new      = parseBool(get(idx.nouveau), false);
+      if (idx.promo !== -1)   payload.is_promo    = parseBool(get(idx.promo), false);
+      if (idx.vedette !== -1) payload.is_featured = parseBool(get(idx.vedette), false);
+      if (idx.motsCles !== -1) payload.keywords = get(idx.motsCles) || null;
+      if (attrCols.length) {
+        const attributes = [];
+        attrCols.forEach(([t, v]) => { const at = get(t), av = get(v); if (at || av) attributes.push({ title: at, desc: av }); });
+        payload.attributes = attributes.length ? attributes : null;
+      }
 
-      let sexe = get(idx.sexe).toLowerCase() || 'mixte';
-      if (!['mixte', 'fille', 'garcon'].includes(sexe)) sexe = 'mixte';
-
-      const ages = get(idx.ages).split(';').map(a => a.trim()).filter(a => validAges.includes(a));
-      const images = get(idx.images).split(';').map(u => u.trim()).filter(Boolean);
-
-      const attributes = [];
-      const a1t = get(idx.a1t), a1v = get(idx.a1v), a2t = get(idx.a2t), a2v = get(idx.a2v);
-      if (a1t || a1v) attributes.push({ title: a1t, desc: a1v });
-      if (a2t || a2v) attributes.push({ title: a2t, desc: a2v });
-
-      const baseSlug = slugifyProductName(nom) || ('produit-' + Date.now());
-      let uniqueSlug = baseSlug, n = 2;
-      while (existingSlugs.has(uniqueSlug)) { uniqueSlug = `${baseSlug}-${n++}`; }
-      existingSlugs.add(uniqueSlug);
-
-      payloads.push({
-        name: nom,
-        slug: uniqueSlug,
-        subtitle: get(idx.sousTitre) || null,
-        category_id: cat.id,
-        subcategory_id: subId,
-        price: prix,
-        price_old: (prixBarre !== null && !isNaN(prixBarre)) ? prixBarre : null,
-        stock: isNaN(stock) ? 0 : stock,
-        is_active: parseBool(get(idx.actif), true),
-        is_new: parseBool(get(idx.nouveau), false),
-        is_promo: parseBool(get(idx.promo), false),
-        is_featured: parseBool(get(idx.vedette), false),
-        gender: sexe,
-        age_ranges: ages,
-        images,
-        description: get(idx.description) || null,
-        attributes: attributes.length ? attributes : null
-      });
+      if (id) {
+        seenIds.add(id);
+        updates.push({ id, payload });
+      } else {
+        const baseSlug = slugifyProductName(nom) || ('produit-' + Date.now());
+        let uniqueSlug = baseSlug, n = 2;
+        while (existingSlugs.has(uniqueSlug)) { uniqueSlug = `${baseSlug}-${n++}`; }
+        existingSlugs.add(uniqueSlug);
+        inserts.push({
+          slug: uniqueSlug, subcategory_id: null, stock: 0, is_active: true, is_new: false, is_promo: false,
+          is_featured: false, gender: 'mixte', age_ranges: [], images: [], ...payload
+        });
+      }
     }
 
-    if (!payloads.length) {
+    if (!inserts.length && !updates.length) {
       alert('Aucune ligne valide à importer.' + (errors.length ? '\n\n' + errors.join('\n') : ''));
       return;
     }
 
-    const { error } = await _supabase.from('products').insert(payloads);
-    if (error) { alert('Erreur lors de l\'import : ' + error.message); return; }
+    // Produits de la boutique absents du fichier (seulement si le fichier contient des ID)
+    const missing = idx.id !== -1 ? PRODUITS.filter(p => !seenIds.has(p.id)) : [];
+    const choice = await _importConfirmModal({
+      fileName: file.name, nUpdate: updates.length, nInsert: inserts.length,
+      nMissing: missing.length, nCurrent: PRODUITS.length, nFile: allRows.length - 1, errors
+    });
+    if (!choice) return;
+
+    const db = await _auditClient('import:' + file.name);
+    const failed = [];
+    if (inserts.length) {
+      const { error } = await db.from('products').insert(inserts);
+      if (error) failed.push('Ajout des nouveaux produits : ' + error.message);
+    }
+    for (let i = 0; i < updates.length; i += 5) {           // 5 mises à jour en parallèle
+      const res = await Promise.all(updates.slice(i, i + 5).map(u => db.from('products').update(u.payload).eq('id', u.id)));
+      res.forEach((r, k) => { if (r.error) failed.push(`Mise à jour de « ${updates[i + k].payload.name} » : ${r.error.message}`); });
+    }
+    let hidden = 0;
+    if (choice.missing === 'hide') {
+      const toHide = missing.filter(p => p.is_active).map(p => p.id);
+      for (let i = 0; i < toHide.length; i += 100) {
+        const { error } = await db.from('products').update({ is_active: false }).in('id', toHide.slice(i, i + 100));
+        if (error) failed.push('Masquage des produits absents : ' + error.message); else hidden += toHide.slice(i, i + 100).length;
+      }
+    }
 
     await loadProduits();
 
-    let msg = `${payloads.length} produit${payloads.length > 1 ? 's' : ''} importé${payloads.length > 1 ? 's' : ''} avec succès.`;
+    const pl = (n, s, p) => `${n} ${n > 1 ? p : s}`;
+    let msg = `Import terminé :\n• ${pl(updates.length, 'produit mis à jour', 'produits mis à jour')}\n• ${pl(inserts.length, 'nouveau produit ajouté', 'nouveaux produits ajoutés')}`;
+    if (choice.missing === 'hide') msg += `\n• ${pl(hidden, 'produit absent du fichier masqué', 'produits absents du fichier masqués')} du site`;
+    if (failed.length) msg += `\n\nErreurs :\n` + failed.join('\n');
     if (errors.length) msg += `\n\n${errors.length} ligne(s) ignorée(s) :\n` + errors.join('\n');
+    msg += `\n\nLe détail est visible dans Historique › Produits.`;
     alert(msg);
 
   } catch (e) {
@@ -4879,6 +5095,116 @@ function showToast(title, sub, onClick, type) {
     t.classList.remove('show');
     setTimeout(() => t.remove(), 350);
   }, 6000);
+}
+
+// ── HISTORIQUE (journal des actions, rempli par la base) ─────────
+const HIST_PAGE = 50;
+let _hist = { cat: '', rows: [], done: false, loading: false };
+const HIST_CATS = { commandes: 'Commandes', clients: 'Clients', produits: 'Produits', categories: 'Catégories', contenu: 'Contenu', reseaux: 'Réseaux sociaux' };
+const HIST_FIELDS = {
+  name: 'Nom', subtitle: 'Sous-titre', description: 'Description', price: 'Prix', price_old: 'Prix barré', stock: 'Stock',
+  images: 'Photos', is_active: 'Visible sur le site', is_new: 'Nouveau', is_promo: 'Promo', is_featured: 'Vedette',
+  category_id: 'Catégorie', subcategory_id: 'Sous-catégorie', age_ranges: 'Âges', gender: 'Sexe', attributes: 'Attributs',
+  keywords: 'Mots-clés', slug: 'Adresse de la page', status: 'Statut', total: 'Total', customer_name: 'Nom du client',
+  customer_phone: 'Téléphone', customer_email: 'E-mail', address_line1: 'Adresse', address_line2: 'Complément', city: 'Ville',
+  postal_code: 'Code postal', country: 'Pays', notes: 'Notes', first_name: 'Prénom', last_name: 'Nom', phone: 'Téléphone',
+  email: 'E-mail', role: 'Rôle', label: 'Libellé', is_default: 'Adresse par défaut', key: 'Clé', name_full: 'Nom complet',
+  color: 'Couleur', icon_svg: 'Icône', data: 'Sections modifiées', post_days: 'Jours de publication', post_time: 'Heure de publication',
+  enabled_categories: 'Catégories publiées', template_style: 'Style du visuel', timezone: 'Fuseau horaire', site_url: 'Adresse du site',
+  facebook_page_id: 'Page Facebook', instagram_business_id: 'Compte Instagram', platform: 'Plateforme', scheduled_for: 'Programmé le',
+  posted_at: 'Publié le', error_message: 'Erreur', source_image: 'Image du post', manual: 'Ajout manuel', custom_text: "Texte d'accroche",
+  product_id: 'Produit', avatar_url: 'Photo de profil'
+};
+const HIST_DAYS = ['', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'];
+
+function _histVal(field, v, table) {
+  if (v === null || v === undefined || v === '') return '<i>vide</i>';
+  if (typeof v === 'boolean') return v ? 'oui' : 'non';
+  if (field === 'category_id') return escapeHtml(CATEGORIES.find(c => c.id === v)?.nom || 'catégorie supprimée');
+  if (field === 'subcategory_id') { for (const c of CATEGORIES) { const s = (c.subs || []).find(x => x.id === v); if (s) return escapeHtml(s.nom); } return 'sous-catégorie'; }
+  if (field === 'status' && table === 'orders') return escapeHtml(STATUS_LABELS[v] || v);
+  if (field === 'status') return escapeHtml({ pending: 'en attente', posted: 'publié', failed: 'échec' }[v] || v);
+  if (field === 'price' || field === 'price_old' || field === 'total') return Number(v).toFixed(3).replace('.', ',') + ' DT';
+  if (field === 'images') return `${v.length} photo${v.length > 1 ? 's' : ''}`;
+  if (field === 'post_days' && Array.isArray(v)) return v.map(d => HIST_DAYS[d] || d).join(', ');
+  if (field === 'enabled_categories' && Array.isArray(v)) return v.map(id => escapeHtml(CATEGORIES.find(c => c.id === id)?.nom || '?')).join(', ') || '<i>aucune</i>';
+  if (field === 'attributes' && Array.isArray(v)) return v.map(a => escapeHtml(`${a.title || ''} : ${a.desc || ''}`)).join(' · ');
+  if (Array.isArray(v)) return escapeHtml(v.join(', '));
+  if (typeof v === 'object') return 'modifié';
+  return escapeHtml(String(v));
+}
+
+function _histDetail(r) {
+  if (r.action !== 'update' || !r.changes) return '';
+  return Object.entries(r.changes).map(([k, [a, b]]) => {
+    const f = HIST_FIELDS[k] || k;
+    if (k === 'data') return `<div><span class="hist-f">${f} :</span> ${escapeHtml((b || []).join(', '))}</div>`;
+    if (k === 'description' || k === 'custom_text' || k === 'icon_svg') return `<div><span class="hist-f">${f}</span> modifié${k === 'description' ? 'e' : ''}</div>`;
+    return `<div><span class="hist-f">${f} :</span> ${_histVal(k, a, r.table_name)} <span class="hist-arrow">→</span> ${_histVal(k, b, r.table_name)}</div>`;
+  }).join('');
+}
+
+function _histAction(r) {
+  if (r.table_name === 'orders' && r.action === 'insert') return ['Nouvelle commande', 'hist-new'];
+  if (r.table_name === 'profiles' && r.action === 'insert') return ['Nouveau compte', 'hist-new'];
+  if (r.table_name === 'social_queue' && r.action === 'update' && r.changes?.status?.[1] === 'posted') return ['Publié', 'hist-new'];
+  return { insert: ['Ajout', 'hist-new'], update: ['Modification', 'hist-upd'], delete: ['Suppression', 'hist-del'] }[r.action] || [r.action, ''];
+}
+
+function _histSource(r) {
+  if (!r.source) return '';
+  if (r.source.startsWith('import:')) return `<div class="hist-src">par import du fichier « ${escapeHtml(r.source.slice(7))} »</div>`;
+  return `<div class="hist-src">${escapeHtml(r.source)}</div>`;
+}
+
+function renderHistorique() {
+  const tb = document.getElementById('tbody-historique');
+  if (!_hist.rows.length) {
+    tb.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">${_hist.loading ? 'Chargement…' : 'Aucune action enregistrée pour le moment'}</td></tr>`;
+  } else {
+    let lastDay = null;
+    tb.innerHTML = _hist.rows.map(r => {
+      const d = new Date(r.created_at);
+      const day = _dayKey(d);
+      let sep = '';
+      if (day !== lastDay) { sep = `<tr class="day-sep"><td colspan="5"><span>${_dayLabel(day)}</span></td></tr>`; lastDay = day; }
+      const [act, cls] = _histAction(r);
+      return sep + `<tr>
+        <td style="white-space:nowrap;color:var(--text-muted)">${d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
+        <td><span class="hist-badge ${cls}">${act}</span>${_hist.cat ? '' : `<div class="hist-cat">${HIST_CATS[r.category] || r.category}</div>`}</td>
+        <td><strong>${escapeHtml(r.label || '—')}</strong>${_histSource(r)}</td>
+        <td class="hist-detail">${_histDetail(r)}</td>
+        <td class="col-hide-mobile" style="white-space:nowrap">${escapeHtml(r.actor_name || '—')}</td>
+      </tr>`;
+    }).join('');
+  }
+  const more = document.getElementById('hist-more');
+  if (more) more.style.display = (_hist.done || !_hist.rows.length) ? 'none' : '';
+}
+
+async function loadHistorique(reset = true) {
+  if (_hist.loading) return;
+  if (reset) { _hist.rows = []; _hist.done = false; }
+  _hist.loading = true;
+  if (reset) renderHistorique();
+  if (!CATEGORIES.length) await loadCategories();
+  let q = _supabase.from('admin_audit_log')
+    .select('id, created_at, category, action, table_name, label, changes, actor_name, source')
+    .order('created_at', { ascending: false })
+    .range(_hist.rows.length, _hist.rows.length + HIST_PAGE - 1);
+  if (_hist.cat) q = q.eq('category', _hist.cat);
+  const { data, error } = await q;
+  _hist.loading = false;
+  if (error) { console.error(error); document.getElementById('tbody-historique').innerHTML = `<tr><td colspan="5" style="color:#C62828;padding:1.5rem">Erreur : ${escapeHtml(error.message)}</td></tr>`; return; }
+  _hist.rows = _hist.rows.concat(data || []);
+  if (!data || data.length < HIST_PAGE) _hist.done = true;
+  renderHistorique();
+}
+
+function histSetCat(cat, btn) {
+  _hist.cat = cat;
+  document.querySelectorAll('.hist-tab').forEach(b => b.classList.toggle('active', b === btn));
+  loadHistorique(true);
 }
 
 // ── Realtime commandes ───────────────────────────────────────────
