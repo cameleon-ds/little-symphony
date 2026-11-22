@@ -180,6 +180,23 @@ function checkStrength(pwd) {
   label.textContent = level.text;
 }
 
+// Invitation envoyée par la boutique (lien « Créer mon compte » de l'e-mail) : champs pré-remplis
+(async () => {
+  const inv = new URLSearchParams(location.search).get('invite');
+  if (!inv || !/^[0-9a-f-]{36}$/i.test(inv) || typeof _supabase === 'undefined') return;
+  const { data } = await _supabase.rpc('get_invitation', { inv });
+  const v = Array.isArray(data) ? data[0] : data;
+  if (!v) return;
+  const parts = String(v.full_name || '').trim().split(/\s+/);
+  const set = (id, val) => { const el = document.getElementById(id); if (el && !el.value && val) el.value = val; };
+  set('firstName', parts[0] || '');
+  set('lastName', parts.slice(1).join(' '));
+  set('phone', v.phone || '');
+  const em = document.getElementById('email');
+  if (em) { em.value = v.email; em.readOnly = true; em.style.background = '#FAFAFA'; em.title = 'Adresse de votre invitation'; }
+  document.getElementById('password')?.focus();
+})();
+
 function showErr(id, show) {
   document.getElementById(id).style.display = show ? 'block' : 'none';
 }

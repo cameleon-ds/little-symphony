@@ -53,6 +53,11 @@ img{display:block;max-width:100%}
 .nav-badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--primary);color:#fff;
   font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;line-height:1}
 .nav-badge:empty{display:none}
+.client-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--text-soft);background:#F7F2F1;border-radius:6px;padding:3px 7px;cursor:copy}
+.client-id:hover{background:#EFE6E4;color:var(--charcoal)}
+.cl-status{display:inline-block;padding:3px 9px;border-radius:12px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.cl-active{background:#E8F5EC;color:#2E7D4F}.cl-pending{background:#FFF4E0;color:#A86400}
+.inv-l{display:block;font-size:12px;font-weight:600;color:var(--charcoal);margin:.7rem 0 .3rem}
 /* Séparateur de journée dans la liste des commandes */
 #tbl-commandes tr.day-sep td{padding:16px 0 8px;border:none;background:transparent;text-align:center;position:relative}
 #tbl-commandes tr.day-sep td::before{content:"";position:absolute;left:0;right:0;top:calc(50% + 4px);height:2px;background:#E6DCD9;transform:translateY(-50%)}
@@ -801,21 +806,33 @@ tr.row-selected td{background:#FBF6F5}
 
     <!-- CLIENTS -->
     <div class="panel" id="panel-clients">
-      <div class="page-header">
-        <h1 class="page-title">Clients</h1>
-        <p class="page-sub">Liste de tous les clients inscrits</p>
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div>
+          <h1 class="page-title">Clients</h1>
+          <p class="page-sub">Liste de tous les clients inscrits et invités</p>
+        </div>
+        <button type="button" onclick="openInviteModal()" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:var(--charcoal);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--sans)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          Ajouter nouveau
+        </button>
       </div>
       <div class="table-wrap">
         <div class="table-header">
           <span class="table-title">Tous les clients</span>
-          <input class="table-search" placeholder="Rechercher…" oninput="filterTable('tbl-clients', this.value)">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button type="button" id="btn-clients-export" onclick="exportClientsCsv()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--sans);color:var(--charcoal)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+              <span>Exporter les clients (CSV)</span>
+            </button>
+            <input class="table-search" placeholder="Rechercher…" oninput="filterTable('tbl-clients', this.value)">
+          </div>
         </div>
         <table id="tbl-clients">
           <thead><tr>
-            <th>Nom</th><th>Email</th><th>Téléphone</th><th class="col-hide-mobile">Ville</th><th class="col-hide-mobile">Inscrit le</th>
+            <th>ID</th><th>Nom</th><th>Email</th><th>Téléphone</th><th class="col-hide-mobile">Ville</th><th class="col-hide-mobile">Inscrit le</th><th>Statut</th>
           </tr></thead>
           <tbody id="tbody-clients">
-            <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement…</td></tr>
+            <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement…</td></tr>
           </tbody>
         </table>
       </div>
@@ -830,6 +847,7 @@ tr.row-selected td{background:#FBF6F5}
       <div style="max-width:600px">
         <div class="detail-card">
           <div class="detail-card-title">Informations du client</div>
+          <div style="font-size:12px;color:var(--text-muted);margin:-4px 0 12px">ID client : <span id="c-id" style="font-family:ui-monospace,Menlo,monospace;color:var(--text-soft);user-select:all"></span></div>
           <div class="two-col-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
             <div>
               <label style="font-size:12px;font-weight:500;color:var(--text-muted);display:block;margin-bottom:5px">Prénom</label>
@@ -2342,6 +2360,7 @@ async function loadClients() {
     .order('created_at', { ascending: false });
 
   if (error) { console.error('loadClients:', error); return; }
+  await loadInvites();
 
   CLIENTS = (data || []).map((p, i) => ({
     id: p.id, idx: i,
@@ -2360,10 +2379,166 @@ async function loadClients() {
   renderClients();
 }
 
+// ── Invitations clients (ajoutés par l'admin, « en attente » jusqu'à la création du compte) ──
+let INVITES = [];
+
+async function loadInvites() {
+  const { data, error } = await _supabase.from('client_invitations')
+    .select('id, email, full_name, phone, created_at, last_sent_at, send_count')
+    .eq('status', 'pending').order('created_at', { ascending: false });
+  if (error) { console.error('loadInvites:', error); INVITES = []; return; }
+  INVITES = data || [];
+}
+
+function openInviteModal() {
+  document.getElementById('inv-modal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'inv-modal'; m.className = 'del-overlay';
+  m.innerHTML = `
+    <div class="del-box" role="dialog" aria-modal="true" style="max-width:440px;text-align:left">
+      <h3 style="text-align:center">Ajouter un client</h3>
+      <p style="font-size:13px;color:var(--text-muted);text-align:center;margin:0 0 1rem">Le client reçoit un e-mail pour créer son compte. Il apparaît « En attente » jusqu'à son inscription.</p>
+      <label class="inv-l">Nom et prénom *</label><input id="inv-name" class="detail-input" autocomplete="off" placeholder="Ex. Sarah Ben Ali">
+      <label class="inv-l">E-mail *</label><input id="inv-email" class="detail-input" type="email" autocomplete="off" placeholder="cliente@exemple.com">
+      <label class="inv-l">Téléphone *</label><input id="inv-phone" class="detail-input" type="tel" autocomplete="off" placeholder="+216 XX XXX XXX">
+      <div class="del-err" id="inv-err"></div>
+      <div class="del-actions" style="margin-top:1rem">
+        <button type="button" class="del-cancel" onclick="document.getElementById('inv-modal').remove()">Annuler</button>
+        <button type="button" class="del-confirm" id="inv-send" style="background:var(--charcoal)">Envoyer</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  m.querySelector('#inv-name').focus();
+  m.querySelector('#inv-send').onclick = async () => {
+    const btn = m.querySelector('#inv-send'), errEl = m.querySelector('#inv-err');
+    const full_name = m.querySelector('#inv-name').value.trim();
+    const email = m.querySelector('#inv-email').value.trim();
+    const phone = m.querySelector('#inv-phone').value.trim();
+    errEl.style.display = 'none';
+    if (!full_name || !email || !phone) { errEl.textContent = 'Le nom, l\'e-mail et le téléphone sont obligatoires.'; errEl.style.display = 'block'; return; }
+    btn.disabled = true; btn.textContent = 'Envoi…';
+    const { data, error } = await _supabase.functions.invoke('invite-client', { body: { action: 'invite', full_name, email, phone } });
+    btn.disabled = false; btn.textContent = 'Envoyer';
+    if (error || !data?.ok) {
+      errEl.textContent = data?.error || error?.message || 'Erreur inattendue.';
+      errEl.style.display = 'block';
+      if (data?.saved) { await loadClients(); }
+      return;
+    }
+    m.remove();
+    showToast('Invitation envoyée', `${email} va recevoir un e-mail pour créer son compte`, null, 'success');
+    await loadClients();
+  };
+}
+
+async function resendInvite(id, btn) {
+  btn.disabled = true;
+  const { data, error } = await _supabase.functions.invoke('invite-client', { body: { action: 'resend', id } });
+  btn.disabled = false;
+  if (error || !data?.ok) { alert(data?.error || error?.message || 'Erreur inattendue.'); return; }
+  showToast('Invitation renvoyée', 'Le client va recevoir un nouvel e-mail', null, 'success');
+  await loadClients();
+}
+
+async function deleteInvite(id, email) {
+  if (!confirm(`Supprimer l'invitation de ${email} ?\nLe lien déjà envoyé ne fonctionnera plus pour pré-remplir l'inscription.`)) return;
+  const { error } = await _supabase.from('client_invitations').delete().eq('id', id);
+  if (error) { alert('Erreur : ' + error.message); return; }
+  await loadClients();
+}
+
+// Numéro client court affiché dans la liste (même principe que les commandes « LS-… »)
+const clientRef = id => 'CL-' + String(id || '').substring(0, 8).toUpperCase();
+
+function copyClientId(id, el) {
+  const done = () => { const t = el.textContent; el.textContent = 'ID copié'; setTimeout(() => { el.textContent = t; }, 1200); };
+  if (navigator.clipboard) navigator.clipboard.writeText(id).then(done).catch(() => {}); else done();
+}
+
+// Export CSV de tous les clients : infos, adresses, commandes (avec articles), tout
+async function exportClientsCsv() {
+  const btn = document.getElementById('btn-clients-export');
+  const label = btn.querySelector('span');
+  const old = label.textContent;
+  btn.disabled = true; label.textContent = 'Préparation…';
+  try {
+    const [pRes, aRes, oRes] = await Promise.all([
+      _supabase.from('profiles').select('*').neq('role', 'admin').order('created_at', { ascending: false }),
+      _supabase.from('addresses').select('*').order('created_at'),
+      _supabase.from('orders').select('id, user_id, status, total, address_line1, address_line2, city, postal_code, country, customer_name, customer_phone, customer_email, notes, created_at, order_items(product_name, unit_price, quantity)').order('created_at', { ascending: false })
+    ]);
+    const err = pRes.error || aRes.error || oRes.error;
+    if (err) throw err;
+    const profiles = pRes.data || [], addrs = aRes.data || [], orders = oRes.data || [];
+    if (!profiles.length) { alert('Aucun client à exporter.'); return; }
+
+    const money = n => Number(n || 0).toFixed(3).replace('.', ',');
+    const dt = v => v ? new Date(v).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+    const d = v => v ? new Date(v).toLocaleDateString('fr-FR') : '';
+
+    const headers = ['id', 'numero_client', 'prenom', 'nom', 'email', 'telephone',
+      'adresse_profil', 'complement', 'ville', 'code_postal', 'pays', 'inscrit_le',
+      'nb_adresses', 'adresses_enregistrees',
+      'nb_commandes', 'nb_commandes_hors_annulees', 'total_depense_dt', 'premiere_commande', 'derniere_commande',
+      'historique_commandes'];
+    const lines = [headers];
+    profiles.forEach(p => {
+      const myAddrs = addrs.filter(a => a.user_id === p.id);
+      const myOrders = orders.filter(o => o.user_id === p.id);
+      const valid = myOrders.filter(o => o.status !== 'cancelled');
+      const spent = valid.reduce((s, o) => s + Number(o.total || 0), 0);
+      const addrTxt = myAddrs.map(a => `${a.label ? a.label + ' : ' : ''}${[a.address_line1, a.postal_code, a.city, a.country].filter(Boolean).join(', ')}${a.is_default ? ' (par défaut)' : ''}`).join(' | ');
+      const histTxt = myOrders.map(o => {
+        const items = (o.order_items || []).map(i => `${i.quantity}× ${i.product_name} (${money(i.unit_price)} DT)`).join('; ');
+        const where = o.address_line1 === 'Retrait boutique' ? 'Retrait boutique' : [o.address_line1, o.city].filter(Boolean).join(', ');
+        return `LS-${o.id.substring(0, 8).toUpperCase()} — ${dt(o.created_at)} — ${STATUS_LABELS[o.status] || o.status} — ${money(o.total)} DT — ${where}${items ? ' — ' + items : ''}`;
+      }).join(' || ');
+      const dates = myOrders.map(o => o.created_at).sort();
+      lines.push([
+        p.id, clientRef(p.id), p.first_name || '', p.last_name || '', p.email || '', p.phone || '',
+        p.address_line1 || '', p.address_line2 || '', p.city || '', p.postal_code || '', p.country || '', d(p.created_at),
+        myAddrs.length, addrTxt,
+        myOrders.length, valid.length, money(spent), d(dates[0]), d(dates[dates.length - 1]),
+        histTxt
+      ]);
+    });
+
+    const csv = '﻿' + lines.map(r => r.map(csvEscape).join(',')).join('\r\n'); // BOM : accents corrects dans Excel
+    const now = new Date();
+    const stamp = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `little-symphony-clients-${stamp}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (e) {
+    alert("L'export a échoué : " + (e.message || e));
+  } finally {
+    btn.disabled = false; label.textContent = old;
+  }
+}
+
 function renderClients() {
-  document.getElementById('tbody-clients').innerHTML = CLIENTS.length
-    ? CLIENTS.map((c, i) => `
+  const inviteRows = INVITES.map(v => `
+      <tr class="row-pending">
+        <td style="white-space:nowrap"><span class="client-id" style="cursor:default" title="Pas encore de compte">—</span></td>
+        <td style="white-space:nowrap"><strong>${escapeHtml(v.full_name)}</strong></td>
+        <td>${escapeHtml(v.email)}</td>
+        <td>${escapeHtml(v.phone || '—')}</td>
+        <td class="col-hide-mobile">—</td>
+        <td class="col-hide-mobile" title="Invitation envoyée ${v.send_count || 0} fois">Invité le ${new Date(v.created_at).toLocaleDateString('fr-FR')}</td>
+        <td style="white-space:nowrap">
+          <span class="cl-status cl-pending">En attente</span>
+          <button class="btn-detail" title="Renvoyer l'invitation" onclick="resendInvite('${v.id}', this)" style="padding:5px 7px;margin-left:4px"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
+          <button class="btn-detail" title="Supprimer l'invitation" onclick="deleteInvite('${v.id}', '${escapeHtml(v.email)}')" style="padding:5px 7px"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+        </td>
+      </tr>`).join('');
+  document.getElementById('tbody-clients').innerHTML = (CLIENTS.length || INVITES.length)
+    ? inviteRows + CLIENTS.map((c, i) => `
       <tr>
+        <td style="white-space:nowrap"><span class="client-id" title="ID complet : ${c.id} — cliquer pour copier" onclick="copyClientId('${c.id}', this)">${clientRef(c.id)}</span></td>
         <td style="white-space:nowrap">
           <button class="btn-detail" onclick="showClient(${i})" style="margin-right:8px;flex-shrink:0"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button><strong>${c.nom}</strong>
         </td>
@@ -2371,8 +2546,9 @@ function renderClients() {
         <td>${c.tel || '—'}</td>
         <td class="col-hide-mobile">${c.ville || '—'}</td>
         <td class="col-hide-mobile">${c.date}</td>
+        <td><span class="cl-status cl-active">Actif</span></td>
       </tr>`).join('')
-    : `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">Aucun client</td></tr>`;
+    : `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Aucun client</td></tr>`;
 }
 
 function showClient(i) {
@@ -2385,6 +2561,7 @@ function showClient(i) {
   document.getElementById('c-tel').value     = c.tel;
   document.getElementById('c-ville').value   = c.ville;
   document.getElementById('c-date').value    = c.date;
+  const idEl = document.getElementById('c-id'); if (idEl) idEl.textContent = `${clientRef(c.id)} · ${c.id}`;
   document.getElementById('c-save-ok').style.display = 'none';
   document.getElementById('c-addr-form').style.display = 'none';
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
