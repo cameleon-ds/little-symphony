@@ -106,13 +106,14 @@ async function sendLink(e) {
   const err = document.getElementById('error-msg');
   err.style.display = 'none';
   btn.disabled = true; btn.textContent = 'Envoi…';
-  const { error } = await _supabase.auth.signInWithOtp({
-    email,
-    options: { shouldCreateUser: false, emailRedirectTo: new URL('admin-panel.html', window.location.href).href }
+  // L'e-mail n'est envoyé que si l'adresse est admin : la vérification se fait côté serveur
+  // (fonction Supabase « admin-login »), la liste des adresses n'est jamais dans la page.
+  const { error } = await _supabase.functions.invoke('admin-login', {
+    body: { email, redirectTo: new URL('admin-panel.html', window.location.href).href }
   });
   btn.disabled = false; btn.textContent = 'Continuer →';
-  if (error && /rate|too many|seconds/i.test(error.message || '')) {
-    err.textContent = 'Trop de demandes. Merci de patienter une minute avant de réessayer.';
+  if (error) {
+    err.textContent = "Envoi impossible pour le moment. Merci de réessayer dans un instant.";
     err.style.display = 'block';
     return;
   }
