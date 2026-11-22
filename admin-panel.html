@@ -175,10 +175,10 @@ tbody tr:hover{background:var(--primary-xlight)}
   .col-hide-mobile{display:none}
   #tbl-commandes td{padding:10px 6px}
   #tbl-commandes th{padding:8px 6px}
-  #tbl-commandes td:nth-child(5),
-  #tbl-commandes th:nth-child(5){padding-right:2px}
   #tbl-commandes td:nth-child(6),
-  #tbl-commandes th:nth-child(6){padding-left:2px}
+  #tbl-commandes th:nth-child(6){padding-right:2px}
+  #tbl-commandes td:nth-child(7),
+  #tbl-commandes th:nth-child(7){padding-left:2px}
 }
 
 /* ── PANEL DÉTAIL COMMANDE ── */
@@ -635,10 +635,10 @@ tr.row-selected td{background:#FBF6F5}
         </div>
         <table id="tbl-commandes">
           <thead><tr>
-            <th>N° commande</th><th>Client</th><th>Date</th><th>Montant</th><th>Statut</th><th style="text-align:right">Facture</th>
+            <th>N° commande</th><th>Client</th><th>Date</th><th>Heure</th><th>Montant</th><th>Statut</th><th style="text-align:right">Facture</th>
           </tr></thead>
           <tbody id="tbody-commandes">
-            <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement…</td></tr>
+            <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement…</td></tr>
           </tbody>
         </table>
       </div>
@@ -1698,6 +1698,7 @@ async function loadCommandes() {
     phone: o.customer_phone || '',
     date: new Date(o.created_at).toLocaleDateString('fr-FR'),
     dateShort: new Date(o.created_at).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit'}),
+    time: new Date(o.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}),
     dateTime: new Date(o.created_at).toLocaleDateString('fr-FR') + ' à ' + new Date(o.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}),
     dateISO: (d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'))(new Date(o.created_at)),
     total: Number(o.total).toFixed(3).replace('.', ',') + ' DT',
@@ -1742,6 +1743,7 @@ function renderCommandes() {
         </td>
         <td>${o.client}</td>
         <td><span class="date-full">${o.date}</span><span class="date-short">${o.dateShort}</span></td>
+        <td style="white-space:nowrap">${o.time}</td>
         <td><strong>${o.total}</strong></td>
         <td>
           <select class="status-select-inline s-${o.status}" onchange="updateStatus('${o.id}', this)">
@@ -1760,7 +1762,7 @@ function renderCommandes() {
           </button>` : `<span style="color:var(--text-muted);font-size:12px">—</span>`}
         </td>
       </tr>`).join('')
-    : `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">Aucune commande</td></tr>`;
+    : `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Aucune commande</td></tr>`;
 }
 
 // ── FACTURES (PDF généré côté navigateur, aucun stockage) ─────────
