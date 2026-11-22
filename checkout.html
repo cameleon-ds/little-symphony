@@ -411,66 +411,75 @@ async function confirm() {
   const addr      = document.getElementById('f-addr')?.value  || '';
   const city      = document.getElementById('f-city')?.value  || '';
 
-  // ── Sauvegarde dans Supabase ──────────────────────────────
-  let supabaseOrderId = null;
-  if (typeof _supabase !== 'undefined' && user.id) {
-    const { data: { user: sbUser } } = await _supabase.auth.getUser();
-    if (sbUser) {
-      // 1. Créer la commande
-      const { data: order, error: orderErr } = await _supabase
-        .from('orders')
-        .insert({
-          user_id:        sbUser.id,
-          status:         'pending',
-          total:          total,
-          address_line1:  deliveryMode === 'livraison' ? addr : 'Retrait boutique',
-          city:           deliveryMode === 'livraison' ? city : '',
-          country:        'TN',
-          customer_name:  `${firstName} ${lastName}`.trim(),
-          customer_phone: phone,
-          customer_email: sbUser.email
-        })
-        .select('id')
-        .single();
+  // ── Sauvegarde dans Supabase (obligatoire : sans elle, l'admin ne reçoit pas la commande) ──
+  const btn = document.getElementById('btn-confirm');
+  const btnLabel = btn.textContent;
+  const fail = (msg) => { btn.disabled = false; btn.textContent = btnLabel; alert(msg); };
+  btn.disabled = true; btn.textContent = 'Envoi de la commande…';
 
-      if (!orderErr && order) {
-        supabaseOrderId = order.id;
+  if (typeof _supabase === 'undefined') {
+    return fail("La connexion au serveur est impossible pour le moment. Votre panier est conservé, merci de réessayer dans un instant.");
+  }
+  // Session expirée (ex. téléphone resté connecté longtemps) : reconnexion obligatoire, le panier est conservé
+  const { data: { user: sbUser } } = await _supabase.auth.getUser();
+  if (!sbUser) {
+    localStorage.removeItem('ls_user');
+    alert("Votre session a expiré. Merci de vous reconnecter pour valider votre commande — votre panier est conservé.");
+    window.location.href = 'login.html?next=checkout.html';
+    return;
+  }
 
-        // 2. Résoudre les UUIDs manquants via Supabase (articles ajoutés avant le fix)
-        const resolvedItems = await Promise.all(items.map(async i => {
-          const uuidOk = i.id && /^[0-9a-f-]{36}$/i.test(i.id);
-          if (uuidOk) return i;
-          // Chercher le produit par nom
-          const { data: found } = await _supabase
-            .from('products').select('id, slug').eq('name', i.name).single();
-          if (found) return { ...i, id: found.id, slug: found.slug };
-          return null; // produit introuvable → on ignore
-        }));
+  // 1. Créer la commande
+  const { data: order, error: orderErr } = await _supabase
+    .from('orders')
+    .insert({
+      user_id:        sbUser.id,
+      status:         'pending',
+      total:          total,
+      address_line1:  deliveryMode === 'livraison' ? addr : 'Retrait boutique',
+      city:           deliveryMode === 'livraison' ? city : '',
+      country:        'TN',
+      customer_name:  `${firstName} ${lastName}`.trim(),
+      customer_phone: phone,
+      customer_email: sbUser.email
+    })
+    .select('id')
+    .single();
 
-        const orderItems = resolvedItems
-          .filter(i => i && i.id && /^[0-9a-f-]{36}$/i.test(i.id))
-          .map(i => ({
-            order_id:     order.id,
-            product_id:   i.id,
-            product_name: i.name,
-            product_slug: i.slug || i.name.toLowerCase().replace(/\s+/g,'-'),
-            unit_price:   parsePrice(i.price),
-            quantity:     i.qty
-          }));
+  if (orderErr || !order) {
+    console.error('Supabase order error:', orderErr);
+    return fail("Votre commande n'a pas pu être enregistrée. Votre panier est conservé, merci de réessayer. Si le problème persiste, contactez-nous.");
+  }
+  const supabaseOrderId = order.id;
 
-        if (orderItems.length) {
-          await _supabase.from('order_items').insert(orderItems);
-        }
-      } else if (orderErr) {
-        console.error('Supabase order error:', orderErr);
-      }
-    }
+  // 2. Résoudre les UUIDs manquants via Supabase (articles ajoutés avant le fix)
+  const resolvedItems = await Promise.all(items.map(async i => {
+    const uuidOk = i.id && /^[0-9a-f-]{36}$/i.test(i.id);
+    if (uuidOk) return i;
+    const { data: found } = await _supabase
+      .from('products').select('id, slug').eq('name', i.name).single();
+    if (found) return { ...i, id: found.id, slug: found.slug };
+    return null; // produit introuvable → on ignore
+  }));
+
+  const orderItems = resolvedItems
+    .filter(i => i && i.id && /^[0-9a-f-]{36}$/i.test(i.id))
+    .map(i => ({
+      order_id:     order.id,
+      product_id:   i.id,
+      product_name: i.name,
+      product_slug: i.slug || i.name.toLowerCase().replace(/\s+/g,'-'),
+      unit_price:   parsePrice(i.price),
+      quantity:     i.qty
+    }));
+
+  if (orderItems.length) {
+    const { error: itemsErr } = await _supabase.from('order_items').insert(orderItems);
+    if (itemsErr) console.error('Supabase order_items error:', itemsErr);
   }
 
   // ── Sauvegarde locale (fallback + page confirm) ───────────
-  const localId = supabaseOrderId
-    ? 'LS-' + supabaseOrderId.substring(0,8).toUpperCase()
-    : 'LS-' + Date.now().toString(36).toUpperCase();
+  const localId = 'LS-' + supabaseOrderId.substring(0,8).toUpperCase();
 
   const localOrder = {
     id: localId, supabaseId: supabaseOrderId,
