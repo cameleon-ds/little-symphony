@@ -3330,20 +3330,20 @@ function csvEscape(val) {
 
 function buildProduitsCsvTemplate() {
   const headers = [
-    'categorie', 'sous_categorie', 'nom', 'sous_titre', 'description',
+    'id', 'categorie', 'sous_categorie', 'nom', 'sous_titre', 'description',
     'prix', 'prix_barre', 'stock', 'sexe', 'ages', 'images',
     'actif', 'nouveau', 'promo', 'vedette',
-    'attribut1_titre', 'attribut1_valeur', 'attribut2_titre', 'attribut2_valeur'
+    'attribut1_titre', 'attribut1_valeur', 'attribut2_titre', 'attribut2_valeur', 'mots_cles'
   ];
   const exCat = CATEGORIES[0]?.nom || 'Vêtements';
   const exSub = CATEGORIES[0]?.subs?.[0]?.nom || '';
   const rows = [
     headers,
-    [exCat, exSub, 'Body manches longues', 'En coton bio', 'Body doux et confortable pour bébé.',
+    ['', exCat, exSub, 'Body manches longues', 'En coton bio', 'Body doux et confortable pour bébé.',
       '24.900', '29.900', '15', 'mixte', '0-6;6-12',
       'https://exemple.com/image1.jpg;https://exemple.com/image2.jpg',
-      'oui', 'oui', 'non', 'non', 'Matière', 'Coton bio', 'Entretien', 'Lavage 30°C'],
-    ['', '', 'Exemple à remplacer', '', '', '19.900', '', '10', 'fille', '1-3', '', 'oui', 'non', 'non', 'non', '', '', '', '']
+      'oui', 'oui', 'non', 'non', 'Matière', 'Coton bio', 'Entretien', 'Lavage 30°C', 'body bébé, coton bio, naissance'],
+    ['', '', '', 'Exemple à remplacer', '', '', '19.900', '', '10', 'fille', '1-3', '', 'oui', 'non', 'non', 'non', '', '', '', '', '']
   ];
   return rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
 }
@@ -3545,12 +3545,20 @@ async function handleCsvImport(event) {
       attrCols.push([col(`attribut${i}_titre`), col(`attribut${i}_valeur`)]);
     }
 
+    if (idx.id === -1) {
+      alert("Import refusé : le fichier ne contient pas de colonne « id ».\n\nSans cette colonne, chaque ligne serait ajoutée comme un nouveau produit, ce qui créerait des doublons.\n\n• Pour modifier vos produits : partez du fichier obtenu avec le bouton « Exporter tous les produits (CSV) », qui contient l'ID de chaque produit.\n• Pour ajouter des produits : utilisez le modèle CSV et laissez la colonne « id » vide.");
+      return;
+    }
     if (idx.categorie === -1 || idx.nom === -1 || idx.prix === -1) {
-      alert('Le fichier CSV doit contenir au minimum les colonnes : categorie, nom, prix.\nTéléchargez le modèle CSV pour respecter le bon format.');
+      alert('Le fichier CSV doit contenir au minimum les colonnes : id, categorie, nom, prix.\nTéléchargez le modèle CSV pour respecter le bon format.');
       return;
     }
 
     if (!CATEGORIES.length) await loadCategories();
+    // Doublons probables : ligne sans ID dont le nom correspond déjà à un produit de la boutique
+    const normName = v => String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+    const byName = new Map(PRODUITS.map(p => [normName(p.nom), p]));
+    const newNames = new Set();
     const parseBool = (v, def) => {
       const s = (v || '').trim().toLowerCase();
       if (!s) return def;
@@ -3623,6 +3631,10 @@ async function handleCsvImport(event) {
         seenIds.add(id);
         updates.push({ id, payload });
       } else {
+        const twin = byName.get(normName(nom));
+        if (twin) { errors.push(`Ligne ${lineNo} : « ${nom} » existe déjà dans la boutique (ID ${twin.id}). Ajoutez cet ID dans la colonne « id » pour le mettre à jour. Ligne ignorée pour éviter un doublon.`); continue; }
+        if (newNames.has(normName(nom))) { errors.push(`Ligne ${lineNo} : « ${nom} » apparaît plusieurs fois sans ID dans le fichier. Ligne ignorée.`); continue; }
+        newNames.add(normName(nom));
         const baseSlug = slugifyProductName(nom) || ('produit-' + Date.now());
         let uniqueSlug = baseSlug, n = 2;
         while (existingSlugs.has(uniqueSlug)) { uniqueSlug = `${baseSlug}-${n++}`; }
@@ -3640,7 +3652,7 @@ async function handleCsvImport(event) {
     }
 
     // Produits de la boutique absents du fichier (seulement si le fichier contient des ID)
-    const missing = idx.id !== -1 ? PRODUITS.filter(p => !seenIds.has(p.id)) : [];
+    const missing = PRODUITS.filter(p => !seenIds.has(p.id));
     const choice = await _importConfirmModal({
       fileName: file.name, nUpdate: updates.length, nInsert: inserts.length,
       nMissing: missing.length, nCurrent: PRODUITS.length, nFile: allRows.length - 1, errors
