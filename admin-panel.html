@@ -5072,10 +5072,10 @@ async function saveMessagingSettings() {
   const { data: { session } } = await _supabase.auth.getSession();
   if (!session) { window.location.href = 's-admin.html'; return; }
 
-  const { data: profile, error: profErr } = await _supabase
-    .from('profiles').select('role').eq('id', session.user.id).single();
+  // Droits admin vérifiés par la base (liste blanche des adresses autorisées)
+  const { data: myRole, error: profErr } = await _supabase.rpc('get_my_role');
 
-  if (profErr || !profile || profile.role !== 'admin') {
+  if (profErr || myRole !== 'admin') {
     await _supabase.auth.signOut();
     window.location.href = 's-admin.html'; return;
   }

@@ -48,7 +48,7 @@ input:focus{border-color:var(--primary)}
   border-radius:40px;font-size:14px;font-weight:600;transition:all 0.25s;
   box-shadow:0 4px 16px rgba(0,0,0,0.15);margin-top:0.5rem}
 .btn:hover{background:#3A3A3C;transform:translateY(-2px)}
-.forgot{display:block;text-align:center;margin-top:1.2rem;font-size:13px;color:var(--primary-dark);background:none;border:none;cursor:pointer;font-family:var(--sans);width:100%}
+.forgot{display:none;text-align:center;margin-top:1.2rem;font-size:13px;color:var(--primary-dark);background:none;border:none;cursor:pointer;font-family:var(--sans);width:100%}
 .forgot:hover{text-decoration:underline}
 .info-msg{background:#F1F8F1;border:1px solid #C8E6C9;border-radius:8px;padding:10px 14px;font-size:13px;color:#2E7D32;display:none;margin-top:1rem}
 
@@ -71,20 +71,15 @@ input:focus{border-color:var(--primary)}
   <h1>Connexion admin</h1>
   <p class="sub">Accès réservé à l'équipe Little Symphony</p>
 
-  <div class="error-msg" id="error-msg">Identifiants incorrects.</div>
+  <div class="error-msg" id="error-msg"></div>
 
-  <form onsubmit="doLogin(event)">
+  <form id="login-form" onsubmit="sendLink(event)">
     <div class="form-group">
-      <label>Nom d'utilisateur</label>
-      <input type="text" id="username" placeholder="admin" autocomplete="username" required>
+      <label for="email">Login</label>
+      <input type="email" id="email" placeholder="votre adresse e-mail" autocomplete="email" inputmode="email" required>
     </div>
-    <div class="form-group">
-      <label>Mot de passe</label>
-      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
-    </div>
-    <button type="submit" class="btn">Se connecter →</button>
+    <button type="submit" class="btn" id="btn-continue">Continuer →</button>
   </form>
-  <button type="button" class="forgot" onclick="forgotPassword()">Mot de passe oublié ?</button>
   <div class="info-msg" id="info-msg"></div>
 </div>
 
@@ -95,72 +90,35 @@ input:focus{border-color:var(--primary)}
 (async () => {
   const { data: { session } } = await _supabase.auth.getSession();
   if (session) {
-    const { data: p } = await _supabase.from('profiles').select('role').eq('id', session.user.id).single();
-    if (p?.role === 'admin') { window.location.href = 'admin-panel.html'; return; }
+    const { data: role } = await _supabase.rpc('get_my_role');
+    if (role === 'admin') { window.location.href = 'admin-panel.html'; return; }
   }
 })();
 
-async function doLogin(e) {
+// Connexion par lien e-mail (sans mot de passe). Le message est toujours le même,
+// que l'adresse soit autorisée ou non : la page ne révèle jamais quelles adresses ont accès.
+// Les droits admin sont vérifiés par la base (liste blanche de 2 adresses).
+async function sendLink(e) {
   e.preventDefault();
-  const username = document.getElementById('username').value.trim();
-  const password = document.getElementById('password').value;
-  const err = document.getElementById('error-msg');
-  const btn = document.querySelector('.btn');
-
-  // Seul l'identifiant "cissi" est accepté
-  if (username !== 'cissi') {
-    err.style.display = 'block';
-    document.getElementById('password').value = '';
-    return;
-  }
-
-  btn.textContent = 'Connexion…';
-  btn.disabled = true;
-  err.style.display = 'none';
-
-  // Authentification Supabase avec le compte admin réel
-  const { data, error } = await _supabase.auth.signInWithPassword({
-    email: 'nizarmadeby.pro@gmail.com',
-    password
-  });
-
-  btn.textContent = 'Se connecter →';
-  btn.disabled = false;
-
-  if (error) {
-    err.style.display = 'block';
-    document.getElementById('password').value = '';
-    return;
-  }
-
-  // Vérifier que le compte a bien le rôle admin
-  const { data: profile } = await _supabase
-    .from('profiles').select('role').eq('id', data.user.id).single();
-
-  if (!profile || profile.role !== 'admin') {
-    await _supabase.auth.signOut();
-    err.style.display = 'block';
-    document.getElementById('password').value = '';
-    return;
-  }
-
-  window.location.href = 'admin-panel.html';
-}
-
-// Mot de passe oublié : envoie un e-mail de réinitialisation au compte admin
-async function forgotPassword() {
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const btn = document.getElementById('btn-continue');
   const info = document.getElementById('info-msg');
-  const btn = document.querySelector('.forgot');
+  const err = document.getElementById('error-msg');
+  err.style.display = 'none';
   btn.disabled = true; btn.textContent = 'Envoi…';
-  const { error } = await _supabase.auth.resetPasswordForEmail('nizarmadeby.pro@gmail.com', {
-    redirectTo: new URL('reset-password.html', window.location.href).href
+  const { error } = await _supabase.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: false, emailRedirectTo: new URL('admin-panel.html', window.location.href).href }
   });
-  btn.disabled = false; btn.textContent = 'Mot de passe oublié ?';
+  btn.disabled = false; btn.textContent = 'Continuer →';
+  if (error && /rate|too many|seconds/i.test(error.message || '')) {
+    err.textContent = 'Trop de demandes. Merci de patienter une minute avant de réessayer.';
+    err.style.display = 'block';
+    return;
+  }
+  document.getElementById('login-form').style.display = 'none';
   info.style.display = 'block';
-  info.style.color = error ? '#C62828' : '#2E7D32';
-  info.textContent = error
-    ? "Envoi impossible pour le moment (" + error.message + "). Réessaie dans une minute."
-    : "Un e-mail de réinitialisation a été envoyé à l'adresse du compte admin. Ouvre le lien qu'il contient pour choisir un nouveau mot de passe.";
+  info.innerHTML = "Si cette adresse est autorisée, un lien de connexion vient de lui être envoyé.<br>Il est valable 10 minutes et ne fonctionne qu'une seule fois.";
 }
 </script>
 </body>
