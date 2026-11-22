@@ -62,6 +62,7 @@ input:focus,textarea:focus{border-color:var(--primary)}
 .btn-submit:hover{background:var(--primary-dark);transform:translateY(-2px)}
 .login-link{text-align:center;font-size:13px;color:var(--text-soft)}
 .login-link a{color:var(--primary-dark);font-weight:600}
+.success-msg{width:100%;padding:15px;background:#F0FFF4;border:1px solid #C6F6D5;border-radius:40px;color:#276749;font-size:14px;font-weight:600;text-align:center;line-height:1.5;margin-bottom:1rem}
 .error-msg{background:#FFF3F0;border:1px solid #FFCCC7;border-radius:8px;
   padding:10px 14px;font-size:13px;color:#C62828;display:none;margin-bottom:1rem}
 .field-error{font-size:11px;color:#E65100;margin-top:3px;display:none}
@@ -262,12 +263,13 @@ async function doRegister(e) {
     const next = new URLSearchParams(window.location.search).get('next') || 'profile.html';
     window.location.href = next;
   } else {
-    // Email de confirmation envoyé — ne pas connecter l'utilisateur
-    err.style.background = '#F0FFF4';
-    err.style.borderColor = '#C6F6D5';
-    err.style.color = '#276749';
-    err.textContent = '✓ Compte créé ! Vérifiez votre email pour confirmer votre inscription.';
-    err.style.display = 'block';
+    // Email de confirmation envoyé — ne pas connecter l'utilisateur.
+    // Le bouton « Créer mon compte » est remplacé par le message de confirmation, à la même place.
+    err.style.display = 'none';
+    const ok = document.createElement('div');
+    ok.className = 'success-msg';
+    ok.textContent = '✓ Compte créé ! Vérifiez votre email pour confirmer votre inscription.';
+    btn.replaceWith(ok);
   }
 }
 </script>
