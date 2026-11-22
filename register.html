@@ -240,7 +240,9 @@ async function doRegister(e) {
     email,
     password,
     options: {
-      data: { first_name: firstName, last_name: lastName }
+      data: { first_name: firstName, last_name: lastName },
+      // Le lien de l'e-mail de confirmation ramène sur la page de connexion (e-mail pré-rempli + message)
+      emailRedirectTo: new URL('login.html?confirmed=1', window.location.href).href
     }
   });
 

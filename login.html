@@ -189,6 +189,26 @@ async function sendReset(e) {
 }
 if (location.hash === '#oubli') showForgot();
 
+// Retour depuis l'e-mail de confirmation d'inscription : message vert + e-mail pré-rempli.
+// Supabase ouvre une session automatiquement ; on la ferme pour que le client se connecte normalement.
+if (new URLSearchParams(location.search).get('confirmed') === '1') {
+  (async () => {
+    const box = document.getElementById('login-box');
+    const msg = document.createElement('div');
+    msg.className = 'ok-msg';
+    msg.textContent = 'Votre adresse e-mail a bien été confirmée. Vous pouvez maintenant vous connecter.';
+    box.insertBefore(msg, document.getElementById('error-msg'));
+    try {
+      const { data: { session } } = await _supabase.auth.getSession();
+      const mail = session?.user?.email;
+      if (mail) document.getElementById('email').value = mail;
+      if (session) await _supabase.auth.signOut({ scope: 'local' });
+    } catch (e) { /* rien : le client saisit son e-mail */ }
+    history.replaceState(null, '', location.pathname);   // retire les jetons de l'adresse
+    document.getElementById('password')?.focus();
+  })();
+}
+
 // Message après un changement de mot de passe réussi
 if (new URLSearchParams(location.search).get('reset') === 'ok') {
   const box = document.getElementById('login-box');
