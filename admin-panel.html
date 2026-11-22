@@ -50,6 +50,14 @@ img{display:block;max-width:100%}
 .nav-item:hover{background:var(--primary-xlight);color:var(--charcoal)}
 .nav-item.active{background:#F5EDED;color:var(--primary-dark);font-weight:600}
 .nav-item.active svg{stroke:var(--primary-dark)}
+.nav-badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#2E9E5B;color:#fff;
+  font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;line-height:1}
+.nav-badge:empty{display:none}
+/* Séparateur de journée dans la liste des commandes */
+#tbl-commandes tr.day-sep td{padding:16px 0 8px;border:none;background:transparent;text-align:center;position:relative}
+#tbl-commandes tr.day-sep td::before{content:"";position:absolute;left:0;right:0;top:calc(50% + 4px);height:2px;background:#B8AAA6;transform:translateY(-50%)}
+#tbl-commandes tr.day-sep span{position:relative;display:inline-block;padding:2px 12px;background:#fff;font-size:11px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--text-soft)}
 
 .sidebar-footer{padding:1rem 1.5rem;border-top:1px solid var(--border)}
 .btn-logout{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);
@@ -505,6 +513,7 @@ tr.row-selected td{background:#FBF6F5}
     <button class="nav-item active" onclick="showPanel('commandes', this);closeSidebar()">
       <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
       Commandes
+      <span class="nav-badge" id="nav-badge-commandes" title="Commandes reçues aujourd'hui"></span>
     </button>
 
     <button class="nav-item" onclick="showPanel('clients', this);closeSidebar()">
@@ -1622,7 +1631,7 @@ function filterCommandes() {
   const status = document.getElementById('commandes-status-filter').value;
   const dateFrom = document.getElementById('commandes-date-from').value; // yyyy-mm-dd ou ''
   const dateTo   = document.getElementById('commandes-date-to').value;   // yyyy-mm-dd ou ''
-  document.querySelectorAll('#tbl-commandes tbody tr').forEach(tr => {
+  document.querySelectorAll('#tbl-commandes tbody tr:not(.day-sep)').forEach(tr => {
     const matchText = !q || tr.textContent.toLowerCase().includes(q);
     const matchStatus = !status
       || (status === 'invoiced' ? invoiceAvailableForStatus(tr.dataset.status) : tr.dataset.status === status);
@@ -1630,6 +1639,12 @@ function filterCommandes() {
     const matchDateFrom = !dateFrom || (rowDate >= dateFrom);
     const matchDateTo   = !dateTo   || (rowDate <= dateTo);
     tr.style.display = (matchText && matchStatus && matchDateFrom && matchDateTo) ? '' : 'none';
+  });
+  // Séparateurs de journée : masqués si aucune commande visible ce jour-là
+  document.querySelectorAll('#tbl-commandes tbody tr.day-sep').forEach(sep => {
+    const day = sep.dataset.day;
+    const anyVisible = [...document.querySelectorAll(`#tbl-commandes tbody tr[data-date="${day}"]`)].some(r => r.style.display !== 'none');
+    sep.style.display = anyVisible ? '' : 'none';
   });
 
   const zipBtn = document.getElementById('btn-invoices-zip');
@@ -1734,9 +1749,39 @@ function renderStats() {
   document.getElementById('s-revenue').textContent   = revenue.toFixed(3).replace('.', ',') + ' DT';
 }
 
+// Libellé d'une journée : Aujourd'hui, Hier, sinon jj/mm/aa
+function _dayKey(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function _dayLabel(iso) {
+  const today = new Date(); const y = new Date(); y.setDate(today.getDate() - 1);
+  if (iso === _dayKey(today)) return "Aujourd'hui";
+  if (iso === _dayKey(y)) return 'Hier';
+  const [Y, M, D] = iso.split('-');
+  return `${D}/${M}/${Y.slice(2)}`;
+}
+
+// Pastille verte du menu : nombre de commandes reçues aujourd'hui
+function updateOrdersBadge() {
+  const el = document.getElementById('nav-badge-commandes');
+  if (!el) return;
+  const today = _dayKey(new Date());
+  const n = COMMANDES.filter(o => o.dateISO === today).length;
+  el.textContent = n ? String(n) : '';
+}
+setInterval(updateOrdersBadge, 60000); // passage à minuit
+
 function renderCommandes() {
+  updateOrdersBadge();
+  const today = _dayKey(new Date());
+  let lastDay = null;
   document.getElementById('tbody-commandes').innerHTML = COMMANDES.length
-    ? COMMANDES.map(o => `
+    ? COMMANDES.map(o => {
+      // Ligne épaisse + date à chaque changement de journée (pas au-dessus des commandes du jour)
+      let sep = '';
+      if (o.dateISO !== lastDay) {
+        if (lastDay !== null || o.dateISO !== today) sep = `<tr class="day-sep" data-day="${o.dateISO}"><td colspan="7"><span>${_dayLabel(o.dateISO)}</span></td></tr>`;
+        lastDay = o.dateISO;
+      }
+      return sep + `
       <tr data-status="${o.status}" data-date="${o.dateISO}" data-id="${o.id}">
         <td style="white-space:nowrap">
           <button class="btn-detail" onclick="showDetail('${o.id}')" style="margin-right:8px;flex-shrink:0"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button><strong>${o.ref}</strong>
@@ -1761,7 +1806,7 @@ function renderCommandes() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           </button>` : `<span style="color:var(--text-muted);font-size:12px">—</span>`}
         </td>
-      </tr>`).join('')
+      </tr>`; }).join('')
     : `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Aucune commande</td></tr>`;
 }
 
