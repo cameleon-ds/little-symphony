@@ -86,17 +86,15 @@ button{cursor:pointer;font-family:var(--sans)}
 <nav id="main-nav"></nav>
 
 <!-- ── HERO ── -->
-<div class="ml-hero">
+<div class="ml-hero" id="ls-lg-hero">
   <span class="eyebrow">Informations légales</span>
   <h1>Conditions Générales d'Utilisation</h1>
   <p>Les présentes CGU définissent les règles d'accès et d'utilisation du site Little Symphony par tout visiteur ou utilisateur.</p>
 </div>
 
-<div class="ml-wrap">
+<div class="ml-wrap" id="ls-lg-body">
 
-  <div class="ml-note">
-    <strong>À compléter :</strong> les informations en <span class="ml-placeholder">[crochets]</span> ci-dessous sont des exemples de champs à préciser ou ajuster avant la mise en ligne du site.
-  </div>
+  
 
   <div class="ml-section">
     <h2>1. Objet</h2>
@@ -173,7 +171,10 @@ button{cursor:pointer;font-family:var(--sans)}
 <div id="main-footer"></div>
 
 <script src="_shared.js?v=9"></script>
+<script src="site-content.js?v=5"></script>
 <script>
+// Contenu éditable depuis l'admin (Contenu → CGU)
+if (typeof lsApplyLegal === 'function') loadSiteContent('cgu', lsApplyLegal);
 renderNav();
 renderFooter();
 </script>

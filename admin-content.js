@@ -208,6 +208,15 @@ const CE_PAGES = {
     ], { titleKey: 'title', hint: 'Ajouter, supprimer, réordonner' }),
     { k: '', label: 'Date de mise à jour', type: 'root', fields: [CEF.text('updated', 'Texte en bas de page', { full: true })] },
   ]},
+
+  cgu: { key: 'cgu', label: 'CGU', url: 'cgu.html', sections: [
+    CEF.group('hero', 'En-tête', [CEF.text('eyebrow', 'Sur-titre'), CEF.text('title', 'Titre'), CEF.area('text', 'Introduction', { rows: 3 })]),
+    CEF.list('sections', 'Articles', 'Article', [
+      CEF.text('title', 'Titre de l\u2019article', { full: true }),
+      CEF.area('body', 'Texte', { rows: 9, help: 'Ligne vide = nouveau paragraphe · ligne commençant par « - » = liste à puces · [texte](lien) = lien · [texte] = champ à compléter surligné · **texte** = gras' }),
+    ], { titleKey: 'title', hint: 'Ajouter, supprimer, réordonner' }),
+    { k: '', label: 'Date de mise à jour', type: 'root', fields: [CEF.text('updated', 'Texte en bas de page', { full: true })] },
+  ]},
 };
 
 /* ── État de l'éditeur ───────────────────────────────────────────────────── */
