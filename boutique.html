@@ -685,6 +685,7 @@ async function loadProducts() {
     badge:    p.is_new ? 'new' : p.is_promo ? 'promo' : null,
     isNew:    !!p.is_new,
     isPromo:  !!p.is_promo,
+    hasProductImage: !!(p.images && p.images.some(url => typeof url === 'string' && url.trim())),
     img:      (p.images && p.images.length > 0) ? p.images[0] : (IMG_BY_SLUG[p.slug] || 'images/placeholder-produit.svg'),
     images:   (p.images && p.images.length > 0) ? p.images : (IMG_BY_SLUG[p.slug] ? [IMG_BY_SLUG[p.slug]] : []),
     age:      p.age_ranges || [],
@@ -960,6 +961,9 @@ function applyFilters() {
     CATS_META.forEach(c => { head.push(...filtered.filter(p => p.catKey === c.key).slice(0, 2)); });
     filtered = head.concat(filtered.filter(p => !head.includes(p)));
   }
+
+  // Garder l'ordre choisi, mais placer toujours les produits avec photo en premier.
+  filtered = filtered.filter(p => p.hasProductImage).concat(filtered.filter(p => !p.hasProductImage));
 
   // Update cat color CSS variable for add buttons
   const catColor = activeCat !== null ? CATS_META[activeCat].color : 'var(--primary)';

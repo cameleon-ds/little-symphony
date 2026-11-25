@@ -1479,6 +1479,13 @@ async function loadIndexProducts() {
   buildCatBar();
   const catUsed = {}; // { catIdx: { url: count } } pour éviter les doublons visuels
 
+  // Dans chaque catégorie, conserver l'ordre existant et repousser les produits sans photo.
+  data.sort((a, b) => {
+    const aHasImage = Array.isArray(a.images) && a.images.some(url => typeof url === 'string' && url.trim());
+    const bHasImage = Array.isArray(b.images) && b.images.some(url => typeof url === 'string' && url.trim());
+    return Number(bHasImage) - Number(aHasImage);
+  });
+
   data.forEach(p => {
     const catIdx = CATS_META.findIndex(m => m.key === p.category_key);
     if (catIdx === -1) return;
