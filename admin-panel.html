@@ -3733,9 +3733,25 @@ async function handleCsvImport(event) {
     }
 
     if (!CATEGORIES.length) await loadCategories();
-    // Doublons probables : ligne sans ID dont le nom correspond déjà à un produit de la boutique
+    // Correspondances utilisées pour mettre à jour sans UUID : référence fournisseur d'abord,
+    // puis nom exact et unique. Les noms ambigus restent ignorés.
     const normName = v => String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
-    const byName = new Map(PRODUITS.map(p => [normName(p.nom), p]));
+    const byName = new Map();
+    const bySupplierRef = new Map();
+    const ambiguousSupplierRefs = new Set();
+    const productAttr = (p, title) => (p.attributes || []).find(a => normName(a.title) === title)?.desc || '';
+    const supplierRefKey = (supplier, ref) => `${normName(supplier)}\u0000${normName(ref)}`;
+    PRODUITS.forEach(p => {
+      const nameKey = normName(p.nom);
+      if (!byName.has(nameKey)) byName.set(nameKey, []);
+      byName.get(nameKey).push(p);
+      const supplier = productAttr(p, 'fournisseur');
+      const ref = productAttr(p, 'reference');
+      if (!supplier || !ref) return;
+      const key = supplierRefKey(supplier, ref);
+      if (bySupplierRef.has(key)) ambiguousSupplierRefs.add(key);
+      else bySupplierRef.set(key, p);
+    });
     const newNames = new Set();
     const parseBool = (v, def) => {
       const s = (v || '').trim().toLowerCase();
@@ -3755,10 +3771,8 @@ async function handleCsvImport(event) {
       const get = i => (i >= 0 && row[i] !== undefined) ? row[i].trim() : '';
       const lineNo = r + 1;
 
-      const id = get(idx.id);
-      if (id && !byId.has(id)) { errors.push(`Ligne ${lineNo} : ID "${id}" introuvable dans la boutique (ligne ignorée pour éviter un doublon).`); continue; }
-      if (id && seenIds.has(id)) { errors.push(`Ligne ${lineNo} : ID "${id}" présent plusieurs fois dans le fichier.`); continue; }
-
+      let id = get(idx.id);
+      let matchedWithoutId = false;
       const catName = get(idx.categorie);
       const subName = get(idx.sousCategorie);
       const nom = get(idx.nom);
@@ -3767,6 +3781,38 @@ async function handleCsvImport(event) {
       if (!catName) { errors.push(`Ligne ${lineNo} : catégorie manquante.`); continue; }
       if (!nom)     { errors.push(`Ligne ${lineNo} : nom du produit manquant.`); continue; }
       if (isNaN(prix) || prix < 0) { errors.push(`Ligne ${lineNo} : prix invalide ("${get(idx.prix)}").`); continue; }
+
+      const rowImages = idx.images === -1 ? [] : get(idx.images).split(';').map(u => u.trim()).filter(Boolean);
+      if (!id) {
+        const rowAttributes = new Map();
+        attrCols.forEach(([t, v]) => { const title = normName(get(t)); if (title) rowAttributes.set(title, get(v)); });
+        const supplier = rowAttributes.get('fournisseur') || '';
+        const ref = rowAttributes.get('reference') || '';
+        let match = null;
+        if (supplier && ref) {
+          const key = supplierRefKey(supplier, ref);
+          if (ambiguousSupplierRefs.has(key)) {
+            errors.push(`Ligne ${lineNo} : la référence « ${ref} » du fournisseur « ${supplier} » correspond à plusieurs produits (ligne ignorée).`);
+            continue;
+          }
+          match = bySupplierRef.get(key) || null;
+          if (!match && (byName.get(normName(nom)) || []).length) {
+            errors.push(`Ligne ${lineNo} : le nom « ${nom} » existe, mais sa référence fournisseur ne correspond pas (ligne ignorée).`);
+            continue;
+          }
+        } else {
+          const nameMatches = byName.get(normName(nom)) || [];
+          if (nameMatches.length > 1) {
+            errors.push(`Ligne ${lineNo} : le nom « ${nom} » correspond à plusieurs produits (ligne ignorée).`);
+            continue;
+          }
+          match = nameMatches[0] || null;
+        }
+        if (match) { id = match.id; matchedWithoutId = true; }
+      }
+
+      if (id && !byId.has(id)) { errors.push(`Ligne ${lineNo} : ID "${id}" introuvable dans la boutique (ligne ignorée pour éviter un doublon).`); continue; }
+      if (id && seenIds.has(id)) { errors.push(`Ligne ${lineNo} : ID "${id}" présent plusieurs fois dans le fichier.`); continue; }
 
       const cat = CATEGORIES.find(c => c.nom.trim().toLowerCase() === catName.toLowerCase());
       if (!cat) { errors.push(`Ligne ${lineNo} : catégorie "${catName}" introuvable (vérifiez l'orthographe exacte, voir le modèle CSV).`); continue; }
@@ -3793,7 +3839,8 @@ async function handleCsvImport(event) {
         payload.gender = ['mixte', 'fille', 'garcon'].includes(sexe) ? sexe : 'mixte';
       }
       if (idx.ages !== -1) payload.age_ranges = get(idx.ages).split(';').map(a => a.trim()).filter(a => validAges.includes(a));
-      if (idx.images !== -1) payload.images = get(idx.images).split(';').map(u => u.trim()).filter(Boolean);
+      // Une cellule images vide signifie « conserver les photos existantes ».
+      if (idx.images !== -1 && rowImages.length) payload.images = rowImages;
       if (idx.actif !== -1)   payload.is_active   = parseBool(get(idx.actif), true);
       if (idx.nouveau !== -1) payload.is_new      = parseBool(get(idx.nouveau), false);
       if (idx.promo !== -1)   payload.is_promo    = parseBool(get(idx.promo), false);
@@ -3805,12 +3852,23 @@ async function handleCsvImport(event) {
         payload.attributes = attributes.length ? attributes : null;
       }
 
+      if (matchedWithoutId) {
+        // Pour les lignes reconnues par fournisseur/référence ou nom, ne modifier que les photos.
+        seenIds.add(id);
+        if (rowImages.length) updates.push({ id, payload: { images: rowImages } });
+        continue;
+      }
+
       if (id) {
         seenIds.add(id);
         updates.push({ id, payload });
       } else {
-        const twin = byName.get(normName(nom));
-        if (twin) { errors.push(`Ligne ${lineNo} : « ${nom} » existe déjà dans la boutique (ID ${twin.id}). Ajoutez cet ID dans la colonne « id » pour le mettre à jour. Ligne ignorée pour éviter un doublon.`); continue; }
+        const twins = byName.get(normName(nom)) || [];
+        if (twins.length) {
+          const identity = twins.length === 1 ? `ID ${twins[0].id}` : `${twins.length} produits portent ce nom`;
+          errors.push(`Ligne ${lineNo} : « ${nom} » existe déjà dans la boutique (${identity}). Ajoutez son ID ou sa référence fournisseur pour le mettre à jour. Ligne ignorée pour éviter un doublon.`);
+          continue;
+        }
         if (newNames.has(normName(nom))) { errors.push(`Ligne ${lineNo} : « ${nom} » apparaît plusieurs fois sans ID dans le fichier. Ligne ignorée.`); continue; }
         newNames.add(normName(nom));
         const baseSlug = slugifyProductName(nom) || ('produit-' + Date.now());
